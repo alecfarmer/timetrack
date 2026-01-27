@@ -1,0 +1,447 @@
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
+import { ClockButton } from "@/components/clock-button"
+import { TimerDisplay } from "@/components/timer-display"
+import { ComplianceWidget } from "@/components/compliance-widget"
+import { EntryCard } from "@/components/entry-card"
+import { LocationPicker } from "@/components/location-picker"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { useGeolocation } from "@/hooks/use-geolocation"
+import { formatDistance, calculateDistance } from "@/lib/geo"
+import { Menu, RefreshCw, MapPin, WifiOff, AlertCircle } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+interface Location {
+  id: string
+  name: string
+  code: string | null
+  category: string
+  latitude: number
+  longitude: number
+  geofenceRadius: number
+  isDefault: boolean
+}
+
+interface Entry {
+  id: string
+  type: "CLOCK_IN" | "CLOCK_OUT"
+  timestampServer: string
+  timestampClient: string
+  gpsLatitude: number | null
+  gpsLongitude: number | null
+  gpsAccuracy: number | null
+  notes: string | null
+  location: {
+    id: string
+    name: string
+    code: string | null
+  }
+}
+
+interface WeekDay {
+  date: string
+  dayOfWeek: string
+  worked: boolean
+}
+
+interface CurrentStatus {
+  isClockedIn: boolean
+  activeClockIn: Entry | null
+  currentSessionStart: string | null
+  todayEntries: Entry[]
+  totalMinutesToday: number
+}
+
+interface WeekSummary {
+  daysWorked: number
+  requiredDays: number
+  isCompliant: boolean
+  weekDays: WeekDay[]
+}
+
+export default function Dashboard() {
+  const [locations, setLocations] = useState<Location[]>([])
+  const [selectedLocationId, setSelectedLocationId] = useState<string>("")
+  const [currentStatus, setCurrentStatus] = useState<CurrentStatus | null>(null)
+  const [weekSummary, setWeekSummary] = useState<WeekSummary | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isOffline, setIsOffline] = useState(false)
+
+  const { position, loading: gpsLoading, error: gpsError, refresh: refreshGps } = useGeolocation(true)
+
+  // Detect offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+
+    setIsOffline(!navigator.onLine)
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
+
+  // Fetch locations
+  const fetchLocations = useCallback(async () => {
+    try {
+      const res = await fetch("/api/locations")
+      if (!res.ok) throw new Error("Failed to fetch locations")
+      const data = await res.json()
+      setLocations(data)
+
+      // Set default location or first location
+      const defaultLoc = data.find((l: Location) => l.isDefault) || data[0]
+      if (defaultLoc && !selectedLocationId) {
+        setSelectedLocationId(defaultLoc.id)
+      }
+    } catch (err) {
+      console.error("Error fetching locations:", err)
+      setError("Failed to load locations")
+    }
+  }, [selectedLocationId])
+
+  // Fetch current status
+  const fetchCurrentStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/entries/current")
+      if (!res.ok) throw new Error("Failed to fetch status")
+      const data = await res.json()
+      setCurrentStatus(data)
+    } catch (err) {
+      console.error("Error fetching current status:", err)
+    }
+  }, [])
+
+  // Fetch week summary
+  const fetchWeekSummary = useCallback(async () => {
+    try {
+      const res = await fetch("/api/workdays/week")
+      if (!res.ok) throw new Error("Failed to fetch week summary")
+      const data = await res.json()
+      setWeekSummary(data)
+    } catch (err) {
+      console.error("Error fetching week summary:", err)
+    }
+  }, [])
+
+  // Initial data fetch
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true)
+      await Promise.all([fetchLocations(), fetchCurrentStatus(), fetchWeekSummary()])
+      setLoading(false)
+    }
+    fetchAll()
+  }, [fetchLocations, fetchCurrentStatus, fetchWeekSummary])
+
+  // Auto-select nearest location when GPS updates
+  useEffect(() => {
+    if (position && locations.length > 0) {
+      const nearestLocation = locations.reduce((nearest, loc) => {
+        const distance = calculateDistance(
+          position.latitude,
+          position.longitude,
+          loc.latitude,
+          loc.longitude
+        )
+        const nearestDistance = calculateDistance(
+          position.latitude,
+          position.longitude,
+          nearest.latitude,
+          nearest.longitude
+        )
+        return distance < nearestDistance ? loc : nearest
+      })
+
+      const distanceToNearest = calculateDistance(
+        position.latitude,
+        position.longitude,
+        nearestLocation.latitude,
+        nearestLocation.longitude
+      )
+
+      // Auto-select if within geofence
+      if (distanceToNearest <= nearestLocation.geofenceRadius) {
+        setSelectedLocationId(nearestLocation.id)
+      }
+    }
+  }, [position, locations])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await Promise.all([fetchCurrentStatus(), fetchWeekSummary(), refreshGps()])
+    setRefreshing(false)
+  }
+
+  const handleClockIn = async () => {
+    if (!selectedLocationId) {
+      setError("Please select a location")
+      return
+    }
+
+    try {
+      const res = await fetch("/api/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "CLOCK_IN",
+          locationId: selectedLocationId,
+          timestampClient: new Date().toISOString(),
+          gpsLatitude: position?.latitude,
+          gpsLongitude: position?.longitude,
+          gpsAccuracy: position?.accuracy,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Failed to clock in")
+      }
+
+      // Refresh data
+      await Promise.all([fetchCurrentStatus(), fetchWeekSummary()])
+
+      // Haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(100)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clock in")
+    }
+  }
+
+  const handleClockOut = async () => {
+    try {
+      const res = await fetch("/api/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "CLOCK_OUT",
+          locationId: selectedLocationId,
+          timestampClient: new Date().toISOString(),
+          gpsLatitude: position?.latitude,
+          gpsLongitude: position?.longitude,
+          gpsAccuracy: position?.accuracy,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Failed to clock out")
+      }
+
+      // Refresh data
+      await Promise.all([fetchCurrentStatus(), fetchWeekSummary()])
+
+      // Haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate([100, 50, 100])
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clock out")
+    }
+  }
+
+  const selectedLocation = locations.find((l) => l.id === selectedLocationId)
+  const distanceToSelected =
+    position && selectedLocation
+      ? calculateDistance(
+          position.latitude,
+          position.longitude,
+          selectedLocation.latitude,
+          selectedLocation.longitude
+        )
+      : null
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading OnSite...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="flex items-center justify-between px-4 h-14">
+          <h1 className="text-xl font-bold">OnSite</h1>
+          <div className="flex items-center gap-2">
+            {isOffline && (
+              <Badge variant="warning" className="gap-1">
+                <WifiOff className="h-3 w-3" />
+                Offline
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn("h-5 w-5", refreshing && "animate-spin")} />
+            </Button>
+            <Button variant="ghost" size="icon">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 p-4 pb-24 space-y-4">
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+            <p className="text-sm text-destructive">{error}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              onClick={() => setError(null)}
+            >
+              Dismiss
+            </Button>
+          </div>
+        )}
+
+        {/* Compliance Widget */}
+        {weekSummary && (
+          <ComplianceWidget
+            daysWorked={weekSummary.daysWorked}
+            requiredDays={weekSummary.requiredDays}
+            weekDays={weekSummary.weekDays.map((d) => ({
+              day: d.dayOfWeek,
+              date: new Date(d.date),
+              worked: d.worked,
+            }))}
+          />
+        )}
+
+        {/* Clock Card */}
+        <Card>
+          <CardContent className="p-6 space-y-6">
+            {/* Location Display */}
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center gap-2">
+                <MapPin className="h-5 w-5 text-primary" />
+                <span className="text-lg font-semibold">
+                  {selectedLocation?.name || "Select Location"}
+                </span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                {selectedLocation?.code && (
+                  <Badge variant="secondary">{selectedLocation.code}</Badge>
+                )}
+                {distanceToSelected !== null && (
+                  <span>· {formatDistance(distanceToSelected)} away</span>
+                )}
+                {gpsLoading && <span>· Getting location...</span>}
+                {gpsError && <span className="text-warning">· {gpsError}</span>}
+              </div>
+            </div>
+
+            {/* Location Picker */}
+            <LocationPicker
+              locations={locations}
+              selectedId={selectedLocationId}
+              userPosition={position}
+              onSelect={setSelectedLocationId}
+            />
+
+            {/* Clock Button */}
+            <ClockButton
+              isClockedIn={currentStatus?.isClockedIn || false}
+              onClockIn={handleClockIn}
+              onClockOut={handleClockOut}
+              disabled={!selectedLocationId}
+            />
+
+            {/* Timer */}
+            <div className="flex justify-center">
+              <TimerDisplay
+                startTime={
+                  currentStatus?.currentSessionStart
+                    ? new Date(currentStatus.currentSessionStart)
+                    : null
+                }
+                label={currentStatus?.isClockedIn ? "on site" : undefined}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Today's Entries */}
+        <div className="space-y-3">
+          <Separator />
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide px-1">
+            Today
+          </h2>
+
+          {currentStatus?.todayEntries && currentStatus.todayEntries.length > 0 ? (
+            <div className="space-y-2">
+              {currentStatus.todayEntries.map((entry) => (
+                <EntryCard
+                  key={entry.id}
+                  type={entry.type}
+                  timestamp={entry.timestampServer}
+                  locationName={entry.location.name}
+                  gpsAccuracy={entry.gpsAccuracy}
+                  notes={entry.notes}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">
+              No entries yet today
+            </p>
+          )}
+        </div>
+      </main>
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t safe-area-inset-bottom">
+        <div className="flex items-center justify-around h-16">
+          <Button variant="ghost" className="flex-1 h-full rounded-none flex-col gap-1">
+            <MapPin className="h-5 w-5" />
+            <span className="text-xs">Home</span>
+          </Button>
+          <Button variant="ghost" className="flex-1 h-full rounded-none flex-col gap-1">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className="text-xs">History</span>
+          </Button>
+          <Button variant="ghost" className="flex-1 h-full rounded-none flex-col gap-1">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span className="text-xs">Reports</span>
+          </Button>
+          <Button variant="ghost" className="flex-1 h-full rounded-none flex-col gap-1">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="text-xs">Settings</span>
+          </Button>
+        </div>
+      </nav>
+    </div>
+  )
+}
