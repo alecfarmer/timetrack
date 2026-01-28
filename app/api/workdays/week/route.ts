@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       .from("WorkDay")
       .select(`
         *,
-        location:Location (id, name, code)
+        location:Location (id, name, code, category)
       `)
       .gte("date", weekStart.toISOString().split("T")[0])
       .lte("date", weekEnd.toISOString().split("T")[0])
@@ -47,9 +47,10 @@ export async function GET(request: NextRequest) {
     const requiredDays = policy?.requiredDaysPerWeek || 3
 
     // Create a map of dates that have work recorded
+    // Only count non-HOME category locations toward compliance (in-office requirement)
     const workedDates = new Set(
       (workDays || [])
-        .filter((wd) => wd.meetsPolicy)
+        .filter((wd) => wd.meetsPolicy && wd.location?.category !== "HOME")
         .map((wd) => wd.date)
     )
 

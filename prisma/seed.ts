@@ -57,6 +57,16 @@ async function main() {
       geofenceRadius: 50, // ~164 feet
       isDefault: false,
     },
+    {
+      name: "WFH",
+      code: "WFH",
+      category: LocationCategory.HOME,
+      address: "400 Bayridge Rd, Simpsonville, SC 29680",
+      latitude: 34.7373,
+      longitude: -82.2543,
+      geofenceRadius: 200, // ~656 feet - same as other locations
+      isDefault: false,
+    },
   ]
 
   for (const location of locations) {

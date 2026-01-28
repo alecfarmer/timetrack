@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       .from("WorkDay")
       .select(`
         *,
-        location:Location (id, name, code)
+        location:Location (id, name, code, category)
       `)
       .gte("date", format(monthStart, "yyyy-MM-dd"))
       .lte("date", format(monthEnd, "yyyy-MM-dd"))
@@ -74,7 +74,8 @@ export async function GET(request: NextRequest) {
         return wdDate >= effectiveStart && wdDate <= effectiveEnd
       })
 
-      const daysWorked = daysInWeek.length
+      // Only count non-HOME category locations toward compliance (in-office requirement)
+      const daysWorked = daysInWeek.filter((wd) => wd.location?.category !== "HOME").length
       const isCompliant = daysWorked >= requiredDays
       const totalMinutes = daysInWeek.reduce((sum, wd) => sum + (wd.totalMinutes || 0), 0)
 
@@ -92,8 +93,8 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Calculate totals
-    const totalDaysWorked = (workDays || []).length
+    // Calculate totals (only non-HOME for compliance, all for total time)
+    const totalDaysWorked = (workDays || []).filter((wd) => wd.location?.category !== "HOME").length
     const totalMinutes = (workDays || []).reduce((sum, wd) => sum + (wd.totalMinutes || 0), 0)
 
     // Group by location
