@@ -47,7 +47,8 @@ export function LocationPicker({
         return {
           ...loc,
           distance,
-          isWithinGeofence: distance <= loc.geofenceRadius,
+          // Allow within geofence OR within 200m for GPS flexibility
+          isWithinGeofence: distance <= Math.max(loc.geofenceRadius, 200),
         }
       })
       // Sort by distance

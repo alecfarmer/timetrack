@@ -303,10 +303,11 @@ export default function Dashboard() {
         )
       : null
 
+  // Allow within geofence OR within 200m for flexibility with GPS accuracy
   const isWithinGeofence =
     distanceToSelected !== null &&
     selectedLocation &&
-    distanceToSelected <= selectedLocation.geofenceRadius
+    distanceToSelected <= Math.max(selectedLocation.geofenceRadius, 200)
 
   if (loading) {
     return (
@@ -504,12 +505,29 @@ export default function Dashboard() {
                   )}
 
                   {/* Location Picker */}
-                  <LocationPicker
-                    locations={locations}
-                    selectedId={selectedLocationId}
-                    userPosition={position}
-                    onSelect={setSelectedLocationId}
-                  />
+                  {locations.length > 0 ? (
+                    <LocationPicker
+                      locations={locations}
+                      selectedId={selectedLocationId}
+                      userPosition={position}
+                      onSelect={setSelectedLocationId}
+                    />
+                  ) : (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
+                      <p className="text-sm text-destructive font-medium">No locations loaded</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Check your Supabase configuration in .env file
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Distance debug info */}
+                  {position && selectedLocation && distanceToSelected !== null && (
+                    <div className="text-xs text-center text-muted-foreground bg-muted/50 rounded-lg p-2">
+                      Distance to {selectedLocation.name}: {formatDistance(distanceToSelected)}
+                      {isWithinGeofence ? " (within range)" : " (outside geofence)"}
+                    </div>
+                  )}
 
                   {/* Clock Button */}
                   <ClockButton
