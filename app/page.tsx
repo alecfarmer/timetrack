@@ -498,40 +498,6 @@ export default function Dashboard() {
         <motion.div variants={staggerItem}>
           <Card>
             <CardContent className="p-6 space-y-6">
-              {/* Location Display */}
-              <motion.div
-                className="text-center space-y-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  <span className="text-lg font-semibold">
-                    {selectedLocation?.name || "Select Location"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  {selectedLocation?.code && (
-                    <Badge variant="secondary">{selectedLocation.code}</Badge>
-                  )}
-                  {distanceToSelected !== null && (
-                    <span>· {formatDistance(distanceToSelected)} away</span>
-                  )}
-                  {gpsLoading && <span>· Getting location...</span>}
-                  {gpsError && <span className="text-destructive">· {gpsError}</span>}
-                </div>
-                {/* Geofence Status */}
-                {position && selectedLocation && !gpsLoading && (
-                  <div className={cn(
-                    "text-sm font-medium mt-2",
-                    isWithinGeofence ? "text-green-600" : "text-destructive"
-                  )}>
-                    {isWithinGeofence ? "✓ You are on-site" : "✗ You are not on-site"}
-                  </div>
-                )}
-              </motion.div>
-
               {/* Location Picker */}
               <LocationPicker
                 locations={locations}
@@ -539,6 +505,18 @@ export default function Dashboard() {
                 userPosition={position}
                 onSelect={setSelectedLocationId}
               />
+
+              {/* GPS Status */}
+              {gpsLoading && (
+                <p className="text-sm text-center text-muted-foreground">
+                  Getting your location...
+                </p>
+              )}
+              {gpsError && (
+                <p className="text-sm text-center text-destructive">
+                  {gpsError}
+                </p>
+              )}
 
               {/* Clock Button */}
               <ClockButton

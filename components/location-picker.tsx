@@ -1,15 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { motion } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Navigation } from "lucide-react"
+import { MapPin, Check } from "lucide-react"
 import { calculateDistance, formatDistance } from "@/lib/geo"
 import { cn } from "@/lib/utils"
 
@@ -64,62 +58,72 @@ export function LocationPicker({
     }
   }, [locations, userPosition])
 
-  const selectedLocation = locationsWithDistance.find((l) => l.id === selectedId)
-
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
         <MapPin className="h-4 w-4" />
-        <span>Location</span>
+        <span>Select Location</span>
       </div>
 
-      <Select value={selectedId} onValueChange={onSelect}>
-        <SelectTrigger className="w-full">
-          <SelectValue>
-            {selectedLocation && (
-              <div className="flex items-center gap-2">
-                <span>{selectedLocation.name}</span>
-                {selectedLocation.code && (
-                  <Badge variant="secondary" className="text-xs">
-                    {selectedLocation.code}
-                  </Badge>
-                )}
-                {selectedLocation.distance !== undefined && (
-                  <span className="text-muted-foreground">
-                    · {formatDistance(selectedLocation.distance)}
-                  </span>
-                )}
-              </div>
-            )}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {locationsWithDistance.map((location) => (
-            <SelectItem key={location.id} value={location.id}>
-              <div className="flex items-center justify-between gap-4 w-full">
-                <div className="flex items-center gap-2">
-                  <span>{location.name}</span>
-                  {location.code && (
-                    <Badge variant="secondary" className="text-xs">
-                      {location.code}
-                    </Badge>
+      <div className="grid gap-2">
+        {locationsWithDistance.map((location) => {
+          const isSelected = location.id === selectedId
+          const isOnSite = location.isWithinGeofence
+
+          return (
+            <motion.button
+              key={location.id}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onSelect(location.id)}
+              className={cn(
+                "w-full p-3 rounded-lg border text-left transition-all",
+                "flex items-center justify-between gap-3",
+                isSelected
+                  ? "border-primary bg-primary/5 ring-1 ring-primary"
+                  : "border-border hover:border-primary/50 hover:bg-muted/50",
+                isOnSite && !isSelected && "border-green-500/50 bg-green-50 dark:bg-green-950/20"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold",
+                    isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : isOnSite
+                      ? "bg-green-500 text-white"
+                      : "bg-muted text-muted-foreground"
                   )}
+                >
+                  {location.code || location.name.substring(0, 2)}
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  {location.isWithinGeofence && (
-                    <Navigation className="h-3 w-3 text-success" />
-                  )}
-                  {location.distance !== undefined && (
-                    <span className="text-xs">
-                      {formatDistance(location.distance)}
-                    </span>
-                  )}
+                <div>
+                  <div className="font-medium flex items-center gap-2">
+                    {location.name}
+                    {isSelected && <Check className="h-4 w-4 text-primary" />}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {location.distance !== undefined ? (
+                      <span className={isOnSite ? "text-green-600 font-medium" : ""}>
+                        {formatDistance(location.distance)}
+                        {isOnSite && " · On-site"}
+                      </span>
+                    ) : (
+                      "Calculating distance..."
+                    )}
+                  </div>
                 </div>
               </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+
+              {isOnSite && !isSelected && (
+                <Badge variant="outline" className="border-green-500 text-green-600 text-xs">
+                  Nearby
+                </Badge>
+              )}
+            </motion.button>
+          )
+        })}
+      </div>
     </div>
   )
 }
