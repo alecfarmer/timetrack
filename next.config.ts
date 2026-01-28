@@ -42,9 +42,8 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  experimental: {
-    // Enable server actions
-  },
+  // Use webpack for build (required for next-pwa)
+  turbopack: {},
 }
 
 export default withPWA(nextConfig)
