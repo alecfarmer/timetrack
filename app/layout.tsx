@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
+import { AuthProvider } from "@/contexts/auth-context"
 import "./globals.css"
 
 const inter = Inter({
@@ -50,7 +51,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body className={`${inter.variable} font-sans antialiased min-h-screen bg-background`}>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   )

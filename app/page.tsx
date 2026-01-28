@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { ClockButton } from "@/components/clock-button"
 import { TimerDisplay } from "@/components/timer-display"
 import { ComplianceWidget } from "@/components/compliance-widget"
@@ -11,8 +12,9 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { useGeolocation } from "@/hooks/use-geolocation"
+import { useAuth } from "@/contexts/auth-context"
 import { formatDistance, calculateDistance } from "@/lib/geo"
-import { Menu, RefreshCw, MapPin, WifiOff, AlertCircle } from "lucide-react"
+import { Menu, RefreshCw, MapPin, WifiOff, AlertCircle, LogOut, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Location {
@@ -63,7 +65,28 @@ interface WeekSummary {
   weekDays: WeekDay[]
 }
 
+// Page transition variants
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -20 },
+}
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+const staggerItem = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+}
+
 export default function Dashboard() {
+  const { user, signOut } = useAuth()
   const [locations, setLocations] = useState<Location[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string>("")
   const [currentStatus, setCurrentStatus] = useState<CurrentStatus | null>(null)
@@ -72,6 +95,7 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isOffline, setIsOffline] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
 
   const { position, loading: gpsLoading, error: gpsError, refresh: refreshGps } = useGeolocation(true)
 
@@ -266,182 +290,290 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          >
+            <RefreshCw className="h-8 w-8 text-primary" />
+          </motion.div>
           <p className="text-muted-foreground">Loading OnSite...</p>
-        </div>
+        </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <motion.div
+      className="flex flex-col min-h-screen"
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageVariants}
+    >
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="flex items-center justify-between px-4 h-14">
-          <h1 className="text-xl font-bold">OnSite</h1>
+          <motion.h1
+            className="text-xl font-bold"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            OnSite
+          </motion.h1>
           <div className="flex items-center gap-2">
-            {isOffline && (
-              <Badge variant="warning" className="gap-1">
-                <WifiOff className="h-3 w-3" />
-                Offline
-              </Badge>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <RefreshCw className={cn("h-5 w-5", refreshing && "animate-spin")} />
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Menu className="h-5 w-5" />
-            </Button>
+            <AnimatePresence>
+              {isOffline && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                >
+                  <Badge variant="warning" className="gap-1">
+                    <WifiOff className="h-3 w-3" />
+                    Offline
+                  </Badge>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <motion.div whileTap={{ scale: 0.9 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                <RefreshCw className={cn("h-5 w-5", refreshing && "animate-spin")} />
+              </Button>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.9 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowMenu(!showMenu)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </motion.div>
           </div>
         </div>
+
+        {/* Dropdown Menu */}
+        <AnimatePresence>
+          {showMenu && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="border-t bg-background"
+            >
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-3 text-sm">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{user?.email}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start gap-2"
+                  onClick={() => signOut()}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 pb-24 space-y-4">
+      <motion.main
+        className="flex-1 p-4 pb-24 space-y-4"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
         {/* Error Banner */}
-        {error && (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
-            <p className="text-sm text-destructive">{error}</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto"
-              onClick={() => setError(null)}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -20, height: 0 }}
+              className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center gap-2"
             >
-              Dismiss
-            </Button>
-          </div>
-        )}
+              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+              <p className="text-sm text-destructive">{error}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto"
+                onClick={() => setError(null)}
+              >
+                Dismiss
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Compliance Widget */}
         {weekSummary && (
-          <ComplianceWidget
-            daysWorked={weekSummary.daysWorked}
-            requiredDays={weekSummary.requiredDays}
-            weekDays={weekSummary.weekDays.map((d) => ({
-              day: d.dayOfWeek,
-              date: new Date(d.date),
-              worked: d.worked,
-            }))}
-          />
+          <motion.div variants={staggerItem}>
+            <ComplianceWidget
+              daysWorked={weekSummary.daysWorked}
+              requiredDays={weekSummary.requiredDays}
+              weekDays={weekSummary.weekDays.map((d) => ({
+                day: d.dayOfWeek,
+                date: new Date(d.date),
+                worked: d.worked,
+              }))}
+            />
+          </motion.div>
         )}
 
         {/* Clock Card */}
-        <Card>
-          <CardContent className="p-6 space-y-6">
-            {/* Location Display */}
-            <div className="text-center space-y-2">
-              <div className="flex items-center justify-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                <span className="text-lg font-semibold">
-                  {selectedLocation?.name || "Select Location"}
-                </span>
-              </div>
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                {selectedLocation?.code && (
-                  <Badge variant="secondary">{selectedLocation.code}</Badge>
-                )}
-                {distanceToSelected !== null && (
-                  <span>· {formatDistance(distanceToSelected)} away</span>
-                )}
-                {gpsLoading && <span>· Getting location...</span>}
-                {gpsError && <span className="text-warning">· {gpsError}</span>}
-              </div>
-            </div>
+        <motion.div variants={staggerItem}>
+          <Card>
+            <CardContent className="p-6 space-y-6">
+              {/* Location Display */}
+              <motion.div
+                className="text-center space-y-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <span className="text-lg font-semibold">
+                    {selectedLocation?.name || "Select Location"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  {selectedLocation?.code && (
+                    <Badge variant="secondary">{selectedLocation.code}</Badge>
+                  )}
+                  {distanceToSelected !== null && (
+                    <span>· {formatDistance(distanceToSelected)} away</span>
+                  )}
+                  {gpsLoading && <span>· Getting location...</span>}
+                  {gpsError && <span className="text-warning">· {gpsError}</span>}
+                </div>
+              </motion.div>
 
-            {/* Location Picker */}
-            <LocationPicker
-              locations={locations}
-              selectedId={selectedLocationId}
-              userPosition={position}
-              onSelect={setSelectedLocationId}
-            />
-
-            {/* Clock Button */}
-            <ClockButton
-              isClockedIn={currentStatus?.isClockedIn || false}
-              onClockIn={handleClockIn}
-              onClockOut={handleClockOut}
-              disabled={!selectedLocationId}
-            />
-
-            {/* Timer */}
-            <div className="flex justify-center">
-              <TimerDisplay
-                startTime={
-                  currentStatus?.currentSessionStart
-                    ? new Date(currentStatus.currentSessionStart)
-                    : null
-                }
-                label={currentStatus?.isClockedIn ? "on site" : undefined}
+              {/* Location Picker */}
+              <LocationPicker
+                locations={locations}
+                selectedId={selectedLocationId}
+                userPosition={position}
+                onSelect={setSelectedLocationId}
               />
-            </div>
-          </CardContent>
-        </Card>
+
+              {/* Clock Button */}
+              <ClockButton
+                isClockedIn={currentStatus?.isClockedIn || false}
+                onClockIn={handleClockIn}
+                onClockOut={handleClockOut}
+                disabled={!selectedLocationId}
+              />
+
+              {/* Timer */}
+              <div className="flex justify-center">
+                <TimerDisplay
+                  startTime={
+                    currentStatus?.currentSessionStart
+                      ? new Date(currentStatus.currentSessionStart)
+                      : null
+                  }
+                  label={currentStatus?.isClockedIn ? "on site" : undefined}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Today's Entries */}
-        <div className="space-y-3">
+        <motion.div variants={staggerItem} className="space-y-3">
           <Separator />
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide px-1">
             Today
           </h2>
 
-          {currentStatus?.todayEntries && currentStatus.todayEntries.length > 0 ? (
-            <div className="space-y-2">
-              {currentStatus.todayEntries.map((entry) => (
-                <EntryCard
-                  key={entry.id}
-                  type={entry.type}
-                  timestamp={entry.timestampServer}
-                  locationName={entry.location.name}
-                  gpsAccuracy={entry.gpsAccuracy}
-                  notes={entry.notes}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
-              No entries yet today
-            </p>
-          )}
-        </div>
-      </main>
+          <AnimatePresence mode="popLayout">
+            {currentStatus?.todayEntries && currentStatus.todayEntries.length > 0 ? (
+              <div className="space-y-2">
+                {currentStatus.todayEntries.map((entry, index) => (
+                  <EntryCard
+                    key={entry.id}
+                    type={entry.type}
+                    timestamp={entry.timestampServer}
+                    locationName={entry.location.name}
+                    gpsAccuracy={entry.gpsAccuracy}
+                    notes={entry.notes}
+                    index={index}
+                  />
+                ))}
+              </div>
+            ) : (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center text-muted-foreground py-8"
+              >
+                No entries yet today
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </motion.main>
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-background border-t safe-area-inset-bottom">
         <div className="flex items-center justify-around h-16">
-          <Button variant="ghost" className="flex-1 h-full rounded-none flex-col gap-1">
-            <MapPin className="h-5 w-5" />
-            <span className="text-xs">Home</span>
-          </Button>
-          <Button variant="ghost" className="flex-1 h-full rounded-none flex-col gap-1">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span className="text-xs">History</span>
-          </Button>
-          <Button variant="ghost" className="flex-1 h-full rounded-none flex-col gap-1">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="text-xs">Reports</span>
-          </Button>
-          <Button variant="ghost" className="flex-1 h-full rounded-none flex-col gap-1">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span className="text-xs">Settings</span>
-          </Button>
+          {[
+            { icon: MapPin, label: "Home", active: true },
+            { icon: () => (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            ), label: "History" },
+            { icon: () => (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            ), label: "Reports" },
+            { icon: () => (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            ), label: "Settings" },
+          ].map((item, index) => (
+            <motion.div
+              key={item.label}
+              whileTap={{ scale: 0.9 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Button
+                variant="ghost"
+                className={cn(
+                  "flex-1 h-full rounded-none flex-col gap-1",
+                  item.active && "text-primary"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-xs">{item.label}</span>
+              </Button>
+            </motion.div>
+          ))}
         </div>
       </nav>
-    </div>
+    </motion.div>
   )
 }

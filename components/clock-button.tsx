@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion"
+import { Loader2, ArrowRight, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ClockButtonProps {
@@ -14,136 +14,183 @@ interface ClockButtonProps {
 
 export function ClockButton({ isClockedIn, onClockIn, onClockOut, disabled }: ClockButtonProps) {
   const [loading, setLoading] = useState(false)
-  const [swipeProgress, setSwipeProgress] = useState(0)
-  const [showSwipeHint, setShowSwipeHint] = useState(false)
-  const startXRef = useRef<number | null>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [isComplete, setIsComplete] = useState(false)
+  const constraintsRef = useRef<HTMLDivElement>(null)
+  const x = useMotionValue(0)
+  const buttonWidth = 280
+  const threshold = buttonWidth * 0.65
 
-  const handleAction = async () => {
+  // Transform x position to background width percentage
+  const backgroundWidth = useTransform(x, [0, threshold], ["0%", "100%"])
+  const textOpacity = useTransform(x, [0, threshold * 0.3], [1, 0])
+  const arrowOpacity = useTransform(x, [threshold * 0.7, threshold], [1, 0])
+  const checkOpacity = useTransform(x, [threshold * 0.7, threshold], [0, 1])
+
+  const handleClockIn = async () => {
     if (loading || disabled) return
-
-    // For clock-out, require swipe confirmation
-    if (isClockedIn) {
-      setShowSwipeHint(true)
-      return
-    }
 
     setLoading(true)
     try {
       await onClockIn()
+      // Success animation
+      setIsComplete(true)
+      setTimeout(() => setIsComplete(false), 1000)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!isClockedIn || loading || disabled) return
-    startXRef.current = e.touches[0].clientX
-    setShowSwipeHint(false)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isClockedIn || !startXRef.current || loading || disabled) return
-    const currentX = e.touches[0].clientX
-    const diff = currentX - startXRef.current
-    const buttonWidth = buttonRef.current?.offsetWidth || 200
-    const progress = Math.min(Math.max(diff / (buttonWidth * 0.6), 0), 1)
-    setSwipeProgress(progress)
-  }
-
-  const handleTouchEnd = async () => {
-    if (!isClockedIn || loading || disabled) return
-
-    if (swipeProgress >= 0.9) {
+  const handleDragEnd = async () => {
+    if (x.get() >= threshold) {
       setLoading(true)
       try {
         await onClockOut()
+        setIsComplete(true)
+        setTimeout(() => setIsComplete(false), 1000)
       } finally {
         setLoading(false)
       }
     }
-
-    startXRef.current = null
-    setSwipeProgress(0)
   }
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isClockedIn || loading || disabled) return
-    startXRef.current = e.clientX
-    setShowSwipeHint(false)
+  // Clock In Button (simple tap)
+  if (!isClockedIn) {
+    return (
+      <motion.button
+        className={cn(
+          "relative w-full min-h-[72px] rounded-xl text-xl font-semibold",
+          "bg-success text-success-foreground",
+          "shadow-lg shadow-success/25",
+          disabled && "opacity-50 cursor-not-allowed"
+        )}
+        onClick={handleClockIn}
+        disabled={disabled || loading}
+        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.01 }}
+      >
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="flex items-center justify-center"
+            >
+              <Loader2 className="h-7 w-7 animate-spin" />
+            </motion.div>
+          ) : isComplete ? (
+            <motion.div
+              key="complete"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0 }}
+              className="flex items-center justify-center"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: [0, 1.2, 1] }}
+                transition={{ duration: 0.4 }}
+              >
+                <Check className="h-8 w-8" />
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.span
+              key="text"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              CLOCK IN
+            </motion.span>
+          )}
+        </AnimatePresence>
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!startXRef.current) return
-      const diff = e.clientX - startXRef.current
-      const buttonWidth = buttonRef.current?.offsetWidth || 200
-      const progress = Math.min(Math.max(diff / (buttonWidth * 0.6), 0), 1)
-      setSwipeProgress(progress)
-    }
-
-    const handleMouseUp = async () => {
-      document.removeEventListener("mousemove", handleMouseMove)
-      document.removeEventListener("mouseup", handleMouseUp)
-
-      if (swipeProgress >= 0.9) {
-        setLoading(true)
-        try {
-          await onClockOut()
-        } finally {
-          setLoading(false)
-        }
-      }
-
-      startXRef.current = null
-      setSwipeProgress(0)
-    }
-
-    document.addEventListener("mousemove", handleMouseMove)
-    document.addEventListener("mouseup", handleMouseUp)
+        {/* Ripple effect on tap */}
+        <motion.div
+          className="absolute inset-0 rounded-xl bg-white/20"
+          initial={{ scale: 0, opacity: 0.5 }}
+          whileTap={{ scale: 2, opacity: 0 }}
+          transition={{ duration: 0.4 }}
+        />
+      </motion.button>
+    )
   }
 
+  // Clock Out Button (swipe to confirm)
   return (
-    <Button
-      ref={buttonRef}
-      variant={isClockedIn ? "destructive" : "success"}
-      size="xl"
+    <div
+      ref={constraintsRef}
       className={cn(
-        "relative w-full min-h-[72px] text-xl font-semibold overflow-hidden transition-all",
-        isClockedIn && "cursor-grab active:cursor-grabbing",
+        "relative w-full min-h-[72px] rounded-xl overflow-hidden",
+        "bg-destructive/20 border-2 border-destructive/30",
         disabled && "opacity-50 cursor-not-allowed"
       )}
-      onClick={handleAction}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onMouseDown={handleMouseDown}
-      disabled={disabled}
     >
-      {/* Swipe progress indicator */}
-      {isClockedIn && swipeProgress > 0 && (
-        <div
-          className="absolute inset-y-0 left-0 bg-white/20 transition-all"
-          style={{ width: `${swipeProgress * 100}%` }}
-        />
-      )}
+      {/* Sliding background */}
+      <motion.div
+        className="absolute inset-y-0 left-0 bg-destructive/30 rounded-l-xl"
+        style={{ width: backgroundWidth }}
+      />
 
-      <span className="relative z-10 flex flex-col items-center gap-1">
-        {loading ? (
-          <Loader2 className="h-6 w-6 animate-spin" />
-        ) : (
-          <>
-            <span>{isClockedIn ? "CLOCK OUT" : "CLOCK IN"}</span>
-            {isClockedIn && (showSwipeHint || swipeProgress > 0) && (
-              <span className="text-xs font-normal opacity-75">
-                {swipeProgress > 0
-                  ? swipeProgress >= 0.9
-                    ? "Release to confirm"
-                    : "Keep sliding..."
-                  : "Swipe right to confirm"}
-              </span>
-            )}
-          </>
+      {/* Text label */}
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        style={{ opacity: textOpacity }}
+      >
+        <span className="text-lg font-medium text-destructive ml-12">
+          Slide to clock out
+        </span>
+      </motion.div>
+
+      {/* Draggable thumb */}
+      <motion.div
+        drag={!loading && !disabled ? "x" : false}
+        dragConstraints={{ left: 0, right: buttonWidth - 64 }}
+        dragElastic={0.1}
+        onDragEnd={handleDragEnd}
+        style={{ x }}
+        className={cn(
+          "absolute left-1 top-1 bottom-1 w-14 rounded-lg",
+          "bg-destructive text-destructive-foreground",
+          "flex items-center justify-center",
+          "cursor-grab active:cursor-grabbing",
+          "shadow-lg"
         )}
-      </span>
-    </Button>
+        whileDrag={{ scale: 1.05 }}
+        whileTap={{ scale: 1.02 }}
+      >
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </motion.div>
+          ) : (
+            <>
+              <motion.div
+                key="arrow"
+                style={{ opacity: arrowOpacity }}
+                className="absolute"
+              >
+                <ArrowRight className="h-6 w-6" />
+              </motion.div>
+              <motion.div
+                key="check"
+                style={{ opacity: checkOpacity }}
+                className="absolute"
+              >
+                <Check className="h-6 w-6" />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </div>
   )
 }

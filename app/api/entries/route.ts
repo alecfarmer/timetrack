@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 import { prisma } from "@/lib/db"
 import { startOfDay, endOfDay } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
@@ -8,6 +9,14 @@ const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 // GET /api/entries - List entries with optional filters
 export async function GET(request: NextRequest) {
   try {
+    // Verify authentication
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const locationId = searchParams.get("locationId")
     const date = searchParams.get("date")
@@ -67,6 +76,14 @@ export async function GET(request: NextRequest) {
 // POST /api/entries - Create a new entry (clock in/out)
 export async function POST(request: NextRequest) {
   try {
+    // Verify authentication
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await request.json()
     const {
       type,
