@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
+import { supabase } from "@/lib/supabase"
 import { startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
 const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
-
-// Type assertion for callout model (schema exists but prisma generate couldn't run)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const calloutModel = (prisma as any).callout
 
 // GET /api/callouts - List callouts with optional filters
 export async function GET(request: NextRequest) {
@@ -19,52 +15,47 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50")
     const offset = parseInt(searchParams.get("offset") || "0")
 
-    const where: Record<string, unknown> = {}
+    let query = supabase
+      .from("Callout")
+      .select(`
+        *,
+        location:Location (id, name, code)
+      `, { count: "exact" })
+      .order("timeReceived", { ascending: false })
+      .range(offset, offset + limit - 1)
 
     if (locationId) {
-      where.locationId = locationId
+      query = query.eq("locationId", locationId)
     }
 
     if (date) {
       const targetDate = new Date(date)
       const zonedDate = toZonedTime(targetDate, DEFAULT_TIMEZONE)
-      where.timeReceived = {
-        gte: startOfDay(zonedDate),
-        lte: endOfDay(zonedDate),
-      }
+      query = query
+        .gte("timeReceived", startOfDay(zonedDate).toISOString())
+        .lte("timeReceived", endOfDay(zonedDate).toISOString())
     } else if (month) {
       const [year, monthNum] = month.split("-").map(Number)
       const targetDate = new Date(year, monthNum - 1, 1)
       const zonedDate = toZonedTime(targetDate, DEFAULT_TIMEZONE)
-      where.timeReceived = {
-        gte: startOfMonth(zonedDate),
-        lte: endOfMonth(zonedDate),
-      }
+      query = query
+        .gte("timeReceived", startOfMonth(zonedDate).toISOString())
+        .lte("timeReceived", endOfMonth(zonedDate).toISOString())
     }
 
-    const callouts = await calloutModel.findMany({
-      where,
-      include: {
-        location: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
-      orderBy: {
-        timeReceived: "desc",
-      },
-      take: limit,
-      skip: offset,
-    })
+    const { data: callouts, count, error } = await query
 
-    const total = await calloutModel.count({ where })
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Failed to fetch callouts", details: error.message },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       callouts,
-      total,
+      total: count || 0,
       limit,
       offset,
     })
@@ -103,11 +94,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify location exists
-    const location = await prisma.location.findUnique({
-      where: { id: locationId },
-    })
+    const { data: location, error: locError } = await supabase
+      .from("Location")
+      .select("id")
+      .eq("id", locationId)
+      .single()
 
-    if (!location) {
+    if (locError || !location) {
       return NextResponse.json(
         { error: "Location not found" },
         { status: 404 }
@@ -115,29 +108,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the callout
-    const callout = await calloutModel.create({
-      data: {
+    const { data: callout, error } = await supabase
+      .from("Callout")
+      .insert({
         incidentNumber,
         locationId,
-        timeReceived: new Date(timeReceived),
-        timeStarted: timeStarted ? new Date(timeStarted) : null,
-        timeEnded: timeEnded ? new Date(timeEnded) : null,
+        timeReceived: new Date(timeReceived).toISOString(),
+        timeStarted: timeStarted ? new Date(timeStarted).toISOString() : null,
+        timeEnded: timeEnded ? new Date(timeEnded).toISOString() : null,
         gpsLatitude,
         gpsLongitude,
         gpsAccuracy,
         description,
         resolution,
-      },
-      include: {
-        location: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
-    })
+      })
+      .select(`
+        *,
+        location:Location (id, name, code)
+      `)
+      .single()
+
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Failed to create callout", details: error.message },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(callout, { status: 201 })
   } catch (error) {

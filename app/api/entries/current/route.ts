@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
+import { supabase } from "@/lib/supabase"
 import { startOfDay, endOfDay } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
@@ -8,7 +8,7 @@ const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 interface EntryWithLocation {
   id: string
   type: string
-  timestampServer: Date
+  timestampServer: string
   location: { id: string; name: string; code: string | null }
 }
 
@@ -20,40 +20,43 @@ export async function GET() {
     const todayStart = startOfDay(zonedNow)
     const todayEnd = endOfDay(zonedNow)
 
-    const dbEntries = await prisma.entry.findMany({
-      where: {
-        timestampServer: {
-          gte: todayStart,
-          lte: todayEnd,
-        },
-      },
-      include: {
+    const { data: dbEntries, error } = await supabase
+      .from("Entry")
+      .select(`
+        id, type, timestampServer,
+        location:Location (id, name, code)
+      `)
+      .gte("timestampServer", todayStart.toISOString())
+      .lte("timestampServer", todayEnd.toISOString())
+      .order("timestampServer", { ascending: false })
+
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json({
+        isClockedIn: false,
+        activeClockIn: null,
+        currentSessionStart: null,
+        todayEntries: [],
+        totalMinutesToday: 0,
+      })
+    }
+
+    const todayEntries: EntryWithLocation[] = (dbEntries || []).map((e) => {
+      // Supabase returns location as object or array depending on relationship
+      const loc = Array.isArray(e.location) ? e.location[0] : e.location
+      return {
+        id: e.id,
+        type: e.type,
+        timestampServer: e.timestampServer,
         location: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
+          id: loc?.id || "",
+          name: loc?.name || "Unknown",
+          code: loc?.code ?? null,
         },
-      },
-      orderBy: {
-        timestampServer: "desc",
-      },
+      }
     })
 
-    const todayEntries: EntryWithLocation[] = dbEntries.map((e) => ({
-      id: e.id,
-      type: e.type,
-      timestampServer: e.timestampServer,
-      location: {
-        id: e.location?.id || "",
-        name: e.location?.name || "Unknown",
-        code: e.location?.code ?? null,
-      },
-    }))
-
     // Determine if currently clocked in
-    // User is clocked in if the most recent entry is a CLOCK_IN
     const latestEntry = todayEntries[0]
     const isClockedIn = latestEntry?.type === "CLOCK_IN"
 
@@ -70,13 +73,13 @@ export async function GET() {
 
     for (const entry of chronologicalEntries) {
       if (entry.type === "CLOCK_IN") {
-        clockInTime = entry.timestampServer
+        clockInTime = new Date(entry.timestampServer)
         if (isClockedIn && entry.id === activeClockIn?.id) {
           currentSessionStart = clockInTime
         }
       } else if (entry.type === "CLOCK_OUT" && clockInTime) {
         const sessionMinutes = Math.floor(
-          (entry.timestampServer.getTime() - clockInTime.getTime()) / 60000
+          (new Date(entry.timestampServer).getTime() - clockInTime.getTime()) / 60000
         )
         totalMinutesToday += sessionMinutes
         clockInTime = null
@@ -100,7 +103,6 @@ export async function GET() {
     })
   } catch (error) {
     console.error("Error fetching current status:", error)
-    // Return empty status on error
     return NextResponse.json({
       isClockedIn: false,
       activeClockIn: null,

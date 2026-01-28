@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
+import { supabase } from "@/lib/supabase"
 import { startOfWeek, endOfWeek, eachDayOfInterval, format } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
@@ -18,48 +18,46 @@ export async function GET(request: NextRequest) {
     const weekStart = startOfWeek(zonedDate, { weekStartsOn: 1 })
     const weekEnd = endOfWeek(zonedDate, { weekStartsOn: 1 })
 
-    const workDays = await prisma.workDay.findMany({
-      where: {
-        date: {
-          gte: weekStart,
-          lte: weekEnd,
-        },
-      },
-      include: {
-        location: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
-      orderBy: {
-        date: "asc",
-      },
-    })
+    const { data: workDays, error } = await supabase
+      .from("WorkDay")
+      .select(`
+        *,
+        location:Location (id, name, code)
+      `)
+      .gte("date", weekStart.toISOString().split("T")[0])
+      .lte("date", weekEnd.toISOString().split("T")[0])
+      .order("date", { ascending: true })
 
-    const policy = await prisma.policyConfig.findFirst({
-      where: { isActive: true },
-      orderBy: { effectiveDate: "desc" },
-    })
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Failed to fetch weekly summary", details: error.message },
+        { status: 500 }
+      )
+    }
+
+    const { data: policy } = await supabase
+      .from("PolicyConfig")
+      .select("*")
+      .eq("isActive", true)
+      .order("effectiveDate", { ascending: false })
+      .limit(1)
+      .single()
 
     const requiredDays = policy?.requiredDaysPerWeek || 3
 
     // Create a map of dates that have work recorded
     const workedDates = new Set(
-      workDays
+      (workDays || [])
         .filter((wd) => wd.meetsPolicy)
-        .map((wd) => format(wd.date, "yyyy-MM-dd"))
+        .map((wd) => wd.date)
     )
 
     // Generate all days of the week with their status
     const allDaysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd })
-    const weekDays = allDaysOfWeek.map((date) => {
+    const weekDaysData = allDaysOfWeek.map((date) => {
       const dateStr = format(date, "yyyy-MM-dd")
-      const workDay = workDays.find(
-        (wd) => format(wd.date, "yyyy-MM-dd") === dateStr
-      )
+      const workDay = (workDays || []).find((wd) => wd.date === dateStr)
 
       return {
         date: dateStr,
@@ -71,12 +69,12 @@ export async function GET(request: NextRequest) {
     })
 
     // Count days worked (only weekdays Mon-Fri typically count for policy)
-    const daysWorked = weekDays
+    const daysWorked = weekDaysData
       .filter((d) => d.dayNumber >= 1 && d.dayNumber <= 5) // Mon-Fri
       .filter((d) => d.worked).length
 
     // Calculate total minutes for the week
-    const totalMinutes = workDays.reduce(
+    const totalMinutes = (workDays || []).reduce(
       (sum, wd) => sum + (wd.totalMinutes || 0),
       0
     )
@@ -88,7 +86,7 @@ export async function GET(request: NextRequest) {
       requiredDays,
       isCompliant: daysWorked >= requiredDays,
       totalMinutes,
-      weekDays,
+      weekDays: weekDaysData,
       workDays,
     })
   } catch (error) {

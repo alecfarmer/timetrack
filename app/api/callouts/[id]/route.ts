@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
-
-// Type assertion for callout model (schema exists but prisma generate couldn't run)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const calloutModel = (prisma as any).callout
+import { supabase } from "@/lib/supabase"
 
 // GET /api/callouts/[id] - Get a single callout
 export async function GET(
@@ -13,20 +9,16 @@ export async function GET(
   try {
     const { id } = await params
 
-    const callout = await calloutModel.findUnique({
-      where: { id },
-      include: {
-        location: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
-    })
+    const { data: callout, error } = await supabase
+      .from("Callout")
+      .select(`
+        *,
+        location:Location (id, name, code)
+      `)
+      .eq("id", id)
+      .single()
 
-    if (!callout) {
+    if (error || !callout) {
       return NextResponse.json(
         { error: "Callout not found" },
         { status: 404 }
@@ -65,9 +57,11 @@ export async function PATCH(
     } = body
 
     // Check if callout exists
-    const existingCallout = await calloutModel.findUnique({
-      where: { id },
-    })
+    const { data: existingCallout } = await supabase
+      .from("Callout")
+      .select("id")
+      .eq("id", id)
+      .single()
 
     if (!existingCallout) {
       return NextResponse.json(
@@ -81,28 +75,32 @@ export async function PATCH(
 
     if (incidentNumber !== undefined) updateData.incidentNumber = incidentNumber
     if (locationId !== undefined) updateData.locationId = locationId
-    if (timeReceived !== undefined) updateData.timeReceived = new Date(timeReceived)
-    if (timeStarted !== undefined) updateData.timeStarted = timeStarted ? new Date(timeStarted) : null
-    if (timeEnded !== undefined) updateData.timeEnded = timeEnded ? new Date(timeEnded) : null
+    if (timeReceived !== undefined) updateData.timeReceived = new Date(timeReceived).toISOString()
+    if (timeStarted !== undefined) updateData.timeStarted = timeStarted ? new Date(timeStarted).toISOString() : null
+    if (timeEnded !== undefined) updateData.timeEnded = timeEnded ? new Date(timeEnded).toISOString() : null
     if (gpsLatitude !== undefined) updateData.gpsLatitude = gpsLatitude
     if (gpsLongitude !== undefined) updateData.gpsLongitude = gpsLongitude
     if (gpsAccuracy !== undefined) updateData.gpsAccuracy = gpsAccuracy
     if (description !== undefined) updateData.description = description
     if (resolution !== undefined) updateData.resolution = resolution
 
-    const callout = await calloutModel.update({
-      where: { id },
-      data: updateData,
-      include: {
-        location: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
-    })
+    const { data: callout, error } = await supabase
+      .from("Callout")
+      .update(updateData)
+      .eq("id", id)
+      .select(`
+        *,
+        location:Location (id, name, code)
+      `)
+      .single()
+
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Failed to update callout", details: error.message },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(callout)
   } catch (error) {
@@ -123,9 +121,11 @@ export async function DELETE(
     const { id } = await params
 
     // Check if callout exists
-    const existingCallout = await calloutModel.findUnique({
-      where: { id },
-    })
+    const { data: existingCallout } = await supabase
+      .from("Callout")
+      .select("id")
+      .eq("id", id)
+      .single()
 
     if (!existingCallout) {
       return NextResponse.json(
@@ -134,9 +134,18 @@ export async function DELETE(
       )
     }
 
-    await calloutModel.delete({
-      where: { id },
-    })
+    const { error } = await supabase
+      .from("Callout")
+      .delete()
+      .eq("id", id)
+
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Failed to delete callout", details: error.message },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

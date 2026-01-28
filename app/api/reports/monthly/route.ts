@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachWeekOfInterval } from "date-fns"
+import { supabase } from "@/lib/supabase"
+import { startOfMonth, endOfMonth, endOfWeek, eachWeekOfInterval, format } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
 const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
@@ -31,34 +31,34 @@ export async function GET(request: NextRequest) {
     )
 
     // Fetch policy
-    const policy = await prisma.policyConfig.findFirst({
-      where: { isActive: true },
-      orderBy: { effectiveDate: "desc" },
-    })
+    const { data: policy } = await supabase
+      .from("PolicyConfig")
+      .select("*")
+      .eq("isActive", true)
+      .order("effectiveDate", { ascending: false })
+      .limit(1)
+      .single()
 
     const requiredDays = policy?.requiredDaysPerWeek || 3
 
     // Fetch all workdays in the month
-    const workDays = await prisma.workDay.findMany({
-      where: {
-        date: {
-          gte: monthStart,
-          lte: monthEnd,
-        },
-      },
-      include: {
-        location: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
-      orderBy: {
-        date: "asc",
-      },
-    })
+    const { data: workDays, error } = await supabase
+      .from("WorkDay")
+      .select(`
+        *,
+        location:Location (id, name, code)
+      `)
+      .gte("date", format(monthStart, "yyyy-MM-dd"))
+      .lte("date", format(monthEnd, "yyyy-MM-dd"))
+      .order("date", { ascending: true })
+
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Failed to fetch monthly report", details: error.message },
+        { status: 500 }
+      )
+    }
 
     // Calculate weekly compliance
     let weeksCompliant = 0
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       const effectiveStart = weekStart < monthStart ? monthStart : weekStart
       const effectiveEnd = weekEnd > monthEnd ? monthEnd : weekEnd
 
-      const daysInWeek = workDays.filter((wd) => {
+      const daysInWeek = (workDays || []).filter((wd) => {
         const wdDate = new Date(wd.date)
         return wdDate >= effectiveStart && wdDate <= effectiveEnd
       })
@@ -93,11 +93,11 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate totals
-    const totalDaysWorked = workDays.length
-    const totalMinutes = workDays.reduce((sum, wd) => sum + (wd.totalMinutes || 0), 0)
+    const totalDaysWorked = (workDays || []).length
+    const totalMinutes = (workDays || []).reduce((sum, wd) => sum + (wd.totalMinutes || 0), 0)
 
     // Group by location
-    const byLocation = workDays.reduce((acc, wd) => {
+    const byLocation = (workDays || []).reduce((acc, wd) => {
       if (!wd.location) return acc
       const code = wd.location.code ?? wd.location.name ?? "Unknown"
       if (!acc[code]) {

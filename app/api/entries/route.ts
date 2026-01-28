@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
+import { supabase } from "@/lib/supabase"
 import { startOfDay, endOfDay } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
@@ -14,44 +14,40 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50")
     const offset = parseInt(searchParams.get("offset") || "0")
 
-    const where: Record<string, unknown> = {}
+    let query = supabase
+      .from("Entry")
+      .select(`
+        *,
+        location:Location (id, name, code)
+      `, { count: "exact" })
+      .order("timestampServer", { ascending: false })
+      .range(offset, offset + limit - 1)
 
     if (locationId) {
-      where.locationId = locationId
+      query = query.eq("locationId", locationId)
     }
 
     if (date) {
       const targetDate = new Date(date)
       const zonedDate = toZonedTime(targetDate, DEFAULT_TIMEZONE)
-      where.timestampServer = {
-        gte: startOfDay(zonedDate),
-        lte: endOfDay(zonedDate),
-      }
+      query = query
+        .gte("timestampServer", startOfDay(zonedDate).toISOString())
+        .lte("timestampServer", endOfDay(zonedDate).toISOString())
     }
 
-    const entries = await prisma.entry.findMany({
-      where,
-      include: {
-        location: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
-      orderBy: {
-        timestampServer: "desc",
-      },
-      take: limit,
-      skip: offset,
-    })
+    const { data: entries, count, error } = await query
 
-    const total = await prisma.entry.count({ where })
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Failed to fetch entries", details: error.message },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       entries,
-      total,
+      total: count || 0,
       limit,
       offset,
     })
@@ -94,11 +90,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify location exists
-    const location = await prisma.location.findUnique({
-      where: { id: locationId },
-    })
+    const { data: location, error: locError } = await supabase
+      .from("Location")
+      .select("id")
+      .eq("id", locationId)
+      .single()
 
-    if (!location) {
+    if (locError || !location) {
       return NextResponse.json(
         { error: "Location not found" },
         { status: 404 }
@@ -106,87 +104,95 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the entry
-    const entry = await prisma.entry.create({
-      data: {
+    const now = new Date()
+    const { data: entry, error: entryError } = await supabase
+      .from("Entry")
+      .insert({
         type,
         locationId,
-        timestampClient: timestampClient ? new Date(timestampClient) : new Date(),
+        timestampClient: timestampClient ? new Date(timestampClient).toISOString() : now.toISOString(),
+        timestampServer: now.toISOString(),
         gpsLatitude,
         gpsLongitude,
         gpsAccuracy,
         notes,
-      },
-      include: {
-        location: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
-    })
+      })
+      .select(`
+        *,
+        location:Location (id, name, code)
+      `)
+      .single()
+
+    if (entryError) {
+      console.error("Supabase error:", entryError)
+      return NextResponse.json(
+        { error: "Failed to create entry", details: entryError.message },
+        { status: 500 }
+      )
+    }
 
     // Update or create WorkDay
-    const serverDate = entry.timestampServer
+    const serverDate = new Date(entry.timestampServer)
     const zonedDate = toZonedTime(serverDate, DEFAULT_TIMEZONE)
     const workDayDate = startOfDay(zonedDate)
 
-    const existingWorkDay = await prisma.workDay.findUnique({
-      where: {
-        date_locationId: {
-          date: workDayDate,
-          locationId,
-        },
-      },
-    })
+    const { data: existingWorkDay } = await supabase
+      .from("WorkDay")
+      .select("*")
+      .eq("date", workDayDate.toISOString().split("T")[0])
+      .eq("locationId", locationId)
+      .single()
 
     if (existingWorkDay) {
       const updateData: Record<string, unknown> = {}
 
       if (type === "CLOCK_IN") {
-        if (!existingWorkDay.firstClockIn || serverDate < existingWorkDay.firstClockIn) {
-          updateData.firstClockIn = serverDate
+        if (!existingWorkDay.firstClockIn || serverDate < new Date(existingWorkDay.firstClockIn)) {
+          updateData.firstClockIn = serverDate.toISOString()
         }
       } else {
-        if (!existingWorkDay.lastClockOut || serverDate > existingWorkDay.lastClockOut) {
-          updateData.lastClockOut = serverDate
+        if (!existingWorkDay.lastClockOut || serverDate > new Date(existingWorkDay.lastClockOut)) {
+          updateData.lastClockOut = serverDate.toISOString()
         }
       }
 
       if (existingWorkDay.firstClockIn && (updateData.lastClockOut || existingWorkDay.lastClockOut)) {
-        const clockOut = (updateData.lastClockOut || existingWorkDay.lastClockOut) as Date
+        const clockOut = new Date((updateData.lastClockOut as string) || existingWorkDay.lastClockOut)
         const totalMinutes = Math.floor(
-          (clockOut.getTime() - existingWorkDay.firstClockIn.getTime()) / 60000
+          (clockOut.getTime() - new Date(existingWorkDay.firstClockIn).getTime()) / 60000
         )
         updateData.totalMinutes = totalMinutes
         updateData.meetsPolicy = totalMinutes > 0
       }
 
-      await prisma.workDay.update({
-        where: { id: existingWorkDay.id },
-        data: updateData,
-      })
+      await supabase
+        .from("WorkDay")
+        .update(updateData)
+        .eq("id", existingWorkDay.id)
 
-      await prisma.entry.update({
-        where: { id: entry.id },
-        data: { workDayId: existingWorkDay.id },
-      })
+      await supabase
+        .from("Entry")
+        .update({ workDayId: existingWorkDay.id })
+        .eq("id", entry.id)
     } else {
-      const workDay = await prisma.workDay.create({
-        data: {
-          date: workDayDate,
+      const { data: workDay } = await supabase
+        .from("WorkDay")
+        .insert({
+          date: workDayDate.toISOString().split("T")[0],
           locationId,
-          firstClockIn: type === "CLOCK_IN" ? serverDate : null,
-          lastClockOut: type === "CLOCK_OUT" ? serverDate : null,
+          firstClockIn: type === "CLOCK_IN" ? serverDate.toISOString() : null,
+          lastClockOut: type === "CLOCK_OUT" ? serverDate.toISOString() : null,
           meetsPolicy: type === "CLOCK_IN",
-        },
-      })
+        })
+        .select()
+        .single()
 
-      await prisma.entry.update({
-        where: { id: entry.id },
-        data: { workDayId: workDay.id },
-      })
+      if (workDay) {
+        await supabase
+          .from("Entry")
+          .update({ workDayId: workDay.id })
+          .eq("id", entry.id)
+      }
     }
 
     return NextResponse.json(entry, { status: 201 })

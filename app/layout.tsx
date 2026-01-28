@@ -1,13 +1,7 @@
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
 import { AuthProvider } from "@/contexts/auth-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-})
 
 export const metadata: Metadata = {
   title: "OnSite - Time & Attendance",
@@ -51,7 +45,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className={`${inter.variable} font-sans antialiased min-h-screen bg-background`}>
+      <body className="font-sans antialiased min-h-screen bg-background">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

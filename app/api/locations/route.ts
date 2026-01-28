@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
+import { supabase } from "@/lib/supabase"
 
 // GET /api/locations - List all locations
 export async function GET() {
   try {
-    const locations = await prisma.location.findMany({
-      orderBy: [
-        { isDefault: "desc" },
-        { name: "asc" },
-      ],
-    })
+    const { data: locations, error } = await supabase
+      .from("Location")
+      .select("*")
+      .order("isDefault", { ascending: false })
+      .order("name", { ascending: true })
+
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        {
+          error: "Failed to fetch locations",
+          details: error.message,
+          code: error.code,
+        },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(locations)
   } catch (error) {
@@ -19,7 +30,6 @@ export async function GET() {
       {
         error: "Failed to fetch locations",
         details: errorMessage,
-        hint: "Check DATABASE_URL in .env and ensure the Location table exists"
       },
       { status: 500 }
     )
@@ -51,14 +61,15 @@ export async function POST(request: NextRequest) {
 
     // If setting as default, unset other defaults
     if (isDefault) {
-      await prisma.location.updateMany({
-        where: { isDefault: true },
-        data: { isDefault: false },
-      })
+      await supabase
+        .from("Location")
+        .update({ isDefault: false })
+        .eq("isDefault", true)
     }
 
-    const location = await prisma.location.create({
-      data: {
+    const { data: location, error } = await supabase
+      .from("Location")
+      .insert({
         name,
         code,
         category,
@@ -67,8 +78,17 @@ export async function POST(request: NextRequest) {
         longitude,
         geofenceRadius: geofenceRadius || 50,
         isDefault: isDefault || false,
-      },
-    })
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Failed to create location", details: error.message },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(location, { status: 201 })
   } catch (error) {
