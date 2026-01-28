@@ -1,47 +1,29 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
 import { prisma } from "@/lib/db"
-import { DEMO_LOCATIONS_LIST } from "@/lib/demo-data"
 
 // GET /api/locations - List all locations
 export async function GET() {
   try {
-    // Try to fetch from database
-    try {
-      const locations = await prisma.location.findMany({
-        orderBy: [
-          { isDefault: "desc" },
-          { name: "asc" },
-        ],
-      })
+    const locations = await prisma.location.findMany({
+      orderBy: [
+        { isDefault: "desc" },
+        { name: "asc" },
+      ],
+    })
 
-      if (locations.length > 0) {
-        return NextResponse.json(locations)
-      }
-    } catch {
-      // Database not available, continue to demo mode
-    }
-
-    // Return demo locations if database is empty or unavailable
-    return NextResponse.json(DEMO_LOCATIONS_LIST)
+    return NextResponse.json(locations)
   } catch (error) {
     console.error("Error fetching locations:", error)
-    // Return demo locations on any error
-    return NextResponse.json(DEMO_LOCATIONS_LIST)
+    return NextResponse.json(
+      { error: "Failed to fetch locations. Please ensure the database is configured." },
+      { status: 500 }
+    )
   }
 }
 
 // POST /api/locations - Create a new location
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const body = await request.json()
     const {
       name,
@@ -78,7 +60,7 @@ export async function POST(request: NextRequest) {
         address,
         latitude,
         longitude,
-        geofenceRadius: geofenceRadius || 200,
+        geofenceRadius: geofenceRadius || 50,
         isDefault: isDefault || false,
       },
     })

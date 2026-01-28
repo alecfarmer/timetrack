@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Home, Clock, BarChart3, Settings } from "lucide-react"
+import { Home, Clock, BarChart3, Settings, Phone } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface BottomNavProps {
@@ -12,6 +12,7 @@ interface BottomNavProps {
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/history", icon: Clock, label: "History" },
+  { href: "/callouts", icon: Phone, label: "Callouts" },
   { href: "/reports", icon: BarChart3, label: "Reports" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ]

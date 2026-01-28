@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { startOfDay, endOfDay } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
-import { getDemoEntriesForToday } from "@/lib/demo-data"
 
 const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 
@@ -21,51 +20,37 @@ export async function GET() {
     const todayStart = startOfDay(zonedNow)
     const todayEnd = endOfDay(zonedNow)
 
-    // Try to fetch from database
-    let todayEntries: EntryWithLocation[]
-    try {
-      const dbEntries = await prisma.entry.findMany({
-        where: {
-          timestampServer: {
-            gte: todayStart,
-            lte: todayEnd,
-          },
+    const dbEntries = await prisma.entry.findMany({
+      where: {
+        timestampServer: {
+          gte: todayStart,
+          lte: todayEnd,
         },
-        include: {
-          location: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-            },
-          },
-        },
-        orderBy: {
-          timestampServer: "desc",
-        },
-      })
-      // Map to ensure consistent shape
-      todayEntries = dbEntries.map((e) => ({
-        id: e.id,
-        type: e.type,
-        timestampServer: e.timestampServer,
+      },
+      include: {
         location: {
-          id: e.location?.id || "",
-          name: e.location?.name || "Unknown",
-          code: e.location?.code ?? null,
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
         },
-      }))
-    } catch {
-      // Database not available, use demo entries
-      todayEntries = getDemoEntriesForToday(todayStart, todayEnd)
-        .map((e) => ({
-          id: e.id,
-          type: e.type,
-          timestampServer: e.timestampServer,
-          location: e.location,
-        }))
-        .sort((a, b) => b.timestampServer.getTime() - a.timestampServer.getTime())
-    }
+      },
+      orderBy: {
+        timestampServer: "desc",
+      },
+    })
+
+    const todayEntries: EntryWithLocation[] = dbEntries.map((e) => ({
+      id: e.id,
+      type: e.type,
+      timestampServer: e.timestampServer,
+      location: {
+        id: e.location?.id || "",
+        name: e.location?.name || "Unknown",
+        code: e.location?.code ?? null,
+      },
+    }))
 
     // Determine if currently clocked in
     // User is clocked in if the most recent entry is a CLOCK_IN
