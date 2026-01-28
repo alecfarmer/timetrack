@@ -8,14 +8,54 @@ async function main() {
   // Seed Locations
   const locations = [
     {
-      name: "Michelin US0",
+      name: "US0",
       code: "US0",
       category: LocationCategory.PLANT,
-      address: "1401 Antioch Church Rd, Greenville, SC",
+      address: "1401 Antioch Church Rd, Greenville, SC 29605",
       latitude: 34.8526,
       longitude: -82.394,
       geofenceRadius: 50, // ~164 feet
       isDefault: true,
+    },
+    {
+      name: "HNA",
+      code: "HNA",
+      category: LocationCategory.OFFICE,
+      address: "1 Parkway S, Greenville, SC 29615",
+      latitude: 34.8447,
+      longitude: -82.3987,
+      geofenceRadius: 50, // ~164 feet
+      isDefault: false,
+    },
+    {
+      name: "US2",
+      code: "US2",
+      category: LocationCategory.PLANT,
+      address: "6301 US-76, Pendleton, SC 29670",
+      latitude: 34.6518,
+      longitude: -82.7836,
+      geofenceRadius: 50, // ~164 feet
+      isDefault: false,
+    },
+    {
+      name: "SPA",
+      code: "SPA",
+      category: LocationCategory.PLANT,
+      address: "1000 International Dr, Spartanburg, SC 29303",
+      latitude: 34.9285,
+      longitude: -81.9571,
+      geofenceRadius: 50, // ~164 feet
+      isDefault: false,
+    },
+    {
+      name: "LXT",
+      code: "LXT",
+      category: LocationCategory.PLANT,
+      address: "2420 Two Notch Rd, Lexington, SC 29072",
+      latitude: 33.9812,
+      longitude: -81.2365,
+      geofenceRadius: 50, // ~164 feet
+      isDefault: false,
     },
   ]
 
