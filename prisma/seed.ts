@@ -64,7 +64,7 @@ async function main() {
       address: "400 Bayridge Rd, Simpsonville, SC 29680",
       latitude: 34.7373,
       longitude: -82.2543,
-      geofenceRadius: 50000, // Large radius - no geofence check for WFH
+      geofenceRadius: 200, // ~656 feet - same as other locations
       isDefault: false,
     },
   ]
