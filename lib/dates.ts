@@ -75,6 +75,12 @@ export function formatTimeWithZone(date: Date | string, timezone?: string): stri
   return formatInTimeZone(d, tz, "h:mm a zzz")
 }
 
+export function formatDateInZone(date: Date | string, fmt: string, timezone?: string): string {
+  const tz = timezone || getTimezone()
+  const d = parseAsUTC(date)
+  return formatInTimeZone(d, tz, fmt)
+}
+
 export function formatDate(date: Date | string, timezone?: string): string {
   const tz = timezone || getTimezone()
   const d = parseAsUTC(date)

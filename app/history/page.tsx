@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from "date-fns"
+import { formatTime, formatDateInZone } from "@/lib/dates"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -58,7 +59,7 @@ export default function HistoryPage() {
 
       const dayDataMap = new Map<string, Entry[]>()
       entries.forEach((entry: Entry) => {
-        const dateKey = format(new Date(entry.timestampServer), "yyyy-MM-dd")
+        const dateKey = formatDateInZone(entry.timestampServer, "yyyy-MM-dd")
         if (!dayDataMap.has(dateKey)) {
           dayDataMap.set(dateKey, [])
         }
@@ -239,7 +240,7 @@ export default function HistoryPage() {
                                   {entry.type === "CLOCK_IN" ? "IN" : "OUT"}
                                 </Badge>
                                 <span className="font-mono text-sm">
-                                  {format(new Date(entry.timestampServer), "h:mm a")}
+                                  {formatTime(entry.timestampServer)}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
