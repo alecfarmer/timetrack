@@ -61,9 +61,9 @@ async function main() {
       name: "WFH",
       code: "WFH",
       category: LocationCategory.HOME,
-      address: "Work From Home",
-      latitude: 0,
-      longitude: 0,
+      address: "400 Bayridge Rd, Simpsonville, SC 29680",
+      latitude: 34.7373,
+      longitude: -82.2543,
       geofenceRadius: 50000, // Large radius - no geofence check for WFH
       isDefault: false,
     },
