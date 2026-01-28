@@ -11,6 +11,7 @@ ALTER TABLE "Entry" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "WorkDay" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Callout" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "PolicyConfig" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "AppConfig" ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
 -- LOCATION POLICIES
@@ -157,9 +158,37 @@ TO anon, authenticated
 USING (true);
 
 -- =====================================================
+-- APPCONFIG POLICIES
+-- =====================================================
+CREATE POLICY "Allow public read access to app config"
+ON "AppConfig"
+FOR SELECT
+TO anon, authenticated
+USING (true);
+
+CREATE POLICY "Allow public insert access to app config"
+ON "AppConfig"
+FOR INSERT
+TO anon, authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Allow public update access to app config"
+ON "AppConfig"
+FOR UPDATE
+TO anon, authenticated
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "Allow public delete access to app config"
+ON "AppConfig"
+FOR DELETE
+TO anon, authenticated
+USING (true);
+
+-- =====================================================
 -- VERIFY RLS IS ENABLED
 -- =====================================================
 SELECT tablename, rowsecurity
 FROM pg_tables
 WHERE schemaname = 'public'
-AND tablename IN ('Location', 'Entry', 'WorkDay', 'Callout', 'PolicyConfig');
+AND tablename IN ('Location', 'Entry', 'WorkDay', 'Callout', 'PolicyConfig', 'AppConfig');
