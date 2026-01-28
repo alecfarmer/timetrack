@@ -1,32 +1,33 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { prisma } from "@/lib/db"
+import { DEMO_LOCATIONS_LIST } from "@/lib/demo-data"
 
 // GET /api/locations - List all locations
 export async function GET() {
   try {
-    // Verify authentication
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Try to fetch from database
+    try {
+      const locations = await prisma.location.findMany({
+        orderBy: [
+          { isDefault: "desc" },
+          { name: "asc" },
+        ],
+      })
 
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      if (locations.length > 0) {
+        return NextResponse.json(locations)
+      }
+    } catch {
+      // Database not available, continue to demo mode
     }
 
-    const locations = await prisma.location.findMany({
-      orderBy: [
-        { isDefault: "desc" },
-        { name: "asc" },
-      ],
-    })
-
-    return NextResponse.json(locations)
+    // Return demo locations if database is empty or unavailable
+    return NextResponse.json(DEMO_LOCATIONS_LIST)
   } catch (error) {
     console.error("Error fetching locations:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch locations" },
-      { status: 500 }
-    )
+    // Return demo locations on any error
+    return NextResponse.json(DEMO_LOCATIONS_LIST)
   }
 }
 

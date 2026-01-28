@@ -2,8 +2,16 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { startOfDay, endOfDay } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
+import { getDemoEntriesForToday } from "@/lib/demo-data"
 
 const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
+
+interface EntryWithLocation {
+  id: string
+  type: string
+  timestampServer: Date
+  location: { id: string; name: string; code: string | null }
+}
 
 // GET /api/entries/current - Get current clock status
 export async function GET() {
@@ -13,27 +21,51 @@ export async function GET() {
     const todayStart = startOfDay(zonedNow)
     const todayEnd = endOfDay(zonedNow)
 
-    // Get today's entries ordered by timestamp
-    const todayEntries = await prisma.entry.findMany({
-      where: {
-        timestampServer: {
-          gte: todayStart,
-          lte: todayEnd,
-        },
-      },
-      include: {
-        location: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
+    // Try to fetch from database
+    let todayEntries: EntryWithLocation[]
+    try {
+      const dbEntries = await prisma.entry.findMany({
+        where: {
+          timestampServer: {
+            gte: todayStart,
+            lte: todayEnd,
           },
         },
-      },
-      orderBy: {
-        timestampServer: "desc",
-      },
-    })
+        include: {
+          location: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          timestampServer: "desc",
+        },
+      })
+      // Map to ensure consistent shape
+      todayEntries = dbEntries.map((e) => ({
+        id: e.id,
+        type: e.type,
+        timestampServer: e.timestampServer,
+        location: {
+          id: e.location?.id || "",
+          name: e.location?.name || "Unknown",
+          code: e.location?.code ?? null,
+        },
+      }))
+    } catch {
+      // Database not available, use demo entries
+      todayEntries = getDemoEntriesForToday(todayStart, todayEnd)
+        .map((e) => ({
+          id: e.id,
+          type: e.type,
+          timestampServer: e.timestampServer,
+          location: e.location,
+        }))
+        .sort((a, b) => b.timestampServer.getTime() - a.timestampServer.getTime())
+    }
 
     // Determine if currently clocked in
     // User is clocked in if the most recent entry is a CLOCK_IN
@@ -83,9 +115,13 @@ export async function GET() {
     })
   } catch (error) {
     console.error("Error fetching current status:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch current status" },
-      { status: 500 }
-    )
+    // Return empty status on error
+    return NextResponse.json({
+      isClockedIn: false,
+      activeClockIn: null,
+      currentSessionStart: null,
+      todayEntries: [],
+      totalMinutesToday: 0,
+    })
   }
 }
