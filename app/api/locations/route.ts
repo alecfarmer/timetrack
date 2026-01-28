@@ -14,8 +14,13 @@ export async function GET() {
     return NextResponse.json(locations)
   } catch (error) {
     console.error("Error fetching locations:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
-      { error: "Failed to fetch locations. Please ensure the database is configured." },
+      {
+        error: "Failed to fetch locations",
+        details: errorMessage,
+        hint: "Check DATABASE_URL in .env and ensure the Location table exists"
+      },
       { status: 500 }
     )
   }
