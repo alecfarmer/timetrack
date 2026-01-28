@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     // Group by location
     const byLocation = workDays.reduce((acc, wd) => {
       if (!wd.location) return acc
-      const code = wd.location.code || wd.location.name
+      const code = wd.location.code ?? wd.location.name ?? "Unknown"
       if (!acc[code]) {
         acc[code] = { days: 0, minutes: 0 }
       }
