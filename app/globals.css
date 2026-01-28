@@ -1,45 +1,45 @@
 @import "tailwindcss";
 
 /* ============================================
-   ONSITE DESIGN SYSTEM v2.0
-   Inspired by Linear, Vercel, Notion, Stripe
+   ONSITE DESIGN SYSTEM v2.1
+   Michelin Brand Colors — Blues, Whites, Darks
    ============================================ */
 
 :root {
   /* Core palette - Light mode */
-  --background: 0 0% 99%;
-  --foreground: 240 10% 3.9%;
+  --background: 210 20% 98%;
+  --foreground: 216 28% 12%;
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 216 28% 12%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
+  --popover-foreground: 216 28% 12%;
 
-  /* Brand colors */
-  --primary: 262 83% 58%;
+  /* Brand colors — Michelin Blue #27509B → hsl(218, 60%, 38%) */
+  --primary: 218 60% 38%;
   --primary-foreground: 0 0% 100%;
 
   /* Neutrals */
-  --secondary: 240 5% 96%;
-  --secondary-foreground: 240 6% 10%;
-  --muted: 240 5% 96%;
-  --muted-foreground: 240 4% 46%;
-  --accent: 240 5% 96%;
-  --accent-foreground: 240 6% 10%;
+  --secondary: 214 15% 95%;
+  --secondary-foreground: 216 28% 12%;
+  --muted: 214 15% 95%;
+  --muted-foreground: 215 13% 46%;
+  --accent: 214 15% 93%;
+  --accent-foreground: 216 28% 12%;
 
   /* Semantic colors */
-  --destructive: 0 84% 60%;
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
-  --success: 142 71% 45%;
+  --success: 152 60% 40%;
   --success-foreground: 0 0% 100%;
-  --warning: 38 92% 50%;
-  --warning-foreground: 0 0% 100%;
-  --info: 199 89% 48%;
+  --warning: 45 93% 47%;
+  --warning-foreground: 216 28% 12%;
+  --info: 218 60% 50%;
   --info-foreground: 0 0% 100%;
 
   /* UI elements */
-  --border: 240 6% 90%;
-  --input: 240 6% 90%;
-  --ring: 262 83% 58%;
+  --border: 214 18% 88%;
+  --input: 214 18% 88%;
+  --ring: 218 60% 38%;
 
   /* Radius scale */
   --radius: 0.75rem;
@@ -53,16 +53,16 @@
 
   /* Shadows */
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --shadow-glow: 0 0 40px -10px hsl(var(--primary) / 0.3);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.06);
+  --shadow-glow: 0 0 40px -10px hsl(218 60% 38% / 0.25);
 
-  /* Gradient colors */
-  --gradient-start: 262 83% 58%;
-  --gradient-mid: 280 87% 65%;
-  --gradient-end: 320 87% 60%;
+  /* Gradient colors — Michelin Blue range */
+  --gradient-start: 218 60% 38%;
+  --gradient-mid: 210 55% 48%;
+  --gradient-end: 200 50% 55%;
 
   /* Sidebar */
   --sidebar-width: 280px;
@@ -77,46 +77,48 @@
 }
 
 .dark {
-  --background: 240 10% 4%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 6%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 10% 6%;
-  --popover-foreground: 0 0% 98%;
+  /* Michelin Dark — Deep navy-blue base */
+  --background: 220 25% 7%;
+  --foreground: 210 20% 95%;
+  --card: 220 22% 10%;
+  --card-foreground: 210 20% 95%;
+  --popover: 220 22% 10%;
+  --popover-foreground: 210 20% 95%;
 
-  --primary: 262 83% 68%;
-  --primary-foreground: 240 10% 4%;
+  /* Michelin Blue — lighter for dark mode visibility */
+  --primary: 218 65% 55%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 240 4% 16%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 4% 16%;
-  --muted-foreground: 240 5% 65%;
-  --accent: 240 4% 16%;
-  --accent-foreground: 0 0% 98%;
+  --secondary: 220 18% 16%;
+  --secondary-foreground: 210 20% 95%;
+  --muted: 220 18% 16%;
+  --muted-foreground: 215 15% 60%;
+  --accent: 220 18% 18%;
+  --accent-foreground: 210 20% 95%;
 
   --destructive: 0 62% 55%;
   --destructive-foreground: 0 0% 100%;
-  --success: 142 71% 50%;
+  --success: 152 55% 48%;
   --success-foreground: 0 0% 100%;
-  --warning: 38 92% 55%;
-  --warning-foreground: 0 0% 100%;
-  --info: 199 89% 55%;
+  --warning: 45 93% 55%;
+  --warning-foreground: 220 25% 7%;
+  --info: 218 65% 60%;
   --info-foreground: 0 0% 100%;
 
-  --border: 240 4% 16%;
-  --input: 240 4% 16%;
-  --ring: 262 83% 68%;
+  --border: 220 18% 18%;
+  --input: 220 18% 18%;
+  --ring: 218 65% 55%;
 
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
-  --shadow-glow: 0 0 60px -10px hsl(var(--primary) / 0.4);
+  --shadow-glow: 0 0 60px -10px hsl(218 65% 55% / 0.35);
 
-  --gradient-start: 262 83% 68%;
-  --gradient-mid: 280 87% 72%;
-  --gradient-end: 320 87% 68%;
+  --gradient-start: 218 65% 55%;
+  --gradient-mid: 210 60% 58%;
+  --gradient-end: 200 55% 62%;
 }
 
 /* Tailwind theme integration */

@@ -8,6 +8,7 @@ import { ComplianceWidget } from "@/components/compliance-widget"
 import { EntryCard } from "@/components/entry-card"
 import { LocationPicker } from "@/components/location-picker"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { Logo, LogoMark } from "@/components/logo"
 import { DesktopMonitor, useDesktopMonitor } from "@/components/desktop-monitor"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -341,9 +342,7 @@ export default function Dashboard() {
         >
           <div className="relative">
             <div className="w-20 h-20 rounded-2xl bg-gradient-primary opacity-20 animate-pulse-ring absolute inset-0" />
-            <div className="w-20 h-20 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg">
-              <Building2 className="h-10 w-10 text-white" />
-            </div>
+            <LogoMark className="w-20 h-20 rounded-2xl" />
           </div>
           <div className="text-center">
             <p className="text-lg font-semibold">OnSite</p>
@@ -383,17 +382,11 @@ export default function Dashboard() {
         <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
           {/* Mobile Logo */}
           <motion.div
-            className="flex items-center gap-3 lg:hidden"
+            className="lg:hidden"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg animate-float">
-              <Building2 className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold leading-none">OnSite</h1>
-              <p className="text-xs text-muted-foreground">Time Tracking</p>
-            </div>
+            <Logo size="sm" />
           </motion.div>
 
           {/* Desktop Title */}

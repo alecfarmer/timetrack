@@ -59,12 +59,18 @@ export async function GET(request: NextRequest) {
     const weekDaysData = allDaysOfWeek.map((date) => {
       const dateStr = format(date, "yyyy-MM-dd")
       const workDay = (workDays || []).find((wd) => wd.date === dateStr)
+      const loc = workDay?.location
+        ? Array.isArray(workDay.location) ? workDay.location[0] : workDay.location
+        : null
 
       return {
         date: dateStr,
         dayOfWeek: format(date, "EEE"),
         dayNumber: date.getDay(),
         worked: workedDates.has(dateStr),
+        minutes: workDay?.totalMinutes || 0,
+        locationCode: loc?.code || loc?.name || null,
+        locationCategory: loc?.category || null,
         workDay: workDay || null,
       }
     })
@@ -80,6 +86,9 @@ export async function GET(request: NextRequest) {
       0
     )
 
+    const requiredMinutesPerWeek = 40 * 60 // 40 hours
+    const hoursOnTrack = totalMinutes >= requiredMinutesPerWeek
+
     return NextResponse.json({
       weekStart: weekStart.toISOString(),
       weekEnd: weekEnd.toISOString(),
@@ -87,6 +96,8 @@ export async function GET(request: NextRequest) {
       requiredDays,
       isCompliant: daysWorked >= requiredDays,
       totalMinutes,
+      requiredMinutesPerWeek,
+      hoursOnTrack,
       weekDays: weekDaysData,
       workDays,
     })

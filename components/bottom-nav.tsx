@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Home, Clock, BarChart3, Settings, Phone, Building2, Keyboard } from "lucide-react"
+import { Home, Clock, BarChart3, Settings, Phone, Keyboard } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Logo } from "@/components/logo"
 
 interface BottomNavProps {
   currentPath: string
@@ -63,15 +64,7 @@ export function BottomNav({ currentPath }: BottomNavProps) {
       <nav className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 border-r bg-card/50 glass-strong z-40 flex-col">
         {/* Logo */}
         <div className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg">
-              <Building2 className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">OnSite</h1>
-              <p className="text-xs text-muted-foreground">Time Tracking</p>
-            </div>
-          </div>
+          <Logo size="md" />
         </div>
 
         {/* Nav Items */}
