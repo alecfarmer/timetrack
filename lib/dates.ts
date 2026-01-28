@@ -4,6 +4,16 @@ import { toZonedTime, fromZonedTime, formatInTimeZone } from "date-fns-tz"
 // Always use Eastern Time
 const DEFAULT_TIMEZONE = "America/New_York"
 
+// Parse date string ensuring UTC interpretation
+function parseAsUTC(date: Date | string): Date {
+  if (date instanceof Date) return date
+  // If string doesn't have timezone info, treat as UTC
+  if (typeof date === "string" && !date.endsWith("Z") && !date.includes("+") && !date.includes("-", 10)) {
+    return parseISO(date + "Z")
+  }
+  return parseISO(date)
+}
+
 export function getTimezone(): string {
   if (typeof window !== "undefined") {
     return localStorage.getItem("timezone") || DEFAULT_TIMEZONE
@@ -13,7 +23,7 @@ export function getTimezone(): string {
 
 export function toLocalTime(date: Date | string, timezone?: string): Date {
   const tz = timezone || getTimezone()
-  const d = typeof date === "string" ? parseISO(date) : date
+  const d = parseAsUTC(date)
   return toZonedTime(d, tz)
 }
 
@@ -24,42 +34,42 @@ export function toUTC(date: Date, timezone?: string): Date {
 
 export function formatTime(date: Date | string, timezone?: string): string {
   const tz = timezone || getTimezone()
-  const d = typeof date === "string" ? parseISO(date) : date
+  const d = parseAsUTC(date)
   return formatInTimeZone(d, tz, "h:mm a")
 }
 
 export function formatTimeWithZone(date: Date | string, timezone?: string): string {
   const tz = timezone || getTimezone()
-  const d = typeof date === "string" ? parseISO(date) : date
+  const d = parseAsUTC(date)
   return formatInTimeZone(d, tz, "h:mm a zzz")
 }
 
 export function formatDate(date: Date | string, timezone?: string): string {
   const tz = timezone || getTimezone()
-  const d = typeof date === "string" ? parseISO(date) : date
+  const d = parseAsUTC(date)
   return formatInTimeZone(d, tz, "MMM d, yyyy")
 }
 
 export function formatDateTime(date: Date | string, timezone?: string): string {
   const tz = timezone || getTimezone()
-  const d = typeof date === "string" ? parseISO(date) : date
+  const d = parseAsUTC(date)
   return formatInTimeZone(d, tz, "MMM d, yyyy h:mm a")
 }
 
 export function formatDayOfWeek(date: Date | string, timezone?: string): string {
   const tz = timezone || getTimezone()
-  const d = typeof date === "string" ? parseISO(date) : date
+  const d = parseAsUTC(date)
   return formatInTimeZone(d, tz, "EEEE")
 }
 
 export function formatShortDay(date: Date | string, timezone?: string): string {
   const tz = timezone || getTimezone()
-  const d = typeof date === "string" ? parseISO(date) : date
+  const d = parseAsUTC(date)
   return formatInTimeZone(d, tz, "EEE")
 }
 
 export function formatRelative(date: Date | string): string {
-  const d = typeof date === "string" ? parseISO(date) : date
+  const d = parseAsUTC(date)
   return formatDistance(d, new Date(), { addSuffix: true })
 }
 
@@ -100,7 +110,7 @@ export function getDayRange(date: Date, timezone?: string): { start: Date; end: 
 
 export function isToday(date: Date | string, timezone?: string): boolean {
   const tz = timezone || getTimezone()
-  const d = typeof date === "string" ? parseISO(date) : date
+  const d = parseAsUTC(date)
   const zonedDate = toZonedTime(d, tz)
   const today = toZonedTime(new Date(), tz)
   return (
