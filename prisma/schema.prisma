@@ -3,19 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Location {
   id             String           @id @default(cuid())
-  name           String           // "Michelin Donaldson"
-  code           String?          // "US0"
+  name           String
+  code           String?
   category       LocationCategory
   address        String?
   latitude       Float
   longitude      Float
-  geofenceRadius Int              @default(200) // meters
+  geofenceRadius Int              @default(200)
   isDefault      Boolean          @default(false)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -27,23 +28,22 @@ model Location {
 model Entry {
   id              String    @id @default(cuid())
   type            EntryType
-  timestampClient DateTime  // What the user's device reported
-  timestampServer DateTime  @default(now()) // Authoritative server time
+  timestampClient DateTime
+  timestampServer DateTime  @default(now())
 
   locationId String
   location   Location @relation(fields: [locationId], references: [id])
 
   gpsLatitude  Float?
   gpsLongitude Float?
-  gpsAccuracy  Float? // meters
+  gpsAccuracy  Float?
 
   photoUrl String?
   notes    String?
 
-  // Immutable audit fields
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  editHistory Json? // Array of previous values if edited
+  editHistory Json?
 
   workDayId String?
   workDay   WorkDay? @relation(fields: [workDayId], references: [id])
@@ -51,7 +51,7 @@ model Entry {
 
 model WorkDay {
   id   String   @id @default(cuid())
-  date DateTime @db.Date // Just the date, no time
+  date DateTime @db.Date
 
   locationId String
   location   Location @relation(fields: [locationId], references: [id])
@@ -72,9 +72,9 @@ model WorkDay {
 
 model PolicyConfig {
   id                   String   @id @default(cuid())
-  name                 String   // "Standard 3-Day Policy"
+  name                 String
   requiredDaysPerWeek  Int      @default(3)
-  minimumMinutesPerDay Int      @default(0) // Optional: must be on-site X minutes to count
+  minimumMinutesPerDay Int      @default(0)
   effectiveDate        DateTime @default(now())
   isActive             Boolean  @default(true)
 
@@ -84,7 +84,7 @@ model PolicyConfig {
 
 model AppConfig {
   id        String   @id @default("singleton")
-  pinHash   String?  // bcrypt hashed 6-digit PIN
+  pinHash   String?
   timezone  String   @default("America/New_York")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
