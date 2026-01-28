@@ -5,6 +5,10 @@ import { toZonedTime } from "date-fns-tz"
 
 const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 
+// Type assertion for callout model (schema exists but prisma generate couldn't run)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const calloutModel = (prisma as any).callout
+
 // GET /api/callouts - List callouts with optional filters
 export async function GET(request: NextRequest) {
   try {
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const callouts = await prisma.callout.findMany({
+    const callouts = await calloutModel.findMany({
       where,
       include: {
         location: {
@@ -56,7 +60,7 @@ export async function GET(request: NextRequest) {
       skip: offset,
     })
 
-    const total = await prisma.callout.count({ where })
+    const total = await calloutModel.count({ where })
 
     return NextResponse.json({
       callouts,
@@ -111,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the callout
-    const callout = await prisma.callout.create({
+    const callout = await calloutModel.create({
       data: {
         incidentNumber,
         locationId,

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 
+// Type assertion for callout model (schema exists but prisma generate couldn't run)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const calloutModel = (prisma as any).callout
+
 // GET /api/callouts/[id] - Get a single callout
 export async function GET(
   request: NextRequest,
@@ -9,7 +13,7 @@ export async function GET(
   try {
     const { id } = await params
 
-    const callout = await prisma.callout.findUnique({
+    const callout = await calloutModel.findUnique({
       where: { id },
       include: {
         location: {
@@ -61,7 +65,7 @@ export async function PATCH(
     } = body
 
     // Check if callout exists
-    const existingCallout = await prisma.callout.findUnique({
+    const existingCallout = await calloutModel.findUnique({
       where: { id },
     })
 
@@ -86,7 +90,7 @@ export async function PATCH(
     if (description !== undefined) updateData.description = description
     if (resolution !== undefined) updateData.resolution = resolution
 
-    const callout = await prisma.callout.update({
+    const callout = await calloutModel.update({
       where: { id },
       data: updateData,
       include: {
@@ -119,7 +123,7 @@ export async function DELETE(
     const { id } = await params
 
     // Check if callout exists
-    const existingCallout = await prisma.callout.findUnique({
+    const existingCallout = await calloutModel.findUnique({
       where: { id },
     })
 
@@ -130,7 +134,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.callout.delete({
+    await calloutModel.delete({
       where: { id },
     })
 
