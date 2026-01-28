@@ -67,6 +67,26 @@ async function main() {
       geofenceRadius: 200, // ~656 feet - same as other locations
       isDefault: false,
     },
+    {
+      name: "MCC",
+      code: "MCC",
+      category: LocationCategory.OFFICE,
+      address: "515 Michelin Rd, Greenville, SC 29605",
+      latitude: 34.72946,
+      longitude: -82.36624,
+      geofenceRadius: 50, // ~164 feet - tight radius, close to MARC
+      isDefault: false,
+    },
+    {
+      name: "MARC",
+      code: "MARC",
+      category: LocationCategory.OFFICE,
+      address: "515 Michelin Rd, Greenville, SC 29605",
+      latitude: 34.725493,
+      longitude: -82.36745,
+      geofenceRadius: 100, // ~328 feet - close to MCC
+      isDefault: false,
+    },
   ]
 
   for (const location of locations) {
