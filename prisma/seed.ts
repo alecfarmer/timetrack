@@ -14,7 +14,7 @@ async function main() {
       address: "1401 Antioch Church Rd, Greenville, SC",
       latitude: 34.8526,
       longitude: -82.394,
-      geofenceRadius: 300,
+      geofenceRadius: 50, // ~164 feet
       isDefault: true,
     },
   ]

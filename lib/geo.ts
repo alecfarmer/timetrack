@@ -33,12 +33,16 @@ export function calculateDistance(
   return R * c // Distance in meters
 }
 
+const METERS_TO_FEET = 3.28084
+const FEET_PER_MILE = 5280
+
 export function formatDistance(meters: number): string {
-  if (meters < 1000) {
-    return `${Math.round(meters)}m`
+  const feet = meters * METERS_TO_FEET
+  if (feet < FEET_PER_MILE) {
+    return `${Math.round(feet)} ft`
   }
-  const km = meters / 1000
-  return `${km.toFixed(1)}km`
+  const miles = feet / FEET_PER_MILE
+  return `${miles.toFixed(1)} mi`
 }
 
 export function getAccuracyLevel(accuracy: number): "high" | "medium" | "low" {
