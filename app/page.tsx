@@ -214,6 +214,17 @@ export default function Dashboard() {
       return
     }
 
+    if (!position) {
+      setError("Unable to get your location. Please enable GPS.")
+      return
+    }
+
+    if (!isWithinGeofence) {
+      const distance = distanceToSelected ? formatDistance(distanceToSelected) : "unknown"
+      setError(`You must be on-site to clock in. You are ${distance} away from ${selectedLocation?.name || "the location"}.`)
+      return
+    }
+
     try {
       const res = await fetch("/api/entries", {
         method: "POST",
@@ -246,6 +257,17 @@ export default function Dashboard() {
   }
 
   const handleClockOut = async () => {
+    if (!position) {
+      setError("Unable to get your location. Please enable GPS.")
+      return
+    }
+
+    if (!isWithinGeofence) {
+      const distance = distanceToSelected ? formatDistance(distanceToSelected) : "unknown"
+      setError(`You must be on-site to clock out. You are ${distance} away from ${selectedLocation?.name || "the location"}.`)
+      return
+    }
+
     try {
       const res = await fetch("/api/entries", {
         method: "POST",
@@ -287,6 +309,12 @@ export default function Dashboard() {
           selectedLocation.longitude
         )
       : null
+
+  // Check if user is within the geofence
+  const isWithinGeofence =
+    distanceToSelected !== null &&
+    selectedLocation &&
+    distanceToSelected <= selectedLocation.geofenceRadius
 
   if (loading) {
     return (
@@ -462,8 +490,17 @@ export default function Dashboard() {
                     <span>· {formatDistance(distanceToSelected)} away</span>
                   )}
                   {gpsLoading && <span>· Getting location...</span>}
-                  {gpsError && <span className="text-warning">· {gpsError}</span>}
+                  {gpsError && <span className="text-destructive">· {gpsError}</span>}
                 </div>
+                {/* Geofence Status */}
+                {position && selectedLocation && !gpsLoading && (
+                  <div className={cn(
+                    "text-sm font-medium mt-2",
+                    isWithinGeofence ? "text-green-600" : "text-destructive"
+                  )}>
+                    {isWithinGeofence ? "✓ You are on-site" : "✗ You are not on-site"}
+                  </div>
+                )}
               </motion.div>
 
               {/* Location Picker */}
