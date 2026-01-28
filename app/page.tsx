@@ -465,6 +465,35 @@ export default function Dashboard() {
           </motion.div>
         )}
 
+        {/* Location Services Required Banner */}
+        {!position && !gpsLoading && (
+          <motion.div variants={staggerItem}>
+            <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-2">
+                    <p className="font-medium text-amber-800 dark:text-amber-200">
+                      Location Services Required
+                    </p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      Please enable location services to clock in or out. We require GPS confirmation to verify you are on-site before logging your time.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-amber-500 text-amber-700 hover:bg-amber-100"
+                      onClick={refreshGps}
+                    >
+                      Enable Location
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Clock Card */}
         <motion.div variants={staggerItem}>
           <Card>
@@ -516,8 +545,13 @@ export default function Dashboard() {
                 isClockedIn={currentStatus?.isClockedIn || false}
                 onClockIn={handleClockIn}
                 onClockOut={handleClockOut}
-                disabled={!selectedLocationId}
+                disabled={!selectedLocationId || !position || !isWithinGeofence}
               />
+
+              {/* Location verification note */}
+              <p className="text-xs text-center text-muted-foreground">
+                Time is only logged when GPS confirms you are on-site
+              </p>
 
               {/* Timer */}
               <div className="flex justify-center">
