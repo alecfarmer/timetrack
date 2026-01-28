@@ -98,6 +98,7 @@ export default function Dashboard() {
 
   const [eightHourAlert, setEightHourAlert] = useState(false)
   const eightHourAlertShown = useRef(false)
+  const statusFetchedAt = useRef<number>(Date.now())
 
   const { position, loading: gpsLoading, error: gpsError, refresh: refreshGps } = useGeolocation(true)
   const desktopMonitor = useDesktopMonitor()
@@ -139,6 +140,7 @@ export default function Dashboard() {
       if (!res.ok) throw new Error("Failed to fetch status")
       const data = await res.json()
       setCurrentStatus(data)
+      statusFetchedAt.current = Date.now()
     } catch (err) {
       console.error("Error fetching current status:", err)
     }
@@ -183,13 +185,14 @@ export default function Dashboard() {
 
   // 8-hour workday threshold alert
   useEffect(() => {
-    if (!currentStatus?.isClockedIn || !currentStatus?.currentSessionStart) return
+    if (!currentStatus?.isClockedIn) return
 
     const checkThreshold = () => {
-      const totalLogged = currentStatus.totalMinutesToday || 0
-      const sessionStart = new Date(currentStatus.currentSessionStart!).getTime()
-      const liveSessionMinutes = (Date.now() - sessionStart) / 60000
-      const totalMinutes = totalLogged + liveSessionMinutes
+      // totalMinutesToday already includes active session time at fetch time
+      // Only add the delta since we last fetched
+      const totalAtFetch = currentStatus.totalMinutesToday || 0
+      const minutesSinceFetch = (Date.now() - statusFetchedAt.current) / 60000
+      const totalMinutes = totalAtFetch + minutesSinceFetch
 
       if (totalMinutes >= 480 && !eightHourAlertShown.current) {
         eightHourAlertShown.current = true
@@ -201,7 +204,7 @@ export default function Dashboard() {
     checkThreshold()
     const interval = setInterval(checkThreshold, 30000) // check every 30s
     return () => clearInterval(interval)
-  }, [currentStatus?.isClockedIn, currentStatus?.currentSessionStart, currentStatus?.totalMinutesToday])
+  }, [currentStatus?.isClockedIn, currentStatus?.totalMinutesToday])
 
   // Reset alert flag on new day / session
   useEffect(() => {
@@ -212,16 +215,17 @@ export default function Dashboard() {
 
   // Dynamic browser tab title with live timer
   useEffect(() => {
-    if (!currentStatus?.isClockedIn || !currentStatus?.currentSessionStart) {
+    if (!currentStatus?.isClockedIn) {
       document.title = "OnSite"
       return
     }
 
     const updateTitle = () => {
-      const totalLogged = currentStatus.totalMinutesToday || 0
-      const sessionStart = new Date(currentStatus.currentSessionStart!).getTime()
-      const liveSessionMinutes = (Date.now() - sessionStart) / 60000
-      const totalMinutes = Math.floor(totalLogged + liveSessionMinutes)
+      // totalMinutesToday already includes active session at fetch time
+      // Only add delta since last fetch
+      const totalAtFetch = currentStatus.totalMinutesToday || 0
+      const minutesSinceFetch = (Date.now() - statusFetchedAt.current) / 60000
+      const totalMinutes = Math.floor(totalAtFetch + minutesSinceFetch)
       const h = Math.floor(totalMinutes / 60)
       const m = totalMinutes % 60
       const timeStr = `${h}h ${m.toString().padStart(2, "0")}m`
@@ -239,7 +243,7 @@ export default function Dashboard() {
       clearInterval(interval)
       document.title = "OnSite"
     }
-  }, [currentStatus?.isClockedIn, currentStatus?.currentSessionStart, currentStatus?.totalMinutesToday, eightHourAlert])
+  }, [currentStatus?.isClockedIn, currentStatus?.totalMinutesToday, eightHourAlert])
 
   const handleRefresh = async () => {
     setRefreshing(true)
