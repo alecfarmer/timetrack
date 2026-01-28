@@ -8,7 +8,8 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Building2, Loader2, Mail, Lock, ArrowRight, Sparkles } from "lucide-react"
+import { Loader2, Mail, Lock, ArrowRight, Sparkles } from "lucide-react"
+import { Logo, LogoMark } from "@/components/logo"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -76,8 +77,8 @@ export default function LoginPage() {
           transition={{ duration: 0.8 }}
           className="relative z-10 max-w-md"
         >
-          <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-xl mb-8">
-            <Building2 className="h-8 w-8 text-white" />
+          <div className="mb-8">
+            <LogoMark className="h-16 w-16" />
           </div>
           <h1 className="heading-1 mb-4">
             Track your time,<br />
@@ -116,10 +117,7 @@ export default function LoginPage() {
             transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
             className="flex items-center justify-center gap-3 mb-10 lg:hidden"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg">
-              <Building2 className="h-6 w-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">OnSite</h1>
+            <Logo size="md" />
           </motion.div>
 
           {/* Header */}
