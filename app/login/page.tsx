@@ -8,8 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Loader2, Mail, Lock } from "lucide-react"
+import { Building2, Loader2, Mail, Lock, ArrowRight, Sparkles } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -64,120 +63,154 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        {/* Logo */}
+    <div className="min-h-screen flex bg-background">
+      {/* Left Side - Branding (desktop only) */}
+      <div className="hidden lg:flex flex-1 bg-gradient-mesh items-center justify-center p-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-primary opacity-5" />
+        <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+
         <motion.div
-          initial={{ scale: 0.8 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="flex items-center justify-center gap-3 mb-8"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="relative z-10 max-w-md"
         >
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-            <MapPin className="h-7 w-7 text-primary-foreground" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-xl mb-8">
+            <Building2 className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold">OnSite</h1>
+          <h1 className="heading-1 mb-4">
+            Track your time,<br />
+            <span className="text-gradient">anywhere you work.</span>
+          </h1>
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            GPS-verified attendance tracking with real-time compliance monitoring.
+            Know your status at a glance.
+          </p>
+
+          <div className="mt-8 flex items-center gap-4">
+            <div className="flex -space-x-2">
+              {["bg-primary", "bg-success", "bg-warning"].map((color, i) => (
+                <div key={i} className={`w-8 h-8 rounded-full ${color} border-2 border-background flex items-center justify-center`}>
+                  <span className="text-xs text-white font-bold">{["US0", "HNA", "MCC"][i]?.charAt(0)}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground">8 locations tracked</p>
+          </div>
         </motion.div>
+      </div>
 
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Welcome back</CardTitle>
-            <CardDescription className="text-center">
-              Sign in to track your attendance
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm text-destructive"
-                >
-                  {error}
-                </motion.div>
-              )}
+      {/* Right Side - Form */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:max-w-lg">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-sm"
+        >
+          {/* Mobile Logo */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+            className="flex items-center justify-center gap-3 mb-10 lg:hidden"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg">
+              <Building2 className="h-6 w-6 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight">OnSite</h1>
+          </motion.div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
+          {/* Header */}
+          <div className="mb-8">
+            <h2 className="heading-2 mb-2">Welcome back</h2>
+            <p className="text-muted-foreground">Sign in to your account to continue</p>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-
-              <motion.div whileTap={{ scale: 0.98 }}>
-                <Button type="submit" className="w-full h-12" disabled={loading}>
-                  {loading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    "Sign In"
-                  )}
-                </Button>
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-5">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-elevated p-3 border-destructive/20 bg-destructive/5 text-sm text-destructive"
+              >
+                {error}
               </motion.div>
+            )}
 
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or</span>
-                </div>
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                  required
+                />
               </div>
+            </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                  required
+                />
+              </div>
+            </div>
+
+            <motion.div whileTap={{ scale: 0.98 }}>
               <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleMagicLink}
+                type="submit"
+                className="w-full h-12 rounded-xl bg-gradient-primary hover:opacity-90 transition-opacity gap-2"
                 disabled={loading}
               >
-                <Mail className="mr-2 h-4 w-4" />
-                Sign in with Magic Link
+                {loading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    Sign In
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </Button>
-            </form>
+            </motion.div>
 
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/signup"
-                className="font-medium text-primary hover:underline"
-              >
-                Sign up
-              </Link>
-            </p>
-          </CardContent>
-        </Card>
-      </motion.div>
+            <div className="divider-text">or continue with</div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-12 rounded-xl gap-2"
+              onClick={handleMagicLink}
+              disabled={loading}
+            >
+              <Sparkles className="h-4 w-4" />
+              Magic Link
+            </Button>
+          </form>
+
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="font-medium text-primary hover:underline">
+              Sign up
+            </Link>
+          </p>
+        </motion.div>
+      </div>
     </div>
   )
 }
