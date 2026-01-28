@@ -385,8 +385,8 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="relative pb-24 lg:pb-8 lg:ml-64">
-        <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8 space-y-6">
+      <main className="relative pb-24 lg:pb-4 lg:ml-64">
+        <div className="max-w-6xl mx-auto px-4 py-4 lg:px-6 lg:py-4 space-y-4">
           {/* Error Banner */}
           <AnimatePresence>
             {error && (
@@ -394,7 +394,7 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: -20, height: 0 }}
                 animate={{ opacity: 1, y: 0, height: "auto" }}
                 exit={{ opacity: 0, y: -20, height: 0 }}
-                className="card-elevated p-4 border-destructive/20 bg-destructive/5"
+                className="card-elevated p-3 border-destructive/20 bg-destructive/5"
               >
                 <div className="flex items-center gap-3">
                   <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
@@ -407,42 +407,249 @@ export default function Dashboard() {
             )}
           </AnimatePresence>
 
-          {/* Status Hero Card */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <div
-              className={cn(
-                "relative overflow-hidden rounded-2xl p-6 lg:p-8",
-                currentStatus?.isClockedIn
-                  ? "card-highlight"
-                  : "card-elevated"
-              )}
+          {/* === DESKTOP LAYOUT (lg+): 3-column dense grid === */}
+          <div className="hidden lg:grid lg:grid-cols-12 gap-4">
+            {/* Column 1: Clock Actions (4 cols) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="lg:col-span-4 space-y-3"
             >
-              {/* Decorative elements */}
-              {currentStatus?.isClockedIn && (
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-primary opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              )}
+              <div className="card-elevated p-4 space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center",
+                      currentStatus?.isClockedIn ? "bg-success/20" : "bg-muted"
+                    )}
+                  >
+                    {currentStatus?.isClockedIn ? (
+                      <Timer className="h-4 w-4 text-success" />
+                    ) : (
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">
+                      {currentStatus?.isClockedIn ? "Working at" : "Not clocked in"}
+                    </p>
+                    <p className="font-semibold text-sm truncate">
+                      {currentStatus?.isClockedIn && selectedLocation
+                        ? selectedLocation.name
+                        : "Select a location"}
+                    </p>
+                  </div>
+                </div>
 
-              <div className="relative grid lg:grid-cols-2 gap-8">
-                {/* Left: Timer & Status */}
-                <div className="space-y-6">
+                {/* GPS Warning */}
+                {!position && !gpsLoading && (
+                  <div className="bg-warning/10 border border-warning/20 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-4 w-4 text-warning mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-warning">Location Required</p>
+                        <Button size="sm" variant="outline" className="mt-1.5 h-7 text-xs border-warning text-warning" onClick={refreshGps}>
+                          Enable GPS
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {gpsLoading && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+                    <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    Getting location...
+                  </div>
+                )}
+
+                {/* Location Picker */}
+                {locations.length > 0 && (
+                  <LocationPicker
+                    locations={locations}
+                    selectedId={selectedLocationId}
+                    userPosition={position}
+                    onSelect={setSelectedLocationId}
+                  />
+                )}
+
+                {/* Distance Info */}
+                {position && selectedLocation && distanceToSelected !== null && (
+                  <div
+                    className={cn(
+                      "flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg",
+                      isWithinGeofence ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span>{formatDistance(distanceToSelected)} from {selectedLocation.name}</span>
+                    {isWithinGeofence && <CheckCircle2 className="h-3.5 w-3.5 ml-auto" />}
+                  </div>
+                )}
+
+                {/* Clock Button */}
+                <ClockButton
+                  isClockedIn={currentStatus?.isClockedIn || false}
+                  onClockIn={handleClockIn}
+                  onClockOut={handleClockOut}
+                  disabled={!selectedLocationId || !position || !isWithinGeofence}
+                />
+              </div>
+            </motion.div>
+
+            {/* Column 2: Timer + Stats (4 cols) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.05 }}
+              className="lg:col-span-4 space-y-3"
+            >
+              {/* Timer Card */}
+              <div
+                className={cn(
+                  "relative overflow-hidden rounded-2xl p-5",
+                  currentStatus?.isClockedIn ? "card-highlight" : "card-elevated"
+                )}
+              >
+                {currentStatus?.isClockedIn && (
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-primary opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                )}
+                <div className="relative">
+                  <TimerDisplay
+                    startTime={currentStatus?.currentSessionStart ? new Date(currentStatus.currentSessionStart) : null}
+                    label={currentStatus?.isClockedIn ? "session time" : undefined}
+                  />
+                </div>
+              </div>
+
+              {/* Stat Row */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="card-elevated p-3 text-center">
+                  <p className="text-xl font-bold tabular-nums">{todayHours}h {todayMinutes}m</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Today</p>
+                </div>
+                <div className="card-elevated p-3 text-center">
+                  <p className="text-xl font-bold tabular-nums">{currentStatus?.todayEntries?.length || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Entries</p>
+                </div>
+                <div className="card-elevated p-3 text-center">
+                  <p className="text-xl font-bold tabular-nums">{weekSummary?.daysWorked || 0}/{weekSummary?.requiredDays || 3}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Week</p>
+                </div>
+              </div>
+
+              {/* Weekly Progress */}
+              <div className="card-elevated p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Weekly Compliance</span>
+                  </div>
+                  <Badge variant={weekSummary?.isCompliant ? "default" : "secondary"} className={cn("text-xs", weekSummary?.isCompliant && "bg-success")}>
+                    {weekSummary?.isCompliant ? "On Track" : "Behind"}
+                  </Badge>
+                </div>
+                <div className="progress-bar mb-2">
+                  <div
+                    className={cn("progress-bar-fill", weekSummary?.isCompliant ? "success" : "primary")}
+                    style={{ width: `${Math.min(100, ((weekSummary?.daysWorked || 0) / (weekSummary?.requiredDays || 3)) * 100)}%` }}
+                  />
+                </div>
+                <div className="flex gap-1">
+                  {weekSummary?.weekDays?.slice(0, 5).map((day, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "flex-1 h-7 rounded-md flex items-center justify-center text-[11px] font-medium transition-all",
+                        day.worked ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {day.dayOfWeek.slice(0, 2)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Column 3: Today's Activity (4 cols) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="lg:col-span-4"
+            >
+              <div className="card-elevated p-4 h-full">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold">Today's Activity</h2>
+                  <Badge variant="secondary" className="text-xs">
+                    {currentStatus?.todayEntries?.length || 0}
+                  </Badge>
+                </div>
+
+                <div className="space-y-2 max-h-[calc(100vh-12rem)] overflow-y-auto no-scrollbar">
+                  <AnimatePresence mode="popLayout">
+                    {currentStatus?.todayEntries && currentStatus.todayEntries.length > 0 ? (
+                      currentStatus.todayEntries.map((entry, index) => (
+                        <EntryCard
+                          key={entry.id}
+                          type={entry.type}
+                          timestamp={entry.timestampServer}
+                          locationName={entry.location.name}
+                          gpsAccuracy={entry.gpsAccuracy}
+                          notes={entry.notes}
+                          index={index}
+                        />
+                      ))
+                    ) : (
+                      <div className="py-8 text-center">
+                        <div className="w-12 h-12 rounded-xl bg-muted mx-auto mb-3 flex items-center justify-center">
+                          <Clock className="h-6 w-6 text-muted-foreground/40" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">No entries yet</p>
+                        <p className="text-xs text-muted-foreground/60 mt-0.5">Clock in to start</p>
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* === MOBILE LAYOUT (below lg): Stacked === */}
+          <div className="lg:hidden space-y-4">
+            {/* Status Hero Card */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <div
+                className={cn(
+                  "relative overflow-hidden rounded-2xl p-5",
+                  currentStatus?.isClockedIn ? "card-highlight" : "card-elevated"
+                )}
+              >
+                {currentStatus?.isClockedIn && (
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-primary opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                )}
+
+                <div className="relative space-y-5">
+                  {/* Status + Location */}
                   <div className="flex items-center gap-3">
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center",
+                        "w-10 h-10 rounded-xl flex items-center justify-center",
                         currentStatus?.isClockedIn ? "bg-success/20" : "bg-muted"
                       )}
                     >
                       {currentStatus?.isClockedIn ? (
-                        <Timer className="h-6 w-6 text-success" />
+                        <Timer className="h-5 w-5 text-success" />
                       ) : (
-                        <Clock className="h-6 w-6 text-muted-foreground" />
+                        <Clock className="h-5 w-5 text-muted-foreground" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {currentStatus?.isClockedIn ? "Currently working at" : "Not clocked in"}
                       </p>
-                      <p className="font-semibold text-lg">
+                      <p className="font-semibold">
                         {currentStatus?.isClockedIn && selectedLocation
                           ? selectedLocation.name
                           : "Ready to start"}
@@ -451,227 +658,172 @@ export default function Dashboard() {
                   </div>
 
                   {/* Timer */}
-                  <div className="py-4">
-                    <TimerDisplay
-                      startTime={currentStatus?.currentSessionStart ? new Date(currentStatus.currentSessionStart) : null}
-                      label={currentStatus?.isClockedIn ? "session time" : undefined}
-                    />
-                  </div>
-
-                  {/* Today's Stats */}
-                  <div className="flex items-center gap-6">
-                    <div>
-                      <p className="text-3xl font-bold tabular-nums">
-                        {todayHours}h {todayMinutes}m
-                      </p>
-                      <p className="text-sm text-muted-foreground">Today's total</p>
-                    </div>
-                    <div className="h-12 w-px bg-border" />
-                    <div>
-                      <p className="text-3xl font-bold tabular-nums">{currentStatus?.todayEntries?.length || 0}</p>
-                      <p className="text-sm text-muted-foreground">Entries</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right: Clock Actions */}
-                <div className="space-y-4">
-                  {/* GPS Warning */}
-                  {!position && !gpsLoading && (
-                    <div className="bg-warning/10 border border-warning/20 rounded-xl p-4">
-                      <div className="flex items-start gap-3">
-                        <MapPin className="h-5 w-5 text-warning mt-0.5" />
-                        <div className="flex-1">
-                          <p className="font-medium text-warning">Location Required</p>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Enable GPS to verify your on-site presence.
-                          </p>
-                          <Button size="sm" variant="outline" className="mt-2 border-warning text-warning" onClick={refreshGps}>
-                            Enable Location
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {gpsLoading && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                      Getting your location...
-                    </div>
-                  )}
-
-                  {/* Location Picker */}
-                  {locations.length > 0 && (
-                    <LocationPicker
-                      locations={locations}
-                      selectedId={selectedLocationId}
-                      userPosition={position}
-                      onSelect={setSelectedLocationId}
-                    />
-                  )}
-
-                  {/* Distance Info */}
-                  {position && selectedLocation && distanceToSelected !== null && (
-                    <div
-                      className={cn(
-                        "flex items-center gap-2 text-sm px-3 py-2 rounded-lg",
-                        isWithinGeofence ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      <MapPin className="h-4 w-4" />
-                      <span>
-                        {formatDistance(distanceToSelected)} from {selectedLocation.name}
-                      </span>
-                      {isWithinGeofence && <CheckCircle2 className="h-4 w-4 ml-auto" />}
-                    </div>
-                  )}
-
-                  {/* Clock Button */}
-                  <ClockButton
-                    isClockedIn={currentStatus?.isClockedIn || false}
-                    onClockIn={handleClockIn}
-                    onClockOut={handleClockOut}
-                    disabled={!selectedLocationId || !position || !isWithinGeofence}
+                  <TimerDisplay
+                    startTime={currentStatus?.currentSessionStart ? new Date(currentStatus.currentSessionStart) : null}
+                    label={currentStatus?.isClockedIn ? "session time" : undefined}
                   />
 
-                  <p className="text-xs text-center text-muted-foreground">
-                    GPS verification required for time logging
-                  </p>
+                  {/* Stats Row */}
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="text-2xl font-bold tabular-nums">{todayHours}h {todayMinutes}m</p>
+                      <p className="text-xs text-muted-foreground">Today's total</p>
+                    </div>
+                    <div className="h-10 w-px bg-border" />
+                    <div>
+                      <p className="text-2xl font-bold tabular-nums">{currentStatus?.todayEntries?.length || 0}</p>
+                      <p className="text-xs text-muted-foreground">Entries</p>
+                    </div>
+                    <div className="h-10 w-px bg-border" />
+                    <div>
+                      <p className="text-2xl font-bold tabular-nums">{weekSummary?.daysWorked || 0}/{weekSummary?.requiredDays || 3}</p>
+                      <p className="text-xs text-muted-foreground">Week</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
 
-          {/* Stats Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
-          >
-            {/* Weekly Compliance */}
-            <div className="card-elevated p-4 sm:col-span-2">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <span className="font-medium">Weekly Progress</span>
-                </div>
-                <Badge variant={weekSummary?.isCompliant ? "default" : "secondary"} className={weekSummary?.isCompliant ? "bg-success" : ""}>
-                  {weekSummary?.daysWorked || 0}/{weekSummary?.requiredDays || 3} days
-                </Badge>
-              </div>
-              <div className="progress-bar mb-3">
-                <div
-                  className={cn("progress-bar-fill", weekSummary?.isCompliant ? "success" : "primary")}
-                  style={{ width: `${Math.min(100, ((weekSummary?.daysWorked || 0) / (weekSummary?.requiredDays || 3)) * 100)}%` }}
-                />
-              </div>
-              <div className="flex gap-1">
-                {weekSummary?.weekDays?.slice(0, 5).map((day, i) => (
+            {/* Clock Actions */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.05 }}>
+              <div className="card-elevated p-4 space-y-3">
+                {/* GPS Warning */}
+                {!position && !gpsLoading && (
+                  <div className="bg-warning/10 border border-warning/20 rounded-xl p-3">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-warning mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-medium text-warning text-sm">Location Required</p>
+                        <Button size="sm" variant="outline" className="mt-1.5 border-warning text-warning" onClick={refreshGps}>
+                          Enable GPS
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {gpsLoading && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    Getting your location...
+                  </div>
+                )}
+
+                {locations.length > 0 && (
+                  <LocationPicker
+                    locations={locations}
+                    selectedId={selectedLocationId}
+                    userPosition={position}
+                    onSelect={setSelectedLocationId}
+                  />
+                )}
+
+                {position && selectedLocation && distanceToSelected !== null && (
                   <div
-                    key={i}
                     className={cn(
-                      "flex-1 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-all",
-                      day.worked ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                      "flex items-center gap-2 text-sm px-3 py-2 rounded-lg",
+                      isWithinGeofence ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
                     )}
                   >
-                    {day.dayOfWeek.slice(0, 1)}
+                    <MapPin className="h-4 w-4" />
+                    <span>{formatDistance(distanceToSelected)} from {selectedLocation.name}</span>
+                    {isWithinGeofence && <CheckCircle2 className="h-4 w-4 ml-auto" />}
                   </div>
-                ))}
+                )}
+
+                <ClockButton
+                  isClockedIn={currentStatus?.isClockedIn || false}
+                  onClockIn={handleClockIn}
+                  onClockOut={handleClockOut}
+                  disabled={!selectedLocationId || !position || !isWithinGeofence}
+                />
+                <p className="text-xs text-center text-muted-foreground">GPS verification required</p>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Quick Stats Cards */}
-            <div className="card-elevated p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Zap className="h-5 w-5 text-primary" />
+            {/* Weekly Progress */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+              <div className="card-elevated p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Weekly Compliance</span>
+                  </div>
+                  <Badge variant={weekSummary?.isCompliant ? "default" : "secondary"} className={cn("text-xs", weekSummary?.isCompliant && "bg-success")}>
+                    {weekSummary?.daysWorked || 0}/{weekSummary?.requiredDays || 3} days
+                  </Badge>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold tabular-nums">{currentStatus?.todayEntries?.length || 0}</p>
-                  <p className="text-sm text-muted-foreground">Today</p>
+                <div className="progress-bar mb-2">
+                  <div
+                    className={cn("progress-bar-fill", weekSummary?.isCompliant ? "success" : "primary")}
+                    style={{ width: `${Math.min(100, ((weekSummary?.daysWorked || 0) / (weekSummary?.requiredDays || 3)) * 100)}%` }}
+                  />
                 </div>
-              </div>
-            </div>
-
-            <div className="card-elevated p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-success" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold tabular-nums">{weekSummary?.daysWorked || 0}</p>
-                  <p className="text-sm text-muted-foreground">This Week</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Today's Entries */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="space-y-4"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="heading-3">Today's Activity</h2>
-              <Button variant="ghost" size="sm" className="text-muted-foreground gap-1">
-                View All <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <AnimatePresence mode="popLayout">
-              {currentStatus?.todayEntries && currentStatus.todayEntries.length > 0 ? (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {currentStatus.todayEntries.map((entry, index) => (
-                    <EntryCard
-                      key={entry.id}
-                      type={entry.type}
-                      timestamp={entry.timestampServer}
-                      locationName={entry.location.name}
-                      gpsAccuracy={entry.gpsAccuracy}
-                      notes={entry.notes}
-                      index={index}
-                    />
+                <div className="flex gap-1">
+                  {weekSummary?.weekDays?.slice(0, 5).map((day, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "flex-1 h-7 rounded-md flex items-center justify-center text-xs font-medium",
+                        day.worked ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {day.dayOfWeek.slice(0, 2)}
+                    </div>
                   ))}
                 </div>
-              ) : (
-                <div className="card-elevated border-dashed">
-                  <div className="py-12 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-muted mx-auto mb-4 flex items-center justify-center">
-                      <Clock className="h-8 w-8 text-muted-foreground/50" />
-                    </div>
-                    <p className="font-medium text-muted-foreground">No entries yet today</p>
-                    <p className="text-sm text-muted-foreground/60 mt-1">Clock in to start tracking your time</p>
-                  </div>
-                </div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Mobile User Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="sm:hidden"
-          >
-            <div className="card-elevated p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium">
-                    {user?.email?.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-sm text-muted-foreground truncate max-w-[150px]">{user?.email}</span>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => signOut()}>
-                  Sign Out
-                </Button>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+
+            {/* Today's Entries */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }} className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="heading-3">Today's Activity</h2>
+                <Badge variant="secondary" className="text-xs">{currentStatus?.todayEntries?.length || 0}</Badge>
+              </div>
+
+              <AnimatePresence mode="popLayout">
+                {currentStatus?.todayEntries && currentStatus.todayEntries.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {currentStatus.todayEntries.map((entry, index) => (
+                      <EntryCard
+                        key={entry.id}
+                        type={entry.type}
+                        timestamp={entry.timestampServer}
+                        locationName={entry.location.name}
+                        gpsAccuracy={entry.gpsAccuracy}
+                        notes={entry.notes}
+                        index={index}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="card-elevated border-dashed py-8 text-center">
+                    <div className="w-12 h-12 rounded-xl bg-muted mx-auto mb-3 flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-muted-foreground/40" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">No entries yet today</p>
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">Clock in to start tracking</p>
+                  </div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* Mobile User Card */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="sm:hidden">
+              <div className="card-elevated p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-medium">
+                      {user?.email?.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm text-muted-foreground truncate max-w-[150px]">{user?.email}</span>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => signOut()}>Sign Out</Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </main>
 
