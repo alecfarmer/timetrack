@@ -22,6 +22,7 @@ interface MonthSummary {
   totalWeeks: number
   totalDaysWorked: number
   totalMinutes: number
+  byLocation?: Record<string, { days: number; minutes: number }>
 }
 
 export default function ReportsPage() {
@@ -36,21 +37,21 @@ export default function ReportsPage() {
   const fetchReports = async () => {
     setLoading(true)
     try {
-      // Fetch weekly summary
-      const weekRes = await fetch("/api/workdays/week")
+      // Fetch weekly and monthly summaries in parallel
+      const [weekRes, monthRes] = await Promise.all([
+        fetch("/api/workdays/week"),
+        fetch("/api/reports/monthly"),
+      ])
+
       if (weekRes.ok) {
         const weekData = await weekRes.json()
         setWeekSummary(weekData)
       }
 
-      // For now, create mock month summary from week data
-      // TODO: Add /api/reports/monthly endpoint
-      setMonthSummary({
-        weeksCompliant: 3,
-        totalWeeks: 4,
-        totalDaysWorked: 12,
-        totalMinutes: 4800,
-      })
+      if (monthRes.ok) {
+        const monthData = await monthRes.json()
+        setMonthSummary(monthData)
+      }
     } catch (error) {
       console.error("Failed to fetch reports:", error)
     }
