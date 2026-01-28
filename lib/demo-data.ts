@@ -17,50 +17,22 @@ export interface DemoEntry {
 // In-memory storage for demo entries
 export const demoEntries: DemoEntry[] = []
 
-// Demo locations
+// Locations
 export const DEMO_LOCATIONS: Record<string, { id: string; name: string; code: string | null }> = {
-  "demo-1": { id: "demo-1", name: "Main Office", code: "HQ" },
-  "demo-2": { id: "demo-2", name: "Downtown Branch", code: "DT1" },
-  "demo-3": { id: "demo-3", name: "Warehouse", code: "WH1" },
+  "us0": { id: "us0", name: "Michelin US0", code: "US0" },
 }
 
 export const DEMO_LOCATIONS_LIST = [
   {
-    id: "demo-1",
-    name: "Main Office",
-    code: "HQ",
-    category: "OFFICE",
-    address: "123 Business Park, Suite 100",
-    latitude: 40.7128,
-    longitude: -74.006,
-    geofenceRadius: 200,
-    isDefault: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-2",
-    name: "Downtown Branch",
-    code: "DT1",
-    category: "OFFICE",
-    address: "456 Main Street",
-    latitude: 40.7580,
-    longitude: -73.9855,
-    geofenceRadius: 150,
-    isDefault: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-3",
-    name: "Warehouse",
-    code: "WH1",
+    id: "us0",
+    name: "Michelin US0",
+    code: "US0",
     category: "PLANT",
-    address: "789 Industrial Blvd",
-    latitude: 40.6892,
-    longitude: -74.0445,
+    address: "1401 Antioch Church Rd, Greenville, SC",
+    latitude: 34.8526,
+    longitude: -82.394,
     geofenceRadius: 300,
-    isDefault: false,
+    isDefault: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },

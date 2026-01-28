@@ -8,24 +8,14 @@ async function main() {
   // Seed Locations
   const locations = [
     {
-      name: "Michelin Donaldson",
+      name: "Michelin US0",
       code: "US0",
       category: LocationCategory.PLANT,
-      address: "1 Michelin Way, Donaldson, SC 29605",
+      address: "1401 Antioch Church Rd, Greenville, SC",
       latitude: 34.8526,
       longitude: -82.394,
       geofenceRadius: 300,
       isDefault: true,
-    },
-    {
-      name: "Michelin Anderson",
-      code: "US2",
-      category: LocationCategory.PLANT,
-      address: "Anderson, SC",
-      latitude: 34.5034,
-      longitude: -82.6501,
-      geofenceRadius: 300,
-      isDefault: false,
     },
   ]
 
