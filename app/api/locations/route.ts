@@ -99,3 +99,49 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// PATCH /api/locations - Update a location
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { id, latitude, longitude, geofenceRadius, name, code, address } = body
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Missing required field: id" },
+        { status: 400 }
+      )
+    }
+
+    const updateData: Record<string, unknown> = {}
+    if (latitude !== undefined) updateData.latitude = latitude
+    if (longitude !== undefined) updateData.longitude = longitude
+    if (geofenceRadius !== undefined) updateData.geofenceRadius = geofenceRadius
+    if (name !== undefined) updateData.name = name
+    if (code !== undefined) updateData.code = code
+    if (address !== undefined) updateData.address = address
+
+    const { data: location, error } = await supabase
+      .from("Location")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Failed to update location", details: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json(location)
+  } catch (error) {
+    console.error("Error updating location:", error)
+    return NextResponse.json(
+      { error: "Failed to update location" },
+      { status: 500 }
+    )
+  }
+}

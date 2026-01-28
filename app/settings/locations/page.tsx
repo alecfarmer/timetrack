@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, MapPin, Navigation, Check } from "lucide-react"
+import { ArrowLeft, MapPin, Navigation, Check, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { formatDistance, calculateDistance } from "@/lib/geo"
 import { useGeolocation } from "@/hooks/use-geolocation"
@@ -25,7 +25,32 @@ interface Location {
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState<string | null>(null)
   const { position } = useGeolocation(true)
+
+  const updateLocationCoords = async (locationId: string) => {
+    if (!position) return
+    setUpdating(locationId)
+    try {
+      const res = await fetch("/api/locations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: locationId,
+          latitude: position.latitude,
+          longitude: position.longitude,
+        }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setLocations(locs => locs.map(l => l.id === locationId ? updated : l))
+      }
+    } catch (err) {
+      console.error("Failed to update location:", err)
+    } finally {
+      setUpdating(null)
+    }
+  }
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -156,6 +181,23 @@ export default function LocationsPage() {
                       <p className="text-xs text-amber-600">
                         Enable location services to see distance
                       </p>
+                    )}
+
+                    {position && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-2"
+                        onClick={() => updateLocationCoords(location.id)}
+                        disabled={updating === location.id}
+                      >
+                        {updating === location.id ? (
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Navigation className="h-4 w-4 mr-2" />
+                        )}
+                        Set to Current Location
+                      </Button>
                     )}
                   </CardContent>
                 </Card>
