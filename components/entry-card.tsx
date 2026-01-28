@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { formatTime, formatRelative } from "@/lib/dates"
+import { formatTimeWithZone, formatRelative } from "@/lib/dates"
 import { getAccuracyLevel } from "@/lib/geo"
 import { LogIn, LogOut, MapPin, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -80,7 +80,7 @@ export function EntryCard({
                     {isClockIn ? "Clock In" : "Clock Out"}
                   </span>
                   <span className="text-lg font-mono">
-                    {formatTime(timestamp)}
+                    {formatTimeWithZone(timestamp)}
                   </span>
                 </div>
 

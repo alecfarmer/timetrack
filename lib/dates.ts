@@ -1,7 +1,8 @@
 import { format, formatDistance, startOfWeek, endOfWeek, startOfDay, endOfDay, isWithinInterval, parseISO, differenceInMinutes } from "date-fns"
 import { toZonedTime, fromZonedTime, formatInTimeZone } from "date-fns-tz"
 
-const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
+// Always use Eastern Time
+const DEFAULT_TIMEZONE = "America/New_York"
 
 export function getTimezone(): string {
   if (typeof window !== "undefined") {
@@ -25,6 +26,12 @@ export function formatTime(date: Date | string, timezone?: string): string {
   const tz = timezone || getTimezone()
   const d = typeof date === "string" ? parseISO(date) : date
   return formatInTimeZone(d, tz, "h:mm a")
+}
+
+export function formatTimeWithZone(date: Date | string, timezone?: string): string {
+  const tz = timezone || getTimezone()
+  const d = typeof date === "string" ? parseISO(date) : date
+  return formatInTimeZone(d, tz, "h:mm a zzz")
 }
 
 export function formatDate(date: Date | string, timezone?: string): string {
