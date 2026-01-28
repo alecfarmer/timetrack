@@ -57,6 +57,16 @@ async function main() {
       geofenceRadius: 50, // ~164 feet
       isDefault: false,
     },
+    {
+      name: "WFH",
+      code: "WFH",
+      category: LocationCategory.HOME,
+      address: "Work From Home",
+      latitude: 0,
+      longitude: 0,
+      geofenceRadius: 50000, // Large radius - no geofence check for WFH
+      isDefault: false,
+    },
   ]
 
   for (const location of locations) {
