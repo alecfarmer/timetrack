@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import {
   Select,
   SelectContent,
@@ -17,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { BottomNav } from "@/components/bottom-nav"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useGeolocation } from "@/hooks/use-geolocation"
 import { format } from "date-fns"
 import {
@@ -28,6 +28,8 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  PhoneIncoming,
+  PhoneOutgoing,
 } from "lucide-react"
 
 interface Location {
@@ -53,22 +55,22 @@ interface Callout {
 }
 
 const pageVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
 }
 
 const staggerContainer = {
   animate: {
     transition: {
-      staggerChildren: 0.1,
+      staggerChildren: 0.08,
     },
   },
 }
 
 const staggerItem = {
   initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 }
 
 export default function CalloutsPage() {
@@ -79,7 +81,6 @@ export default function CalloutsPage() {
   const [showNewCallout, setShowNewCallout] = useState(false)
   const [expandedCallouts, setExpandedCallouts] = useState<Set<string>>(new Set())
 
-  // New callout form
   const [incidentNumber, setIncidentNumber] = useState("")
   const [selectedLocationId, setSelectedLocationId] = useState("")
   const [description, setDescription] = useState("")
@@ -156,13 +157,11 @@ export default function CalloutsPage() {
         throw new Error(data.error || "Failed to create callout")
       }
 
-      // Reset form and refresh
       setIncidentNumber("")
       setDescription("")
       setShowNewCallout(false)
       await fetchCallouts()
 
-      // Haptic feedback
       if (navigator.vibrate) {
         navigator.vibrate(100)
       }
@@ -210,7 +209,6 @@ export default function CalloutsPage() {
 
       await fetchCallouts()
 
-      // Haptic feedback
       if (navigator.vibrate) {
         navigator.vibrate([100, 50, 100])
       }
@@ -236,14 +234,19 @@ export default function CalloutsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center gap-4"
         >
-          <Phone className="h-8 w-8 text-primary animate-pulse" />
-          <p className="text-muted-foreground">Loading callouts...</p>
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-primary/20 animate-ping absolute inset-0" />
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Phone className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <p className="text-muted-foreground font-medium">Loading callouts...</p>
         </motion.div>
       </div>
     )
@@ -251,191 +254,249 @@ export default function CalloutsPage() {
 
   return (
     <motion.div
-      className="flex flex-col min-h-screen"
+      className="flex flex-col min-h-screen bg-background"
       initial="initial"
       animate="animate"
       exit="exit"
       variants={pageVariants}
     >
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="flex items-center justify-between px-4 h-14">
-          <h1 className="text-xl font-bold">Callouts</h1>
-          <Button
-            variant={showNewCallout ? "outline" : "default"}
-            size="sm"
-            onClick={() => setShowNewCallout(!showNewCallout)}
-            className="gap-2"
-          >
-            {showNewCallout ? (
-              "Cancel"
-            ) : (
-              <>
-                <Plus className="h-4 w-4" />
-                New Callout
-              </>
-            )}
-          </Button>
+      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
+          <div className="flex items-center gap-3 lg:hidden">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Phone className="h-5 w-5 text-primary" />
+            </div>
+            <h1 className="text-lg font-bold">Callouts</h1>
+          </div>
+          <h1 className="hidden lg:block text-xl font-semibold">Callouts</h1>
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button
+              variant={showNewCallout ? "outline" : "default"}
+              size="sm"
+              onClick={() => setShowNewCallout(!showNewCallout)}
+              className="gap-2 rounded-xl"
+            >
+              {showNewCallout ? (
+                "Cancel"
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">New Callout</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <motion.main
-        className="flex-1 p-4 pb-24 space-y-4"
+        className="flex-1 pb-24 lg:pb-8 lg:ml-64"
         variants={staggerContainer}
         initial="initial"
         animate="animate"
       >
-        {/* Error Banner */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -20, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: "auto" }}
-              exit={{ opacity: 0, y: -20, height: 0 }}
-              className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center gap-2"
-            >
-              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
-              <p className="text-sm text-destructive">{error}</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto"
-                onClick={() => setError(null)}
+        <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8">
+          {/* Error Banner */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
+                className="mb-6 bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
               >
-                Dismiss
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+                <p className="text-sm text-destructive flex-1">{error}</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setError(null)}
+                  className="rounded-lg"
+                >
+                  Dismiss
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* New Callout Form */}
-        <AnimatePresence>
-          {showNewCallout && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-            >
-              <Card className="border-primary/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Phone className="h-5 w-5" />
-                    Log New Callout
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="incident">Incident Number *</Label>
-                    <Input
-                      id="incident"
-                      placeholder="e.g., INC0012345"
-                      value={incidentNumber}
-                      onChange={(e) => setIncidentNumber(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location *</Label>
-                    <Select
-                      value={selectedLocationId}
-                      onValueChange={setSelectedLocationId}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {locations.map((loc) => (
-                          <SelectItem key={loc.id} value={loc.id}>
-                            {loc.code ? `${loc.code} - ${loc.name}` : loc.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description (optional)</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Brief description of the issue..."
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={2}
-                    />
-                  </div>
-
-                  <Button
-                    className="w-full gap-2"
-                    onClick={handleStartCallout}
-                    disabled={submitting}
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* New Callout Form - Left Column on Desktop */}
+            <motion.div variants={staggerItem} className="lg:col-span-1">
+              <AnimatePresence mode="wait">
+                {showNewCallout ? (
+                  <motion.div
+                    key="form"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
                   >
-                    {submitting ? (
-                      "Logging..."
-                    ) : (
-                      <>
-                        <Phone className="h-4 w-4" />
-                        Log Callout
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
+                    <Card className="border-0 shadow-xl">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <PhoneIncoming className="h-5 w-5 text-primary" />
+                          Log New Callout
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="incident">Incident Number *</Label>
+                          <Input
+                            id="incident"
+                            placeholder="e.g., INC0012345"
+                            value={incidentNumber}
+                            onChange={(e) => setIncidentNumber(e.target.value)}
+                            className="rounded-xl"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="location">Location *</Label>
+                          <Select
+                            value={selectedLocationId}
+                            onValueChange={setSelectedLocationId}
+                          >
+                            <SelectTrigger className="rounded-xl">
+                              <SelectValue placeholder="Select location" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {locations.map((loc) => (
+                                <SelectItem key={loc.id} value={loc.id}>
+                                  {loc.code ? `${loc.code} - ${loc.name}` : loc.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="description">Description (optional)</Label>
+                          <Textarea
+                            id="description"
+                            placeholder="Brief description of the issue..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            rows={3}
+                            className="rounded-xl"
+                          />
+                        </div>
+
+                        <Button
+                          className="w-full gap-2 rounded-xl"
+                          onClick={handleStartCallout}
+                          disabled={submitting}
+                        >
+                          {submitting ? (
+                            "Logging..."
+                          ) : (
+                            <>
+                              <Phone className="h-4 w-4" />
+                              Log Callout
+                            </>
+                          )}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="stats"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                  >
+                    <Card className="border-0 shadow-lg">
+                      <CardContent className="p-6">
+                        <div className="text-center space-y-4">
+                          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                            <Phone className="h-8 w-8 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-4xl font-bold">{activeCallouts.length}</p>
+                            <p className="text-sm text-muted-foreground">Active Callouts</p>
+                          </div>
+                          <div className="pt-4 border-t grid grid-cols-2 gap-4 text-center">
+                            <div>
+                              <p className="text-2xl font-semibold">{completedCallouts.length}</p>
+                              <p className="text-xs text-muted-foreground">Completed</p>
+                            </div>
+                            <div>
+                              <p className="text-2xl font-semibold">{callouts.length}</p>
+                              <p className="text-xs text-muted-foreground">Total</p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Active Callouts */}
-        {activeCallouts.length > 0 && (
-          <motion.div variants={staggerItem} className="space-y-3">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide px-1">
-              Active Callouts
-            </h2>
-            <div className="space-y-2">
-              {activeCallouts.map((callout) => (
-                <CalloutCard
-                  key={callout.id}
-                  callout={callout}
-                  expanded={expandedCallouts.has(callout.id)}
-                  onToggleExpand={() => toggleExpanded(callout.id)}
-                  onStartWork={() => handleStartWork(callout.id)}
-                  onEndCallout={(resolution) =>
-                    handleEndCallout(callout.id, resolution)
-                  }
-                />
-              ))}
-            </div>
-          </motion.div>
-        )}
+            {/* Callouts List - Right Column on Desktop */}
+            <motion.div variants={staggerItem} className="lg:col-span-2 space-y-6">
+              {/* Active Callouts */}
+              {activeCallouts.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="status-dot status-dot-warning" />
+                    <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      Active Callouts
+                    </h2>
+                    <Badge variant="warning">{activeCallouts.length}</Badge>
+                  </div>
+                  <div className="space-y-3">
+                    {activeCallouts.map((callout) => (
+                      <CalloutCard
+                        key={callout.id}
+                        callout={callout}
+                        expanded={expandedCallouts.has(callout.id)}
+                        onToggleExpand={() => toggleExpanded(callout.id)}
+                        onStartWork={() => handleStartWork(callout.id)}
+                        onEndCallout={(resolution) =>
+                          handleEndCallout(callout.id, resolution)
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        {/* Completed Callouts */}
-        <motion.div variants={staggerItem} className="space-y-3">
-          <Separator />
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide px-1">
-            Recent Callouts
-          </h2>
+              {/* Completed Callouts */}
+              <div className="space-y-3">
+                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Recent Callouts
+                </h2>
 
-          {completedCallouts.length > 0 ? (
-            <div className="space-y-2">
-              {completedCallouts.map((callout) => (
-                <CalloutCard
-                  key={callout.id}
-                  callout={callout}
-                  expanded={expandedCallouts.has(callout.id)}
-                  onToggleExpand={() => toggleExpanded(callout.id)}
-                />
-              ))}
-            </div>
-          ) : (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center text-muted-foreground py-8"
-            >
-              No completed callouts yet
-            </motion.p>
-          )}
-        </motion.div>
+                {completedCallouts.length > 0 ? (
+                  <div className="space-y-3">
+                    {completedCallouts.map((callout) => (
+                      <CalloutCard
+                        key={callout.id}
+                        callout={callout}
+                        expanded={expandedCallouts.has(callout.id)}
+                        onToggleExpand={() => toggleExpanded(callout.id)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="border-dashed">
+                    <CardContent className="py-12 text-center">
+                      <PhoneOutgoing className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No completed callouts yet</p>
+                      <p className="text-sm text-muted-foreground/60 mt-1">
+                        Completed callouts will appear here
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
       </motion.main>
 
       <BottomNav currentPath="/callouts" />
@@ -482,48 +543,52 @@ function CalloutCard({
       animate={{ opacity: 1, y: 0 }}
     >
       <Card
-        className={
+        className={`border-0 shadow-lg transition-all ${
           isActive
-            ? "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20"
-            : ""
-        }
+            ? "ring-2 ring-warning/50 bg-warning/5"
+            : "hover:shadow-xl"
+        }`}
       >
         <CardContent className="p-4">
           <div
             className="flex items-start justify-between cursor-pointer"
             onClick={onToggleExpand}
           >
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-semibold">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono font-bold text-lg">
                   {callout.incidentNumber}
                 </span>
                 {isActive && (
                   <Badge
-                    variant="outline"
-                    className="border-amber-500 text-amber-700 dark:text-amber-300"
+                    variant="warning"
+                    className="gap-1"
                   >
+                    <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                     {isWorking ? "In Progress" : "Active"}
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4" />
                   {callout.location.code || callout.location.name}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
                   {format(new Date(callout.timeReceived), "MMM d, h:mm a")}
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{calculateDuration()}</span>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-lg font-semibold">{calculateDuration()}</p>
+                <p className="text-xs text-muted-foreground">duration</p>
+              </div>
               {expanded ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
               )}
             </div>
           </div>
@@ -534,60 +599,47 @@ function CalloutCard({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mt-4 pt-4 border-t space-y-3"
+                className="mt-4 pt-4 border-t space-y-4"
               >
                 {callout.description && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">
-                      Description
-                    </Label>
-                    <p className="text-sm">{callout.description}</p>
+                  <div className="bg-muted/50 rounded-xl p-3">
+                    <Label className="text-xs text-muted-foreground">Description</Label>
+                    <p className="text-sm mt-1">{callout.description}</p>
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">
-                      Time Received
-                    </Label>
-                    <p>{format(new Date(callout.timeReceived), "h:mm:ss a")}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="bg-muted/50 rounded-xl p-3">
+                    <Label className="text-xs text-muted-foreground">Received</Label>
+                    <p className="font-medium">{format(new Date(callout.timeReceived), "h:mm:ss a")}</p>
                   </div>
                   {callout.timeStarted && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">
-                        Work Started
-                      </Label>
-                      <p>
-                        {format(new Date(callout.timeStarted), "h:mm:ss a")}
-                      </p>
+                    <div className="bg-muted/50 rounded-xl p-3">
+                      <Label className="text-xs text-muted-foreground">Started</Label>
+                      <p className="font-medium">{format(new Date(callout.timeStarted), "h:mm:ss a")}</p>
                     </div>
                   )}
                   {callout.timeEnded && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">
-                        Time Ended
-                      </Label>
-                      <p>{format(new Date(callout.timeEnded), "h:mm:ss a")}</p>
+                    <div className="bg-muted/50 rounded-xl p-3">
+                      <Label className="text-xs text-muted-foreground">Ended</Label>
+                      <p className="font-medium">{format(new Date(callout.timeEnded), "h:mm:ss a")}</p>
                     </div>
                   )}
                 </div>
 
                 {callout.resolution && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">
-                      Resolution
-                    </Label>
-                    <p className="text-sm">{callout.resolution}</p>
+                  <div className="bg-success/10 rounded-xl p-3">
+                    <Label className="text-xs text-success">Resolution</Label>
+                    <p className="text-sm mt-1">{callout.resolution}</p>
                   </div>
                 )}
 
                 {isActive && (
-                  <div className="space-y-2 pt-2">
+                  <div className="space-y-3 pt-2">
                     {!callout.timeStarted && onStartWork && (
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="w-full"
+                        className="w-full rounded-xl"
                         onClick={(e) => {
                           e.stopPropagation()
                           onStartWork()
@@ -604,12 +656,12 @@ function CalloutCard({
                           value={resolution}
                           onChange={(e) => setResolution(e.target.value)}
                           rows={2}
+                          className="rounded-xl"
                           onClick={(e) => e.stopPropagation()}
                         />
                         <Button
                           variant="default"
-                          size="sm"
-                          className="w-full gap-2"
+                          className="w-full gap-2 rounded-xl"
                           onClick={(e) => {
                             e.stopPropagation()
                             onEndCallout(resolution)
