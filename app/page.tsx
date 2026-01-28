@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ClockButton } from "@/components/clock-button"
 import { TimerDisplay } from "@/components/timer-display"
@@ -31,6 +31,8 @@ import {
   Timer,
   CheckCircle2,
   Circle,
+  PartyPopper,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BottomNav } from "@/components/bottom-nav"
@@ -93,6 +95,9 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isOffline, setIsOffline] = useState(false)
+
+  const [eightHourAlert, setEightHourAlert] = useState(false)
+  const eightHourAlertShown = useRef(false)
 
   const { position, loading: gpsLoading, error: gpsError, refresh: refreshGps } = useGeolocation(true)
   const desktopMonitor = useDesktopMonitor()
@@ -175,6 +180,66 @@ export default function Dashboard() {
       }
     }
   }, [position, locations])
+
+  // 8-hour workday threshold alert
+  useEffect(() => {
+    if (!currentStatus?.isClockedIn || !currentStatus?.currentSessionStart) return
+
+    const checkThreshold = () => {
+      const totalLogged = currentStatus.totalMinutesToday || 0
+      const sessionStart = new Date(currentStatus.currentSessionStart!).getTime()
+      const liveSessionMinutes = (Date.now() - sessionStart) / 60000
+      const totalMinutes = totalLogged + liveSessionMinutes
+
+      if (totalMinutes >= 480 && !eightHourAlertShown.current) {
+        eightHourAlertShown.current = true
+        setEightHourAlert(true)
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200])
+      }
+    }
+
+    checkThreshold()
+    const interval = setInterval(checkThreshold, 30000) // check every 30s
+    return () => clearInterval(interval)
+  }, [currentStatus?.isClockedIn, currentStatus?.currentSessionStart, currentStatus?.totalMinutesToday])
+
+  // Reset alert flag on new day / session
+  useEffect(() => {
+    if (!currentStatus?.isClockedIn) {
+      eightHourAlertShown.current = false
+    }
+  }, [currentStatus?.isClockedIn])
+
+  // Dynamic browser tab title with live timer
+  useEffect(() => {
+    if (!currentStatus?.isClockedIn || !currentStatus?.currentSessionStart) {
+      document.title = "OnSite"
+      return
+    }
+
+    const updateTitle = () => {
+      const totalLogged = currentStatus.totalMinutesToday || 0
+      const sessionStart = new Date(currentStatus.currentSessionStart!).getTime()
+      const liveSessionMinutes = (Date.now() - sessionStart) / 60000
+      const totalMinutes = Math.floor(totalLogged + liveSessionMinutes)
+      const h = Math.floor(totalMinutes / 60)
+      const m = totalMinutes % 60
+      const timeStr = `${h}h ${m.toString().padStart(2, "0")}m`
+
+      if (eightHourAlert) {
+        document.title = `[8h+] ${timeStr} - OnSite`
+      } else {
+        document.title = `${timeStr} - OnSite`
+      }
+    }
+
+    updateTitle()
+    const interval = setInterval(updateTitle, 15000) // update every 15s
+    return () => {
+      clearInterval(interval)
+      document.title = "OnSite"
+    }
+  }, [currentStatus?.isClockedIn, currentStatus?.currentSessionStart, currentStatus?.totalMinutesToday, eightHourAlert])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -401,6 +466,39 @@ export default function Dashboard() {
                   <p className="text-sm text-destructive flex-1">{error}</p>
                   <Button variant="ghost" size="sm" onClick={() => setError(null)} className="text-destructive hover:text-destructive">
                     Dismiss
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* 8-Hour Threshold Alert */}
+          <AnimatePresence>
+            {eightHourAlert && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
+                className="relative overflow-hidden rounded-xl border border-success/30 bg-success/10 p-4"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-success/5 via-success/10 to-success/5" />
+                <div className="relative flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center flex-shrink-0">
+                    <PartyPopper className="h-5 w-5 text-success" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-success">8-Hour Workday Complete</p>
+                    <p className="text-xs text-success/80 mt-0.5">
+                      You've reached the standard workday threshold. Great work today!
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEightHourAlert(false)}
+                    className="h-8 w-8 rounded-lg text-success hover:text-success hover:bg-success/20 flex-shrink-0"
+                  >
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               </motion.div>
