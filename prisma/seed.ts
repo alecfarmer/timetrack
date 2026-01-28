@@ -30,11 +30,20 @@ async function main() {
   ]
 
   for (const location of locations) {
-    await prisma.location.upsert({
-      where: { id: location.code || location.name },
-      update: location,
-      create: location,
-    })
+    // Check if location exists by name
+    const existingLocations = await prisma.location.findMany()
+    const existing = existingLocations.find((l: { name: string }) => l.name === location.name)
+
+    if (existing) {
+      await prisma.location.update({
+        where: { id: existing.id },
+        data: location,
+      })
+    } else {
+      await prisma.location.create({
+        data: location,
+      })
+    }
   }
 
   console.log(`Seeded ${locations.length} locations`)
