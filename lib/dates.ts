@@ -1,8 +1,8 @@
 import { format, formatDistance, startOfWeek, endOfWeek, startOfDay, endOfDay, isWithinInterval, parseISO, differenceInMinutes } from "date-fns"
 import { toZonedTime, fromZonedTime, formatInTimeZone } from "date-fns-tz"
 
-// Always use Eastern Time
-const DEFAULT_TIMEZONE = "America/New_York"
+// Fallback timezone if detection fails
+const FALLBACK_TIMEZONE = "America/New_York"
 
 // Parse date string ensuring UTC interpretation
 function parseAsUTC(date: Date | string): Date {
@@ -14,11 +14,42 @@ function parseAsUTC(date: Date | string): Date {
   return parseISO(date)
 }
 
+// Detect user's current timezone from browser
+function detectUserTimezone(): string {
+  if (typeof window !== "undefined") {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone
+    } catch {
+      return FALLBACK_TIMEZONE
+    }
+  }
+  return FALLBACK_TIMEZONE
+}
+
 export function getTimezone(): string {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("timezone") || DEFAULT_TIMEZONE
+    // Check for manual override first, otherwise use detected timezone
+    const manualOverride = localStorage.getItem("timezone_override")
+    if (manualOverride) {
+      return manualOverride
+    }
+    return detectUserTimezone()
   }
-  return DEFAULT_TIMEZONE
+  return FALLBACK_TIMEZONE
+}
+
+export function setTimezoneOverride(timezone: string | null): void {
+  if (typeof window !== "undefined") {
+    if (timezone) {
+      localStorage.setItem("timezone_override", timezone)
+    } else {
+      localStorage.removeItem("timezone_override")
+    }
+  }
+}
+
+export function getDetectedTimezone(): string {
+  return detectUserTimezone()
 }
 
 export function toLocalTime(date: Date | string, timezone?: string): Date {

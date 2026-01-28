@@ -31,3 +31,9 @@ DROP POLICY IF EXISTS "Allow public read access to policy config" ON "PolicyConf
 DROP POLICY IF EXISTS "Allow public insert access to policy config" ON "PolicyConfig";
 DROP POLICY IF EXISTS "Allow public update access to policy config" ON "PolicyConfig";
 DROP POLICY IF EXISTS "Allow public delete access to policy config" ON "PolicyConfig";
+
+-- Drop AppConfig policies
+DROP POLICY IF EXISTS "Allow public read access to app config" ON "AppConfig";
+DROP POLICY IF EXISTS "Allow public insert access to app config" ON "AppConfig";
+DROP POLICY IF EXISTS "Allow public update access to app config" ON "AppConfig";
+DROP POLICY IF EXISTS "Allow public delete access to app config" ON "AppConfig";
