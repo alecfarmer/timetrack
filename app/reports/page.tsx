@@ -2,28 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { format } from "date-fns"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ThemeToggle } from "@/components/theme-toggle"
-import {
-  BarChart3,
-  Download,
-  Clock,
-  Calendar,
-  CheckCircle,
-  TrendingUp,
-  Building2,
-  Home,
-  MapPin,
-  AlertTriangle,
-  Target,
-  FileText,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
+import { BarChart3, Download, FileText } from "lucide-react"
 import { BottomNav } from "@/components/bottom-nav"
+import { WeeklyReport } from "@/components/reports/weekly-report"
+import { MonthlyReport } from "@/components/reports/monthly-report"
 
 interface WeekDay {
   date: string
@@ -70,69 +55,42 @@ const pageVariants = {
 }
 
 const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.08,
-    },
-  },
-}
-
-const staggerItem = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  animate: { transition: { staggerChildren: 0.08 } },
 }
 
 export default function ReportsPage() {
   const [weekSummary, setWeekSummary] = useState<WeekSummary | null>(null)
   const [monthSummary, setMonthSummary] = useState<MonthSummary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<string>("weekly")
 
   useEffect(() => {
+    const fetchReports = async () => {
+      setLoading(true)
+      try {
+        const [weekRes, monthRes] = await Promise.all([
+          fetch("/api/workdays/week"),
+          fetch("/api/reports/monthly"),
+        ])
+        if (weekRes.ok) setWeekSummary(await weekRes.json())
+        if (monthRes.ok) setMonthSummary(await monthRes.json())
+      } catch (error) {
+        console.error("Failed to fetch reports:", error)
+      }
+      setLoading(false)
+    }
     fetchReports()
   }, [])
 
-  const fetchReports = async () => {
-    setLoading(true)
-    try {
-      const [weekRes, monthRes] = await Promise.all([
-        fetch("/api/workdays/week"),
-        fetch("/api/reports/monthly"),
-      ])
-
-      if (weekRes.ok) {
-        const weekData = await weekRes.json()
-        setWeekSummary(weekData)
-      }
-
-      if (monthRes.ok) {
-        const monthData = await monthRes.json()
-        setMonthSummary(monthData)
-      }
-    } catch (error) {
-      console.error("Failed to fetch reports:", error)
-    }
-    setLoading(false)
-  }
-
-  const formatHM = (minutes: number) => {
-    const h = Math.floor(minutes / 60)
-    const m = minutes % 60
-    return `${h}h ${m}m`
-  }
-
-  const [activeTab, setActiveTab] = useState<string>("weekly")
-
   const handleExportCSV = () => {
     const period = activeTab === "monthly" ? "monthly" : "weekly"
-    const date = new Date().toISOString()
-    window.open(`/api/export?format=csv&period=${period}&date=${date}`, "_blank")
+    window.open(`/api/export?format=csv&period=${period}&date=${new Date().toISOString()}`, "_blank")
   }
 
   const handleExportPDF = async () => {
     const period = activeTab === "monthly" ? "monthly" : "weekly"
-    const date = new Date().toISOString()
     try {
-      const res = await fetch(`/api/export?format=json&period=${period}&date=${date}`)
+      const res = await fetch(`/api/export?format=json&period=${period}&date=${new Date().toISOString()}`)
       const data = await res.json()
       const html = generatePrintableReport(data)
       const w = window.open("", "_blank")
@@ -140,22 +98,6 @@ export default function ReportsPage() {
     } catch (err) {
       console.error("Export failed:", err)
     }
-  }
-
-  function generatePrintableReport(data: Record<string, unknown>): string {
-    const days = data.days as Array<{ date: string; dayName: string; location: string | null; totalMinutes: number; leave: { type: string } | null }>
-    const summary = data.summary as { totalMinutes: number; onsiteDays: number; wfhDays: number; leaveDays: number }
-    const fmtH = (m: number) => `${Math.floor(m / 60)}h ${m % 60}m`
-    return `<!DOCTYPE html><html><head><title>OnSite Report - ${data.period}</title>
-<style>body{font-family:-apple-system,sans-serif;max-width:800px;margin:40px auto;padding:0 20px}h1{color:#27509B;border-bottom:3px solid #27509B;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #eee}th{background:#f5f5f5;font-weight:600}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0}.stat{background:#f8f9fa;border-radius:8px;padding:16px;text-align:center}.stat-value{font-size:24px;font-weight:700;color:#27509B}.stat-label{font-size:12px;color:#666;margin-top:4px}@media print{body{margin:0}}</style></head><body>
-<h1>OnSite Time Report</h1>
-<p><strong>Employee:</strong> ${data.userName}<br><strong>Period:</strong> ${data.period}<br><strong>Generated:</strong> ${new Date().toLocaleDateString()}</p>
-<div class="summary"><div class="stat"><div class="stat-value">${fmtH(summary.totalMinutes)}</div><div class="stat-label">Total Hours</div></div><div class="stat"><div class="stat-value">${summary.onsiteDays}</div><div class="stat-label">On-Site Days</div></div><div class="stat"><div class="stat-value">${summary.wfhDays}</div><div class="stat-label">WFH Days</div></div><div class="stat"><div class="stat-value">${summary.leaveDays}</div><div class="stat-label">Leave Days</div></div></div>
-<table><thead><tr><th>Date</th><th>Day</th><th>Location</th><th>Hours</th><th>Status</th></tr></thead><tbody>
-${days.map((d) => `<tr><td>${d.date}</td><td>${d.dayName}</td><td>${d.location || "—"}</td><td>${d.totalMinutes > 0 ? fmtH(d.totalMinutes) : "—"}</td><td>${d.leave ? d.leave.type : d.totalMinutes > 0 ? (d.totalMinutes >= 480 ? "Full Day" : "Partial") : "—"}</td></tr>`).join("\n")}
-</tbody></table>
-<p style="color:#666;font-size:12px;margin-top:40px;">Generated by OnSite Time Tracker</p>
-<script>window.print()</script></body></html>`
   }
 
   if (loading) {
@@ -178,22 +120,11 @@ ${days.map((d) => `<tr><td>${d.date}</td><td>${d.dayName}</td><td>${d.location |
     )
   }
 
-  const weeklyHoursPercent = weekSummary
-    ? Math.min(100, (weekSummary.totalMinutes / weekSummary.requiredMinutesPerWeek) * 100)
-    : 0
-  const weeklyDaysPercent = weekSummary
-    ? Math.min(100, (weekSummary.daysWorked / weekSummary.requiredDays) * 100)
-    : 0
-
   return (
     <motion.div
       className="flex flex-col min-h-screen bg-background"
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={pageVariants}
+      initial="initial" animate="animate" exit="exit" variants={pageVariants}
     >
-      {/* Header */}
       <header className="sticky top-0 z-50 glass border-b lg:ml-64">
         <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
           <div className="flex items-center gap-3 lg:hidden">
@@ -203,7 +134,6 @@ ${days.map((d) => `<tr><td>${d.date}</td><td>${d.dayName}</td><td>${d.location |
             <h1 className="text-lg font-bold">Reports</h1>
           </div>
           <h1 className="hidden lg:block text-xl font-semibold">Reports</h1>
-
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-2 rounded-xl">
@@ -218,12 +148,9 @@ ${days.map((d) => `<tr><td>${d.date}</td><td>${d.dayName}</td><td>${d.location |
         </div>
       </header>
 
-      {/* Main Content */}
       <motion.main
         className="flex-1 pb-24 lg:pb-8 lg:ml-64"
-        variants={staggerContainer}
-        initial="initial"
-        animate="animate"
+        variants={staggerContainer} initial="initial" animate="animate"
       >
         <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8">
           <Tabs defaultValue="weekly" className="w-full" onValueChange={(v) => setActiveTab(v)}>
@@ -232,598 +159,12 @@ ${days.map((d) => `<tr><td>${d.date}</td><td>${d.dayName}</td><td>${d.location |
               <TabsTrigger value="monthly" className="rounded-lg">Monthly</TabsTrigger>
             </TabsList>
 
-            {/* ===================== WEEKLY TAB ===================== */}
             <TabsContent value="weekly" className="mt-6">
-              {weekSummary && (
-                <div className="space-y-6">
-                  {/* Top Row: Hours + Days side by side */}
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {/* Hours Tracker */}
-                    <motion.div variants={staggerItem}>
-                      <Card className={cn(
-                        "border-0 shadow-xl overflow-hidden",
-                        weekSummary.hoursOnTrack && "ring-2 ring-success/50"
-                      )}>
-                        <div className={cn("h-1.5", weekSummary.hoursOnTrack ? "bg-success" : "bg-primary")} />
-                        <CardContent className="p-5">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <Clock className="h-4.5 w-4.5 text-primary" />
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground">Weekly Hours</p>
-                                <p className="text-sm font-semibold">
-                                  {formatHM(weekSummary.totalMinutes)}{" "}
-                                  <span className="text-muted-foreground font-normal">/ 40h</span>
-                                </p>
-                              </div>
-                            </div>
-                            {weekSummary.hoursOnTrack ? (
-                              <Badge variant="default" className="bg-success text-success-foreground gap-1">
-                                <CheckCircle className="h-3 w-3" />
-                                Met
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="gap-1">
-                                <Target className="h-3 w-3" />
-                                {formatHM(weekSummary.requiredMinutesPerWeek - weekSummary.totalMinutes)} left
-                              </Badge>
-                            )}
-                          </div>
-
-                          {/* Hours progress bar */}
-                          <div className="h-3 bg-muted rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${weeklyHoursPercent}%` }}
-                              transition={{ duration: 0.8, ease: "easeOut" }}
-                              className={cn(
-                                "h-full rounded-full",
-                                weekSummary.hoursOnTrack ? "bg-success" : "bg-primary"
-                              )}
-                            />
-                          </div>
-                          <div className="flex justify-between mt-1.5 text-[11px] text-muted-foreground tabular-nums">
-                            <span>0h</span>
-                            <span>20h</span>
-                            <span>40h</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-
-                    {/* Days Compliance */}
-                    <motion.div variants={staggerItem}>
-                      <Card className={cn(
-                        "border-0 shadow-xl overflow-hidden",
-                        weekSummary.isCompliant && "ring-2 ring-success/50"
-                      )}>
-                        <div className={cn("h-1.5", weekSummary.isCompliant ? "bg-success" : "bg-warning")} />
-                        <CardContent className="p-5">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <Building2 className="h-4.5 w-4.5 text-primary" />
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground">In-Office Days</p>
-                                <p className="text-sm font-semibold">
-                                  {weekSummary.daysWorked}{" "}
-                                  <span className="text-muted-foreground font-normal">/ {weekSummary.requiredDays} required</span>
-                                </p>
-                              </div>
-                            </div>
-                            {weekSummary.isCompliant ? (
-                              <Badge variant="default" className="bg-success text-success-foreground gap-1">
-                                <CheckCircle className="h-3 w-3" />
-                                Compliant
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="gap-1 text-warning">
-                                <AlertTriangle className="h-3 w-3" />
-                                {weekSummary.requiredDays - weekSummary.daysWorked} more
-                              </Badge>
-                            )}
-                          </div>
-
-                          {/* Days progress bar */}
-                          <div className="h-3 bg-muted rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${weeklyDaysPercent}%` }}
-                              transition={{ duration: 0.8, ease: "easeOut" }}
-                              className={cn(
-                                "h-full rounded-full",
-                                weekSummary.isCompliant ? "bg-success" : "bg-warning"
-                              )}
-                            />
-                          </div>
-                          <div className="flex justify-between mt-1.5 text-[11px] text-muted-foreground tabular-nums">
-                            <span>0</span>
-                            <span>{weekSummary.requiredDays} days</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  </div>
-
-                  {/* Daily Hours Bar Chart */}
-                  <motion.div variants={staggerItem}>
-                    <Card className="border-0 shadow-lg">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <BarChart3 className="h-4.5 w-4.5 text-primary" />
-                          Daily Hours
-                          {weekSummary.weekStart && (
-                            <span className="text-sm font-normal text-muted-foreground ml-auto">
-                              {format(new Date(weekSummary.weekStart), "MMM d")} – {format(new Date(weekSummary.weekEnd), "MMM d")}
-                            </span>
-                          )}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {/* Bar chart */}
-                        <div className="flex items-end gap-3 h-48 mb-2">
-                          {weekSummary.weekDays
-                            .filter((d) => d.dayNumber >= 1 && d.dayNumber <= 5)
-                            .map((day) => {
-                              const isToday = day.date === format(new Date(), "yyyy-MM-dd")
-                              const hours = day.minutes / 60
-                              const barHeight = Math.min(100, (day.minutes / 600) * 100) // 10h = full height
-
-                              return (
-                                <div key={day.date} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                                  {/* Hours label */}
-                                  <span className="text-xs tabular-nums font-medium text-muted-foreground">
-                                    {day.minutes > 0 ? `${hours.toFixed(1)}h` : ""}
-                                  </span>
-                                  {/* Bar */}
-                                  <motion.div
-                                    initial={{ height: 0 }}
-                                    animate={{ height: `${barHeight}%` }}
-                                    transition={{ duration: 0.6, ease: "easeOut" }}
-                                    className={cn(
-                                      "w-full rounded-t-lg min-h-[4px] relative",
-                                      day.minutes >= 480
-                                        ? "bg-success"
-                                        : day.minutes >= 360
-                                        ? "bg-primary"
-                                        : day.minutes > 0
-                                        ? "bg-warning"
-                                        : "bg-muted",
-                                      isToday && "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                                    )}
-                                  >
-                                    {/* 8h target line */}
-                                    {day.minutes > 0 && day.minutes < 480 && (
-                                      <div
-                                        className="absolute left-0 right-0 border-t-2 border-dashed border-muted-foreground/30"
-                                        style={{ bottom: `${((480 - day.minutes) / (day.minutes || 1)) * 100}%` }}
-                                      />
-                                    )}
-                                  </motion.div>
-                                  {/* Day label */}
-                                  <span className={cn(
-                                    "text-xs font-medium",
-                                    isToday ? "text-primary" : "text-muted-foreground"
-                                  )}>
-                                    {day.dayOfWeek}
-                                  </span>
-                                  {/* Location indicator */}
-                                  <div className="flex items-center gap-0.5">
-                                    {day.locationCode ? (
-                                      day.locationCategory === "HOME" ? (
-                                        <Home className="h-3 w-3 text-blue-500" />
-                                      ) : (
-                                        <MapPin className="h-3 w-3 text-primary" />
-                                      )
-                                    ) : (
-                                      <span className="h-3 w-3" />
-                                    )}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                        </div>
-                        {/* 8h target reference line label */}
-                        <div className="flex items-center gap-2 mt-2 pt-2 border-t">
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                            <span className="w-4 border-t-2 border-dashed border-muted-foreground/40" />
-                            8h target
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground ml-3">
-                            <MapPin className="h-3 w-3 text-primary" /> On-Site
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                            <Home className="h-3 w-3 text-blue-500" /> WFH
-                          </div>
-                          <div className="ml-auto text-sm font-bold tabular-nums">
-                            {formatHM(weekSummary.totalMinutes)}
-                            <span className="text-muted-foreground font-normal text-xs"> / 40h</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-
-                  {/* Daily Breakdown Table */}
-                  <motion.div variants={staggerItem}>
-                    <Card className="border-0 shadow-lg">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Calendar className="h-4.5 w-4.5 text-primary" />
-                          Daily Breakdown
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-1">
-                          {/* Header row */}
-                          <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            <div className="col-span-2">Day</div>
-                            <div className="col-span-3">Location</div>
-                            <div className="col-span-4">Hours</div>
-                            <div className="col-span-3 text-right">Status</div>
-                          </div>
-
-                          {/* Day rows — Mon–Fri only */}
-                          {weekSummary.weekDays
-                            .filter((d) => d.dayNumber >= 1 && d.dayNumber <= 5)
-                            .map((day) => {
-                              const isToday = day.date === format(new Date(), "yyyy-MM-dd")
-                              const hours = day.minutes / 60
-                              const barPercent = Math.min(100, (day.minutes / 480) * 100) // 8h = full
-
-                              return (
-                                <div
-                                  key={day.date}
-                                  className={cn(
-                                    "grid grid-cols-12 gap-2 items-center px-3 py-2.5 rounded-lg transition-colors",
-                                    isToday && "bg-primary/5 ring-1 ring-primary/20",
-                                    !isToday && day.minutes > 0 && "bg-muted/30"
-                                  )}
-                                >
-                                  {/* Day */}
-                                  <div className="col-span-2 flex items-center gap-2">
-                                    <span className={cn(
-                                      "text-sm font-semibold",
-                                      isToday && "text-primary"
-                                    )}>
-                                      {day.dayOfWeek}
-                                    </span>
-                                    {isToday && (
-                                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                    )}
-                                  </div>
-
-                                  {/* Location */}
-                                  <div className="col-span-3">
-                                    {day.locationCode ? (
-                                      <div className="flex items-center gap-1.5">
-                                        {day.locationCategory === "HOME" ? (
-                                          <Home className="h-3 w-3 text-muted-foreground" />
-                                        ) : (
-                                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                                        )}
-                                        <span className="text-sm">{day.locationCode}</span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-sm text-muted-foreground/50">—</span>
-                                    )}
-                                  </div>
-
-                                  {/* Hours bar */}
-                                  <div className="col-span-4 flex items-center gap-2">
-                                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                                      {day.minutes > 0 && (
-                                        <motion.div
-                                          initial={{ width: 0 }}
-                                          animate={{ width: `${barPercent}%` }}
-                                          transition={{ duration: 0.6, ease: "easeOut" }}
-                                          className={cn(
-                                            "h-full rounded-full",
-                                            day.minutes >= 480
-                                              ? "bg-success"
-                                              : day.minutes >= 360
-                                              ? "bg-primary"
-                                              : "bg-warning"
-                                          )}
-                                        />
-                                      )}
-                                    </div>
-                                    <span className="text-xs tabular-nums text-muted-foreground min-w-[40px] text-right">
-                                      {day.minutes > 0 ? formatHM(day.minutes) : "—"}
-                                    </span>
-                                  </div>
-
-                                  {/* Status */}
-                                  <div className="col-span-3 text-right">
-                                    {day.minutes >= 480 ? (
-                                      <Badge variant="default" className="bg-success/15 text-success text-[11px] border-0">
-                                        8h+
-                                      </Badge>
-                                    ) : day.minutes > 0 ? (
-                                      <Badge variant="secondary" className="text-[11px] border-0">
-                                        {hours.toFixed(1)}h
-                                      </Badge>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground/40">No data</span>
-                                    )}
-                                  </div>
-                                </div>
-                              )
-                            })}
-
-                          {/* Totals row */}
-                          <div className="grid grid-cols-12 gap-2 items-center px-3 py-3 mt-2 border-t">
-                            <div className="col-span-2">
-                              <span className="text-sm font-bold">Total</span>
-                            </div>
-                            <div className="col-span-3" />
-                            <div className="col-span-4">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden">
-                                  <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${weeklyHoursPercent}%` }}
-                                    transition={{ duration: 0.8, ease: "easeOut" }}
-                                    className={cn(
-                                      "h-full rounded-full",
-                                      weekSummary.hoursOnTrack ? "bg-success" : "bg-primary"
-                                    )}
-                                  />
-                                </div>
-                                <span className="text-sm font-bold tabular-nums min-w-[52px] text-right">
-                                  {formatHM(weekSummary.totalMinutes)}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="col-span-3 text-right">
-                              <Badge
-                                variant="default"
-                                className={cn(
-                                  "text-xs",
-                                  weekSummary.hoursOnTrack
-                                    ? "bg-success text-success-foreground"
-                                    : "bg-primary"
-                                )}
-                              >
-                                {weekSummary.hoursOnTrack ? "40h Met" : `${formatHM(weekSummary.requiredMinutesPerWeek - weekSummary.totalMinutes)} to go`}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </div>
-              )}
+              {weekSummary && <WeeklyReport weekSummary={weekSummary} />}
             </TabsContent>
 
-            {/* ===================== MONTHLY TAB ===================== */}
             <TabsContent value="monthly" className="mt-6">
-              {monthSummary && (
-                <div className="space-y-6">
-                  {/* Top stats row */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <motion.div variants={staggerItem}>
-                      <Card className="border-0 shadow-lg">
-                        <CardContent className="p-5 text-center">
-                          <p className="text-3xl font-bold">{monthSummary.weeksCompliant}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            of {monthSummary.totalWeeks} weeks compliant
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-
-                    <motion.div variants={staggerItem}>
-                      <Card className="border-0 shadow-lg">
-                        <CardContent className="p-5 text-center">
-                          <p className="text-3xl font-bold">{monthSummary.totalDaysWorked}</p>
-                          <p className="text-xs text-muted-foreground mt-1">days on-site</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-
-                    <motion.div variants={staggerItem}>
-                      <Card className="border-0 shadow-lg">
-                        <CardContent className="p-5 text-center">
-                          <p className="text-3xl font-bold tabular-nums">{formatHM(monthSummary.totalMinutes)}</p>
-                          <p className="text-xs text-muted-foreground mt-1">total hours</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-
-                    <motion.div variants={staggerItem}>
-                      <Card className="border-0 shadow-lg">
-                        <CardContent className="p-5 text-center">
-                          <p className="text-3xl font-bold tabular-nums">
-                            {monthSummary.totalDaysWorked > 0
-                              ? formatHM(Math.round(monthSummary.totalMinutes / monthSummary.totalDaysWorked))
-                              : "—"}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">avg per day</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  </div>
-
-                  {/* Monthly Hours Chart */}
-                  {monthSummary.weeklyBreakdown && monthSummary.weeklyBreakdown.length > 0 && (
-                    <motion.div variants={staggerItem}>
-                      <Card className="border-0 shadow-lg">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-base">
-                            <BarChart3 className="h-4.5 w-4.5 text-primary" />
-                            Weekly Hours — {format(new Date(), "MMMM yyyy")}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex items-end gap-4 h-40 mb-2">
-                            {monthSummary.weeklyBreakdown.map((week, i) => {
-                              const hours = week.totalMinutes / 60
-                              const barHeight = Math.min(100, (week.totalMinutes / 2400) * 100)
-                              return (
-                                <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                                  <span className="text-xs tabular-nums font-medium text-muted-foreground">
-                                    {hours.toFixed(1)}h
-                                  </span>
-                                  <motion.div
-                                    initial={{ height: 0 }}
-                                    animate={{ height: `${barHeight}%` }}
-                                    transition={{ duration: 0.6, delay: i * 0.1, ease: "easeOut" }}
-                                    className={cn(
-                                      "w-full rounded-t-lg min-h-[4px]",
-                                      week.isCompliant ? "bg-success" : "bg-primary"
-                                    )}
-                                  />
-                                  <span className="text-[10px] text-muted-foreground text-center">
-                                    Wk {i + 1}
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground">
-                                    {week.daysWorked}/{week.requiredDays}d
-                                  </span>
-                                </div>
-                              )
-                            })}
-                          </div>
-                          <div className="flex items-center gap-3 mt-2 pt-2 border-t text-[11px] text-muted-foreground">
-                            <div className="flex items-center gap-1.5">
-                              <span className="w-3 h-3 rounded-sm bg-success" /> 40h met
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="w-3 h-3 rounded-sm bg-primary" /> Under 40h
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  )}
-
-                  {/* Weekly breakdown table */}
-                  {monthSummary.weeklyBreakdown && monthSummary.weeklyBreakdown.length > 0 && (
-                    <motion.div variants={staggerItem}>
-                      <Card className="border-0 shadow-lg">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-base">
-                            <TrendingUp className="h-4.5 w-4.5 text-primary" />
-                            Weekly Summary — {format(new Date(), "MMMM yyyy")}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-1">
-                            {/* Header */}
-                            <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                              <div className="col-span-3">Week</div>
-                              <div className="col-span-2">Days</div>
-                              <div className="col-span-4">Hours</div>
-                              <div className="col-span-3 text-right">Status</div>
-                            </div>
-
-                            {monthSummary.weeklyBreakdown.map((week, i) => {
-                              const weekHoursPercent = Math.min(100, (week.totalMinutes / 2400) * 100)
-
-                              return (
-                                <div
-                                  key={i}
-                                  className={cn(
-                                    "grid grid-cols-12 gap-2 items-center px-3 py-2.5 rounded-lg",
-                                    week.isCompliant && "bg-success/5"
-                                  )}
-                                >
-                                  <div className="col-span-3">
-                                    <span className="text-sm font-medium">
-                                      {format(new Date(week.weekStart), "MMM d")}
-                                    </span>
-                                  </div>
-                                  <div className="col-span-2">
-                                    <span className="text-sm tabular-nums">
-                                      {week.daysWorked}/{week.requiredDays}
-                                    </span>
-                                  </div>
-                                  <div className="col-span-4 flex items-center gap-2">
-                                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                                      <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${weekHoursPercent}%` }}
-                                        transition={{ duration: 0.6, delay: i * 0.1, ease: "easeOut" }}
-                                        className={cn(
-                                          "h-full rounded-full",
-                                          week.totalMinutes >= 2400 ? "bg-success" : "bg-primary"
-                                        )}
-                                      />
-                                    </div>
-                                    <span className="text-xs tabular-nums text-muted-foreground min-w-[40px] text-right">
-                                      {formatHM(week.totalMinutes)}
-                                    </span>
-                                  </div>
-                                  <div className="col-span-3 text-right">
-                                    {week.isCompliant ? (
-                                      <Badge variant="default" className="bg-success/15 text-success text-[11px] border-0 gap-1">
-                                        <CheckCircle className="h-3 w-3" />
-                                        Compliant
-                                      </Badge>
-                                    ) : (
-                                      <Badge variant="secondary" className="text-[11px] border-0">
-                                        In Progress
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  )}
-
-                  {/* Location Breakdown */}
-                  {monthSummary.byLocation && Object.keys(monthSummary.byLocation).length > 0 && (
-                    <motion.div variants={staggerItem}>
-                      <Card className="border-0 shadow-lg">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-base">
-                            <Building2 className="h-4.5 w-4.5 text-primary" />
-                            Time by Location
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {Object.entries(monthSummary.byLocation).map(([code, data]) => {
-                              const locPercent = monthSummary.totalMinutes > 0
-                                ? Math.round((data.minutes / monthSummary.totalMinutes) * 100)
-                                : 0
-
-                              return (
-                                <div key={code} className="bg-muted/40 rounded-xl p-4">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <Badge variant="outline" className="font-semibold">{code}</Badge>
-                                    <span className="text-xs text-muted-foreground">{data.days} days</span>
-                                  </div>
-                                  <p className="text-xl font-bold tabular-nums">{formatHM(data.minutes)}</p>
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                                      <div
-                                        className="h-full rounded-full bg-primary"
-                                        style={{ width: `${locPercent}%` }}
-                                      />
-                                    </div>
-                                    <span className="text-[11px] text-muted-foreground tabular-nums">
-                                      {locPercent}%
-                                    </span>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  )}
-                </div>
-              )}
+              {monthSummary && <MonthlyReport monthSummary={monthSummary} />}
             </TabsContent>
           </Tabs>
         </div>
@@ -832,4 +173,20 @@ ${days.map((d) => `<tr><td>${d.date}</td><td>${d.dayName}</td><td>${d.location |
       <BottomNav currentPath="/reports" />
     </motion.div>
   )
+}
+
+function generatePrintableReport(data: Record<string, unknown>): string {
+  const days = data.days as Array<{ date: string; dayName: string; location: string | null; totalMinutes: number; leave: { type: string } | null }>
+  const summary = data.summary as { totalMinutes: number; onsiteDays: number; wfhDays: number; leaveDays: number }
+  const fmtH = (m: number) => `${Math.floor(m / 60)}h ${m % 60}m`
+  return `<!DOCTYPE html><html><head><title>OnSite Report - ${data.period}</title>
+<style>body{font-family:-apple-system,sans-serif;max-width:800px;margin:40px auto;padding:0 20px}h1{color:#27509B;border-bottom:3px solid #27509B;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #eee}th{background:#f5f5f5;font-weight:600}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0}.stat{background:#f8f9fa;border-radius:8px;padding:16px;text-align:center}.stat-value{font-size:24px;font-weight:700;color:#27509B}.stat-label{font-size:12px;color:#666;margin-top:4px}@media print{body{margin:0}}</style></head><body>
+<h1>OnSite Time Report</h1>
+<p><strong>Employee:</strong> ${data.userName}<br><strong>Period:</strong> ${data.period}<br><strong>Generated:</strong> ${new Date().toLocaleDateString()}</p>
+<div class="summary"><div class="stat"><div class="stat-value">${fmtH(summary.totalMinutes)}</div><div class="stat-label">Total Hours</div></div><div class="stat"><div class="stat-value">${summary.onsiteDays}</div><div class="stat-label">On-Site Days</div></div><div class="stat"><div class="stat-value">${summary.wfhDays}</div><div class="stat-label">WFH Days</div></div><div class="stat"><div class="stat-value">${summary.leaveDays}</div><div class="stat-label">Leave Days</div></div></div>
+<table><thead><tr><th>Date</th><th>Day</th><th>Location</th><th>Hours</th><th>Status</th></tr></thead><tbody>
+${days.map((d) => `<tr><td>${d.date}</td><td>${d.dayName}</td><td>${d.location || "—"}</td><td>${d.totalMinutes > 0 ? fmtH(d.totalMinutes) : "—"}</td><td>${d.leave ? d.leave.type : d.totalMinutes > 0 ? (d.totalMinutes >= 480 ? "Full Day" : "Partial") : "—"}</td></tr>`).join("\n")}
+</tbody></table>
+<p style="color:#666;font-size:12px;margin-top:40px;">Generated by OnSite Time Tracker</p>
+<script>window.print()</script></body></html>`
 }

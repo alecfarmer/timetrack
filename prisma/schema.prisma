@@ -57,6 +57,8 @@ model Entry {
   workDay   WorkDay? @relation(fields: [workDayId], references: [id])
 
   @@index([userId])
+  @@index([locationId])
+  @@index([timestampServer])
 }
 
 model WorkDay {
@@ -81,6 +83,7 @@ model WorkDay {
 
   @@unique([date, locationId, userId])
   @@index([userId])
+  @@index([date])
 }
 
 model PolicyConfig {
@@ -127,6 +130,7 @@ model Callout {
   updatedAt      DateTime @updatedAt
 
   @@index([userId])
+  @@index([userId, timeReceived])
 }
 
 model LeaveRequest {
@@ -143,6 +147,7 @@ model LeaveRequest {
 
   @@unique([userId, date])
   @@index([userId])
+  @@index([date])
 }
 
 enum LeaveType {
