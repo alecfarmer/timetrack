@@ -20,7 +20,6 @@ import {
   Clock,
   ChevronRight,
   LogOut,
-  Smartphone,
   Palette,
   User,
   Home,
@@ -30,6 +29,7 @@ import {
   Pencil,
   Trash2,
   AlertTriangle,
+  Search,
 } from "lucide-react"
 import { BottomNav } from "@/components/bottom-nav"
 
@@ -65,8 +65,6 @@ export default function SettingsPage() {
   const { user, signOut } = useAuth()
   const [notifications, setNotifications] = useState(true)
   const [autoClockOut, setAutoClockOut] = useState(false)
-  const [isPWAInstalled, setIsPWAInstalled] = useState(false)
-
   // WFH state
   const [wfhLocation, setWfhLocation] = useState<WfhLocation | null>(null)
   const [wfhLoading, setWfhLoading] = useState(true)
@@ -76,6 +74,7 @@ export default function SettingsPage() {
   const [wfhLng, setWfhLng] = useState("")
   const [wfhSaving, setWfhSaving] = useState(false)
   const [wfhDetecting, setWfhDetecting] = useState(false)
+  const [wfhGeocoding, setWfhGeocoding] = useState(false)
   const [wfhError, setWfhError] = useState<string | null>(null)
   const [wfhSuccess, setWfhSuccess] = useState(false)
 
@@ -84,12 +83,6 @@ export default function SettingsPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("")
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setIsPWAInstalled(true)
-    }
-  }, [])
 
   // Fetch WFH location
   useEffect(() => {
@@ -119,10 +112,6 @@ export default function SettingsPage() {
     router.push("/login")
   }
 
-  const handleInstallPWA = () => {
-    alert("To install: tap the share button and select 'Add to Home Screen'")
-  }
-
   const detectHomeLocation = () => {
     setWfhDetecting(true)
     setWfhError(null)
@@ -138,6 +127,28 @@ export default function SettingsPage() {
       },
       { enableHighAccuracy: true, timeout: 15000 }
     )
+  }
+
+  const geocodeAddress = async () => {
+    if (!wfhAddress.trim() || wfhAddress.trim().length < 3) {
+      setWfhError("Enter a valid address to look up")
+      return
+    }
+    setWfhGeocoding(true)
+    setWfhError(null)
+    try {
+      const res = await fetch(`/api/geocode?address=${encodeURIComponent(wfhAddress.trim())}`)
+      const data = await res.json()
+      if (!res.ok) {
+        setWfhError(data.error || "Could not find address")
+      } else {
+        setWfhLat(data.latitude.toFixed(6))
+        setWfhLng(data.longitude.toFixed(6))
+      }
+    } catch {
+      setWfhError("Failed to look up address")
+    }
+    setWfhGeocoding(false)
   }
 
   const handleWfhSave = async () => {
@@ -263,28 +274,6 @@ export default function SettingsPage() {
             </Card>
           </motion.div>
 
-          {/* Install PWA Card */}
-          {!isPWAInstalled && (
-            <motion.div variants={staggerItem}>
-              <Card className="border-0 shadow-lg ring-2 ring-primary/20 bg-primary/5">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium flex items-center gap-2">
-                    <Smartphone className="h-5 w-5 text-primary" />
-                    Install App
-                  </CardTitle>
-                  <CardDescription>
-                    Install OnSite for the best experience
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={handleInstallPWA} className="w-full rounded-xl">
-                    Install on Device
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
           {/* WFH Location */}
           <motion.div variants={staggerItem}>
             <Card className="border-0 shadow-lg">
@@ -307,13 +296,33 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     <div>
                       <Label htmlFor="settingsWfhAddress" className="text-sm">Home Address</Label>
-                      <Input
-                        id="settingsWfhAddress"
-                        placeholder="123 Main St, City, State ZIP"
-                        value={wfhAddress}
-                        onChange={(e) => setWfhAddress(e.target.value)}
-                        className="mt-1.5"
-                      />
+                      <div className="flex gap-2 mt-1.5">
+                        <Input
+                          id="settingsWfhAddress"
+                          placeholder="123 Main St, City, State ZIP"
+                          value={wfhAddress}
+                          onChange={(e) => setWfhAddress(e.target.value)}
+                          className="flex-1"
+                          onKeyDown={(e) => e.key === "Enter" && geocodeAddress()}
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={geocodeAddress}
+                          disabled={wfhGeocoding || !wfhAddress.trim()}
+                          className="flex-shrink-0"
+                          title="Look up coordinates from address"
+                        >
+                          {wfhGeocoding ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Search className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter address and click search to auto-fill coordinates
+                      </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>

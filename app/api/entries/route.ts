@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       .from("Entry")
       .select(`
         *,
-        location:Location (id, name, code)
+        location:Location (id, name, code, category)
       `, { count: "exact" })
       .eq("userId", user!.id)
       .order("timestampServer", { ascending: false })
@@ -32,12 +32,19 @@ export async function GET(request: NextRequest) {
       query = query.eq("locationId", locationId)
     }
 
+    const startDate = searchParams.get("startDate")
+    const endDate = searchParams.get("endDate")
+
     if (date) {
       const targetDate = new Date(date)
       const zonedDate = toZonedTime(targetDate, DEFAULT_TIMEZONE)
       query = query
         .gte("timestampServer", startOfDay(zonedDate).toISOString())
         .lte("timestampServer", endOfDay(zonedDate).toISOString())
+    } else if (startDate && endDate) {
+      query = query
+        .gte("timestampServer", new Date(startDate).toISOString())
+        .lte("timestampServer", new Date(endDate).toISOString())
     }
 
     const { data: entries, count, error } = await query
@@ -128,7 +135,7 @@ export async function POST(request: NextRequest) {
       })
       .select(`
         *,
-        location:Location (id, name, code)
+        location:Location (id, name, code, category)
       `)
       .single()
 
