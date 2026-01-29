@@ -24,6 +24,8 @@ import {
   LogOut,
   Palette,
   User,
+  Users,
+  Building2,
 } from "lucide-react"
 import { BottomNav } from "@/components/bottom-nav"
 
@@ -44,7 +46,7 @@ const staggerItem = {
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, org, isAdmin, signOut } = useAuth()
   const [notifications, setNotifications] = useState(true)
   const [autoClockOut, setAutoClockOut] = useState(() => {
     if (typeof window !== "undefined") {
@@ -101,6 +103,37 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Organization */}
+          {org && (
+            <motion.div variants={staggerItem}>
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-medium flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    Organization
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="bg-muted/50 rounded-xl p-4">
+                    <p className="font-semibold">{org.orgName}</p>
+                    <p className="text-sm text-muted-foreground capitalize">{org.role.toLowerCase()}</p>
+                  </div>
+                  {isAdmin && (
+                    <Link href="/admin">
+                      <Button variant="ghost" className="w-full justify-between rounded-xl h-12">
+                        <span className="flex items-center gap-2">
+                          <Users className="h-5 w-5" />
+                          Manage Team
+                        </span>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      </Button>
+                    </Link>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* WFH Location */}
           <motion.div variants={staggerItem}>
@@ -173,7 +206,9 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Work policy is managed by your organization administrator.
+                  {isAdmin
+                    ? "You can edit the work policy from the Team dashboard."
+                    : "Work policy is managed by your organization administrator."}
                 </p>
               </CardContent>
             </Card>

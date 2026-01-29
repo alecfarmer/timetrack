@@ -8,6 +8,54 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdBy String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships  Membership[]
+  locations    Location[]
+  policies     PolicyConfig[]
+  invites      Invite[]
+
+  @@index([slug])
+}
+
+model Membership {
+  id     String         @id @default(cuid())
+  userId String
+  orgId  String
+  org    Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  role   MembershipRole @default(MEMBER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, orgId])
+  @@index([userId])
+  @@index([orgId])
+}
+
+model Invite {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  email     String?
+  code      String   @unique
+  role      MembershipRole @default(MEMBER)
+  usedBy    String?
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([code])
+  @@index([orgId])
+}
+
 model Location {
   id             String           @id @default(cuid())
   name           String
@@ -19,7 +67,11 @@ model Location {
   geofenceRadius Int              @default(200)
   isDefault      Boolean          @default(false)
 
-  userId String
+  // Shared locations: orgId set, userId null
+  // Personal locations (WFH): orgId set, userId set
+  orgId  String?
+  org    Organization? @relation(fields: [orgId], references: [id])
+  userId String?
 
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -29,6 +81,7 @@ model Location {
   callouts Callout[]
 
   @@index([userId])
+  @@index([orgId])
 }
 
 model Entry {
@@ -94,8 +147,13 @@ model PolicyConfig {
   effectiveDate        DateTime @default(now())
   isActive             Boolean  @default(true)
 
+  orgId String?
+  org   Organization? @relation(fields: [orgId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([orgId])
 }
 
 model AppConfig {
@@ -148,6 +206,11 @@ model LeaveRequest {
   @@unique([userId, date])
   @@index([userId])
   @@index([date])
+}
+
+enum MembershipRole {
+  ADMIN
+  MEMBER
 }
 
 enum LeaveType {

@@ -20,14 +20,21 @@ import {
   Navigation,
   Loader2,
   Search,
+  Users,
+  Link as LinkIcon,
 } from "lucide-react"
 
 interface OnboardingProps {
   onComplete: () => void
 }
 
+type OrgMode = "create" | "join" | null
+
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(0)
+  const [orgMode, setOrgMode] = useState<OrgMode>(null)
+  const [orgName, setOrgName] = useState("")
+  const [inviteCode, setInviteCode] = useState("")
   const [wfhAddress, setWfhAddress] = useState("")
   const [wfhLat, setWfhLat] = useState("")
   const [wfhLng, setWfhLng] = useState("")
@@ -78,11 +85,26 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   }
 
   const handleFinish = async () => {
+    if (orgMode === "create" && !orgName.trim()) {
+      setError("Organization name is required")
+      return
+    }
+    if (orgMode === "join" && !inviteCode.trim()) {
+      setError("Invite code is required")
+      return
+    }
+
     setSubmitting(true)
     setError(null)
 
     try {
       const body: Record<string, unknown> = {}
+
+      if (orgMode === "create") {
+        body.orgName = orgName.trim()
+      } else if (orgMode === "join") {
+        body.inviteCode = inviteCode.trim().toUpperCase()
+      }
 
       if (!skipWfh && wfhLat && wfhLng) {
         body.wfhAddress = wfhAddress
@@ -119,7 +141,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           </div>
           <div className="space-y-2">
             <p className="text-muted-foreground">
-              Your personal time and attendance tracker. Let's get you set up in a few quick steps.
+              Your team&apos;s time and attendance tracker. Let&apos;s get you set up in a few quick steps.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-3 pt-2">
@@ -132,62 +154,95 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               <p className="text-xs font-medium">GPS Verified</p>
             </div>
             <div className="p-3 rounded-xl bg-muted/50 space-y-2 text-center">
-              <BarChart3 className="h-6 w-6 text-primary mx-auto" />
-              <p className="text-xs font-medium">Reports</p>
+              <Users className="h-6 w-6 text-primary mx-auto" />
+              <p className="text-xs font-medium">Team View</p>
             </div>
           </div>
         </div>
       ),
     },
-    // Step 1: How it works
+    // Step 1: Create or join org
     {
-      title: "How It Works",
+      title: "Your Organization",
       content: (
         <div className="space-y-4">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Building2 className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm">Locations</p>
-              <p className="text-sm text-muted-foreground">
-                Your work sites are pre-loaded. When you're within range, you can clock in.
-              </p>
-            </div>
+          <p className="text-sm text-muted-foreground text-center">
+            Create a new organization or join an existing one with an invite code.
+          </p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => { setOrgMode("create"); setError(null) }}
+              className={`p-4 rounded-xl border-2 text-left transition-all ${
+                orgMode === "create"
+                  ? "border-primary bg-primary/5"
+                  : "border-muted hover:border-muted-foreground/30"
+              }`}
+            >
+              <Building2 className={`h-6 w-6 mb-2 ${orgMode === "create" ? "text-primary" : "text-muted-foreground"}`} />
+              <p className="font-medium text-sm">Create New</p>
+              <p className="text-xs text-muted-foreground">Start a new organization</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setOrgMode("join"); setError(null) }}
+              className={`p-4 rounded-xl border-2 text-left transition-all ${
+                orgMode === "join"
+                  ? "border-primary bg-primary/5"
+                  : "border-muted hover:border-muted-foreground/30"
+              }`}
+            >
+              <LinkIcon className={`h-6 w-6 mb-2 ${orgMode === "join" ? "text-primary" : "text-muted-foreground"}`} />
+              <p className="font-medium text-sm">Join Existing</p>
+              <p className="text-xs text-muted-foreground">Use an invite code</p>
+            </button>
           </div>
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Navigation className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm">GPS Geofencing</p>
-              <p className="text-sm text-muted-foreground">
-                Your location is verified via GPS each time you clock in or out. You must be within range of a location.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Shield className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm">Your Data</p>
-              <p className="text-sm text-muted-foreground">
-                All your time entries, reports, and locations are private to your account. Only you can see your data.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <BarChart3 className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm">40-Hour Tracking</p>
-              <p className="text-sm text-muted-foreground">
-                Weekly and monthly reports track your hours against the standard 40-hour work week and 3-day in-office policy.
-              </p>
-            </div>
-          </div>
+
+          <AnimatePresence mode="wait">
+            {orgMode === "create" && (
+              <motion.div
+                key="create"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-2"
+              >
+                <Label htmlFor="orgName">Organization Name</Label>
+                <Input
+                  id="orgName"
+                  placeholder="e.g., Acme Corp"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  You&apos;ll be the admin. Default work sites will be added automatically.
+                </p>
+              </motion.div>
+            )}
+            {orgMode === "join" && (
+              <motion.div
+                key="join"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-2"
+              >
+                <Label htmlFor="inviteCode">Invite Code</Label>
+                <Input
+                  id="inviteCode"
+                  placeholder="e.g., AB3K7NXQ"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  className="font-mono tracking-wider text-center text-lg"
+                  maxLength={8}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ask your admin for the 8-character invite code.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       ),
     },
@@ -201,7 +256,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             <div>
               <p className="text-sm font-medium">Home Office Location</p>
               <p className="text-xs text-muted-foreground">
-                Set your home address so you can clock in when working from home. WFH days don't count toward in-office compliance but are tracked for total hours.
+                Set your home address so you can clock in when working from home. WFH days don&apos;t count toward in-office compliance but are tracked for total hours.
               </p>
             </div>
           </div>
@@ -285,7 +340,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 onClick={() => setSkipWfh(true)}
                 className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 w-full text-center"
               >
-                Skip — I'll set this up later in Settings
+                Skip — I&apos;ll set this up later in Settings
               </button>
             </div>
           ) : (
@@ -318,14 +373,20 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           </div>
           <div className="space-y-2">
             <p className="text-muted-foreground">
-              Your account is ready. All company locations have been added to your profile.
+              {orgMode === "create"
+                ? `"${orgName}" has been created. Default company locations have been added.`
+                : "You've joined the organization. All shared locations are ready."}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 text-left">
             <div className="p-3 rounded-xl bg-muted/50">
               <Building2 className="h-5 w-5 text-primary mb-1" />
-              <p className="text-xs font-medium">7 Office Sites</p>
-              <p className="text-[11px] text-muted-foreground">US0, HNA, US2, SPA, LXT, MCC, MARC</p>
+              <p className="text-xs font-medium">
+                {orgMode === "create" ? "7 Office Sites" : "Org Locations"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {orgMode === "create" ? "US0, HNA, US2, SPA, LXT, MCC, MARC" : "Shared by your team"}
+              </p>
             </div>
             <div className="p-3 rounded-xl bg-muted/50">
               <Home className="h-5 w-5 text-primary mb-1" />
@@ -336,6 +397,18 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             </div>
           </div>
 
+          {orgMode === "create" && (
+            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-2 mb-1">
+                <Shield className="h-4 w-4 text-primary" />
+                <p className="text-xs font-medium text-primary">Admin Access</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                You&apos;re the admin. Invite team members from Settings &gt; Team.
+              </p>
+            </div>
+          )}
+
           {error && (
             <p className="text-sm text-destructive">{error}</p>
           )}
@@ -343,6 +416,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       ),
     },
   ]
+
+  const canProceed = () => {
+    if (step === 1) {
+      if (!orgMode) return false
+      if (orgMode === "create" && !orgName.trim()) return false
+      if (orgMode === "join" && !inviteCode.trim()) return false
+    }
+    return true
+  }
 
   const isLastStep = step === steps.length - 1
 
@@ -413,7 +495,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 </Button>
               ) : (
                 <Button
-                  onClick={() => setStep(step + 1)}
+                  onClick={() => { setError(null); setStep(step + 1) }}
+                  disabled={!canProceed()}
                   className="gap-1"
                 >
                   Next
