@@ -19,6 +19,7 @@ import {
   Shield,
   Navigation,
   Loader2,
+  Search,
 } from "lucide-react"
 
 interface OnboardingProps {
@@ -32,6 +33,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [wfhLng, setWfhLng] = useState("")
   const [skipWfh, setSkipWfh] = useState(false)
   const [detectingLocation, setDetectingLocation] = useState(false)
+  const [geocoding, setGeocoding] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -51,6 +53,28 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       },
       { enableHighAccuracy: true, timeout: 15000 }
     )
+  }
+
+  const geocodeAddress = async () => {
+    if (!wfhAddress.trim() || wfhAddress.trim().length < 3) {
+      setError("Enter a valid address to look up")
+      return
+    }
+    setGeocoding(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/geocode?address=${encodeURIComponent(wfhAddress.trim())}`)
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Could not find address")
+      } else {
+        setWfhLat(data.latitude.toFixed(6))
+        setWfhLng(data.longitude.toFixed(6))
+      }
+    } catch {
+      setError("Failed to look up address")
+    }
+    setGeocoding(false)
   }
 
   const handleFinish = async () => {
@@ -186,13 +210,33 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="wfhAddress" className="text-sm">Home Address</Label>
-                <Input
-                  id="wfhAddress"
-                  placeholder="123 Main St, City, State ZIP"
-                  value={wfhAddress}
-                  onChange={(e) => setWfhAddress(e.target.value)}
-                  className="mt-1.5"
-                />
+                <div className="flex gap-2 mt-1.5">
+                  <Input
+                    id="wfhAddress"
+                    placeholder="123 Main St, City, State ZIP"
+                    value={wfhAddress}
+                    onChange={(e) => setWfhAddress(e.target.value)}
+                    className="flex-1"
+                    onKeyDown={(e) => e.key === "Enter" && geocodeAddress()}
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={geocodeAddress}
+                    disabled={geocoding || !wfhAddress.trim()}
+                    className="flex-shrink-0"
+                    title="Look up coordinates from address"
+                  >
+                    {geocoding ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter address and click search to auto-fill coordinates
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
