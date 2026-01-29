@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
+import { requestNotificationPermission, getReminderSettings, saveReminderSettings, canNotify } from "@/lib/notifications"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -65,6 +66,11 @@ export default function SettingsPage() {
   const { user, signOut } = useAuth()
   const [notifications, setNotifications] = useState(true)
   const [autoClockOut, setAutoClockOut] = useState(false)
+  // Initialize notification state from actual permissions
+  useEffect(() => {
+    setNotifications(canNotify() && getReminderSettings().clockInReminder)
+  }, [])
+
   // WFH state
   const [wfhLocation, setWfhLocation] = useState<WfhLocation | null>(null)
   const [wfhLoading, setWfhLoading] = useState(true)
@@ -518,15 +524,31 @@ export default function SettingsPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="notifications">Notifications</Label>
+                    <Label htmlFor="notifications">Push Notifications</Label>
                     <p className="text-sm text-muted-foreground">
-                      Reminder to clock in/out
+                      Clock-in reminders, forgot-to-clock-out alerts, weekly compliance
                     </p>
                   </div>
                   <Switch
                     id="notifications"
                     checked={notifications}
-                    onCheckedChange={setNotifications}
+                    onCheckedChange={async (checked) => {
+                      if (checked) {
+                        const granted = await requestNotificationPermission()
+                        setNotifications(granted)
+                        if (!granted) {
+                          alert("Notifications are blocked. Please enable them in your browser settings.")
+                        }
+                      } else {
+                        setNotifications(false)
+                      }
+                      saveReminderSettings({
+                        ...getReminderSettings(),
+                        clockInReminder: checked,
+                        forgotClockOutReminder: checked,
+                        weeklyComplianceReminder: checked,
+                      })
+                    }}
                   />
                 </div>
                 <Separator />
