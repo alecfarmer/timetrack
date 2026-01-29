@@ -32,6 +32,8 @@ model Entry {
   timestampClient DateTime
   timestampServer DateTime  @default(now())
 
+  userId String
+
   locationId String
   location   Location @relation(fields: [locationId], references: [id])
 
@@ -48,11 +50,15 @@ model Entry {
 
   workDayId String?
   workDay   WorkDay? @relation(fields: [workDayId], references: [id])
+
+  @@index([userId])
 }
 
 model WorkDay {
   id   String   @id @default(cuid())
   date DateTime @db.Date
+
+  userId String
 
   locationId String
   location   Location @relation(fields: [locationId], references: [id])
@@ -68,7 +74,8 @@ model WorkDay {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([date, locationId])
+  @@unique([date, locationId, userId])
+  @@index([userId])
 }
 
 model PolicyConfig {
@@ -95,6 +102,8 @@ model Callout {
   id             String   @id @default(cuid())
   incidentNumber String
 
+  userId String
+
   locationId String
   location   Location @relation(fields: [locationId], references: [id])
 
@@ -111,6 +120,8 @@ model Callout {
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([userId])
 }
 
 enum LocationCategory {

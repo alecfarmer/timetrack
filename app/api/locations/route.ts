@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { getAuthUser } from "@/lib/auth"
 
 // GET /api/locations - List all locations
 export async function GET() {
   try {
+    const { error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const { data: locations, error } = await supabase
       .from("Location")
       .select("*")
@@ -39,6 +43,9 @@ export async function GET() {
 // POST /api/locations - Create a new location
 export async function POST(request: NextRequest) {
   try {
+    const { error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const body = await request.json()
     const {
       name,
@@ -103,6 +110,9 @@ export async function POST(request: NextRequest) {
 // PATCH /api/locations - Update a location
 export async function PATCH(request: NextRequest) {
   try {
+    const { error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const body = await request.json()
     const { id, latitude, longitude, geofenceRadius, name, code, address } = body
 

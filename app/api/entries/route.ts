@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { getAuthUser } from "@/lib/auth"
 import { startOfDay, endOfDay } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
@@ -8,6 +9,9 @@ const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 // GET /api/entries - List entries with optional filters
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const searchParams = request.nextUrl.searchParams
     const locationId = searchParams.get("locationId")
     const date = searchParams.get("date")
@@ -20,6 +24,7 @@ export async function GET(request: NextRequest) {
         *,
         location:Location (id, name, code)
       `, { count: "exact" })
+      .eq("userId", user!.id)
       .order("timestampServer", { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -63,6 +68,9 @@ export async function GET(request: NextRequest) {
 // POST /api/entries - Create a new entry (clock in/out)
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const body = await request.json()
     const {
       type,
@@ -110,6 +118,7 @@ export async function POST(request: NextRequest) {
       .insert({
         type,
         locationId,
+        userId: user!.id,
         timestampClient: timestampClient ? new Date(timestampClient).toISOString() : now.toISOString(),
         timestampServer: now.toISOString(),
         gpsLatitude,
@@ -141,6 +150,7 @@ export async function POST(request: NextRequest) {
       .select("*")
       .eq("date", workDayDate.toISOString().split("T")[0])
       .eq("locationId", locationId)
+      .eq("userId", user!.id)
       .single()
 
     if (existingWorkDay) {
@@ -180,6 +190,7 @@ export async function POST(request: NextRequest) {
         .insert({
           date: workDayDate.toISOString().split("T")[0],
           locationId,
+          userId: user!.id,
           firstClockIn: type === "CLOCK_IN" ? serverDate.toISOString() : null,
           lastClockOut: type === "CLOCK_OUT" ? serverDate.toISOString() : null,
           meetsPolicy: type === "CLOCK_IN",

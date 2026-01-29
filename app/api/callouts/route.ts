@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { getAuthUser } from "@/lib/auth"
 import { startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
@@ -8,6 +9,9 @@ const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 // GET /api/callouts - List callouts with optional filters
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const searchParams = request.nextUrl.searchParams
     const locationId = searchParams.get("locationId")
     const date = searchParams.get("date")
@@ -21,6 +25,7 @@ export async function GET(request: NextRequest) {
         *,
         location:Location (id, name, code)
       `, { count: "exact" })
+      .eq("userId", user!.id)
       .order("timeReceived", { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -71,6 +76,9 @@ export async function GET(request: NextRequest) {
 // POST /api/callouts - Create a new callout
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const body = await request.json()
     const {
       incidentNumber,
@@ -113,6 +121,7 @@ export async function POST(request: NextRequest) {
       .insert({
         incidentNumber,
         locationId,
+        userId: user!.id,
         timeReceived: new Date(timeReceived).toISOString(),
         timeStarted: timeStarted ? new Date(timeStarted).toISOString() : null,
         timeEnded: timeEnded ? new Date(timeEnded).toISOString() : null,
