@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 
-// GET /api/locations - List all locations
+// GET /api/locations - List locations for the authenticated user
 export async function GET() {
   try {
-    const { error: authError } = await getAuthUser()
+    const { user, error: authError } = await getAuthUser()
     if (authError) return authError
 
     const { data: locations, error } = await supabase
       .from("Location")
       .select("*")
+      .eq("userId", user!.id)
       .order("isDefault", { ascending: false })
       .order("name", { ascending: true })
 
@@ -40,10 +41,10 @@ export async function GET() {
   }
 }
 
-// POST /api/locations - Create a new location
+// POST /api/locations - Create a new location for the authenticated user
 export async function POST(request: NextRequest) {
   try {
-    const { error: authError } = await getAuthUser()
+    const { user, error: authError } = await getAuthUser()
     if (authError) return authError
 
     const body = await request.json()
@@ -66,12 +67,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // If setting as default, unset other defaults
+    // If setting as default, unset other defaults for this user
     if (isDefault) {
       await supabase
         .from("Location")
         .update({ isDefault: false })
         .eq("isDefault", true)
+        .eq("userId", user!.id)
     }
 
     const { data: location, error } = await supabase
@@ -85,6 +87,7 @@ export async function POST(request: NextRequest) {
         longitude,
         geofenceRadius: geofenceRadius || 50,
         isDefault: isDefault || false,
+        userId: user!.id,
       })
       .select()
       .single()
@@ -107,10 +110,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH /api/locations - Update a location
+// PATCH /api/locations - Update a location (must belong to the user)
 export async function PATCH(request: NextRequest) {
   try {
-    const { error: authError } = await getAuthUser()
+    const { user, error: authError } = await getAuthUser()
     if (authError) return authError
 
     const body = await request.json()
@@ -135,6 +138,7 @@ export async function PATCH(request: NextRequest) {
       .from("Location")
       .update(updateData)
       .eq("id", id)
+      .eq("userId", user!.id)
       .select()
       .single()
 
@@ -151,6 +155,46 @@ export async function PATCH(request: NextRequest) {
     console.error("Error updating location:", error)
     return NextResponse.json(
       { error: "Failed to update location" },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/locations - Delete a location (must belong to user, cannot delete if has entries)
+export async function DELETE(request: NextRequest) {
+  try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
+    const { searchParams } = request.nextUrl
+    const id = searchParams.get("id")
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Missing required parameter: id" },
+        { status: 400 }
+      )
+    }
+
+    const { error } = await supabase
+      .from("Location")
+      .delete()
+      .eq("id", id)
+      .eq("userId", user!.id)
+
+    if (error) {
+      console.error("Supabase error:", error)
+      return NextResponse.json(
+        { error: "Failed to delete location", details: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Error deleting location:", error)
+    return NextResponse.json(
+      { error: "Failed to delete location" },
       { status: 500 }
     )
   }

@@ -10,6 +10,7 @@ import { LocationPicker } from "@/components/location-picker"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Logo, LogoMark } from "@/components/logo"
 import { DesktopMonitor, useDesktopMonitor } from "@/components/desktop-monitor"
+import { Onboarding } from "@/components/onboarding"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +37,7 @@ import {
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 import { BottomNav } from "@/components/bottom-nav"
 
 interface Location {
@@ -87,6 +89,7 @@ interface WeekSummary {
 }
 
 export default function Dashboard() {
+  const router = useRouter()
   const { user, signOut } = useAuth()
   const [locations, setLocations] = useState<Location[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string>("")
@@ -96,6 +99,7 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isOffline, setIsOffline] = useState(false)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
 
   const [eightHourAlert, setEightHourAlert] = useState(false)
   const eightHourAlertShown = useRef(false)
@@ -159,10 +163,23 @@ export default function Dashboard() {
     }
   }, [])
 
-  // Initial data fetch
+  // Initial data fetch — check onboarding first
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true)
+      try {
+        const onboardRes = await fetch("/api/onboarding")
+        if (onboardRes.ok) {
+          const onboardData = await onboardRes.json()
+          if (onboardData.needsOnboarding) {
+            setNeedsOnboarding(true)
+            setLoading(false)
+            return
+          }
+        }
+      } catch {
+        // Continue loading if onboarding check fails
+      }
       await Promise.all([fetchLocations(), fetchCurrentStatus(), fetchWeekSummary()])
       setLoading(false)
     }
@@ -245,6 +262,18 @@ export default function Dashboard() {
       document.title = "OnSite"
     }
   }, [currentStatus?.isClockedIn, currentStatus?.totalMinutesToday, eightHourAlert])
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/login")
+  }
+
+  const handleOnboardingComplete = async () => {
+    setNeedsOnboarding(false)
+    setLoading(true)
+    await Promise.all([fetchLocations(), fetchCurrentStatus(), fetchWeekSummary()])
+    setLoading(false)
+  }
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -331,6 +360,11 @@ export default function Dashboard() {
       : null
   const isWithinGeofence =
     distanceToSelected !== null && selectedLocation && distanceToSelected <= Math.max(selectedLocation.geofenceRadius, 200)
+
+  // Show onboarding for new users
+  if (needsOnboarding) {
+    return <Onboarding onComplete={handleOnboardingComplete} />
+  }
 
   if (loading) {
     return (
@@ -438,7 +472,7 @@ export default function Dashboard() {
               <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-medium">
                 {user?.email?.charAt(0).toUpperCase()}
               </div>
-              <Button variant="ghost" size="icon" onClick={() => signOut()} className="rounded-xl">
+              <Button variant="ghost" size="icon" onClick={handleSignOut} className="rounded-xl">
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
@@ -914,7 +948,7 @@ export default function Dashboard() {
                     </div>
                     <span className="text-sm text-muted-foreground truncate max-w-[150px]">{user?.email}</span>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => signOut()}>Sign Out</Button>
+                  <Button variant="outline" size="sm" onClick={handleSignOut}>Sign Out</Button>
                 </div>
               </div>
             </motion.div>

@@ -18,12 +18,17 @@ model Location {
   longitude      Float
   geofenceRadius Int              @default(200)
   isDefault      Boolean          @default(false)
+
+  userId String
+
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
   entries  Entry[]
   workDays WorkDay[]
   callouts Callout[]
+
+  @@index([userId])
 }
 
 model Entry {

@@ -2,8 +2,8 @@
 -- ROW LEVEL SECURITY POLICIES FOR ONSITE APP
 -- =====================================================
 -- Run this in your Supabase SQL Editor
--- Multi-user: Entry, WorkDay, Callout are scoped per user
--- Shared: Location, PolicyConfig, AppConfig are accessible to all authenticated users
+-- Multi-user: Location, Entry, WorkDay, Callout are scoped per user
+-- Shared: PolicyConfig, AppConfig are accessible to all authenticated users
 -- =====================================================
 
 -- Enable RLS on all tables
@@ -52,6 +52,10 @@ DROP POLICY IF EXISTS "Authenticated users can read locations" ON "Location";
 DROP POLICY IF EXISTS "Authenticated users can insert locations" ON "Location";
 DROP POLICY IF EXISTS "Authenticated users can update locations" ON "Location";
 DROP POLICY IF EXISTS "Authenticated users can delete locations" ON "Location";
+DROP POLICY IF EXISTS "Users can read own locations" ON "Location";
+DROP POLICY IF EXISTS "Users can insert own locations" ON "Location";
+DROP POLICY IF EXISTS "Users can update own locations" ON "Location";
+DROP POLICY IF EXISTS "Users can delete own locations" ON "Location";
 
 DROP POLICY IF EXISTS "Users can read own entries" ON "Entry";
 DROP POLICY IF EXISTS "Users can insert own entries" ON "Entry";
@@ -72,32 +76,32 @@ DROP POLICY IF EXISTS "Authenticated users can read policy config" ON "PolicyCon
 DROP POLICY IF EXISTS "Authenticated users can read app config" ON "AppConfig";
 
 -- =====================================================
--- LOCATION POLICIES (shared across all authenticated users)
+-- LOCATION POLICIES (per-user)
 -- =====================================================
-CREATE POLICY "Authenticated users can read locations"
+CREATE POLICY "Users can read own locations"
 ON "Location"
 FOR SELECT
 TO authenticated
-USING (true);
+USING (auth.uid()::text = "userId");
 
-CREATE POLICY "Authenticated users can insert locations"
+CREATE POLICY "Users can insert own locations"
 ON "Location"
 FOR INSERT
 TO authenticated
-WITH CHECK (true);
+WITH CHECK (auth.uid()::text = "userId");
 
-CREATE POLICY "Authenticated users can update locations"
+CREATE POLICY "Users can update own locations"
 ON "Location"
 FOR UPDATE
 TO authenticated
-USING (true)
-WITH CHECK (true);
+USING (auth.uid()::text = "userId")
+WITH CHECK (auth.uid()::text = "userId");
 
-CREATE POLICY "Authenticated users can delete locations"
+CREATE POLICY "Users can delete own locations"
 ON "Location"
 FOR DELETE
 TO authenticated
-USING (true);
+USING (auth.uid()::text = "userId");
 
 -- =====================================================
 -- ENTRY POLICIES (per-user)
