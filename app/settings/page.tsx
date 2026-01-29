@@ -65,7 +65,12 @@ export default function SettingsPage() {
   const router = useRouter()
   const { user, signOut } = useAuth()
   const [notifications, setNotifications] = useState(true)
-  const [autoClockOut, setAutoClockOut] = useState(false)
+  const [autoClockOut, setAutoClockOut] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("onsite-auto-clockout") === "true"
+    }
+    return false
+  })
   // Initialize notification state from actual permissions
   useEffect(() => {
     setNotifications(canNotify() && getReminderSettings().clockInReminder)
@@ -499,15 +504,23 @@ export default function SettingsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4">
-                  <div>
-                    <p className="font-medium">Required Days</p>
-                    <p className="text-sm text-muted-foreground">3 days per week</p>
+                <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">Required Days</p>
+                    <p className="font-medium">3 days / week</p>
                   </div>
-                  <Button variant="outline" size="sm" className="rounded-lg">
-                    Edit
-                  </Button>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">Weekly Hours Target</p>
+                    <p className="font-medium">40 hours</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">Compliance</p>
+                    <p className="font-medium">On-site only (WFH excluded)</p>
+                  </div>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Work policy is managed by your organization administrator.
+                </p>
               </CardContent>
             </Card>
           </motion.div>
@@ -562,7 +575,10 @@ export default function SettingsPage() {
                   <Switch
                     id="autoClockOut"
                     checked={autoClockOut}
-                    onCheckedChange={setAutoClockOut}
+                    onCheckedChange={(checked) => {
+                      setAutoClockOut(checked)
+                      localStorage.setItem("onsite-auto-clockout", String(checked))
+                    }}
                   />
                 </div>
               </CardContent>
@@ -579,11 +595,6 @@ export default function SettingsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="ghost" className="w-full justify-between rounded-xl h-12">
-                  <span>Change PIN</span>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </Button>
-                <Separator />
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl h-12 gap-2"
@@ -693,7 +704,7 @@ export default function SettingsPage() {
           {/* App Info */}
           <motion.div variants={staggerItem}>
             <div className="text-center text-sm text-muted-foreground py-4">
-              <p className="font-medium">OnSite v1.0.0</p>
+              <p className="font-medium">OnSite v2.0.0</p>
               <p>Personal Time & Attendance Tracker</p>
             </div>
           </motion.div>

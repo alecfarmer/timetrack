@@ -3,8 +3,7 @@ import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
-
-const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
+import { createCalloutSchema, validateBody, getRequestTimezone } from "@/lib/validations"
 
 // GET /api/callouts - List callouts with optional filters
 export async function GET(request: NextRequest) {
@@ -35,14 +34,14 @@ export async function GET(request: NextRequest) {
 
     if (date) {
       const targetDate = new Date(date)
-      const zonedDate = toZonedTime(targetDate, DEFAULT_TIMEZONE)
+      const zonedDate = toZonedTime(targetDate, getRequestTimezone(request))
       query = query
         .gte("timeReceived", startOfDay(zonedDate).toISOString())
         .lte("timeReceived", endOfDay(zonedDate).toISOString())
     } else if (month) {
       const [year, monthNum] = month.split("-").map(Number)
       const targetDate = new Date(year, monthNum - 1, 1)
-      const zonedDate = toZonedTime(targetDate, DEFAULT_TIMEZONE)
+      const zonedDate = toZonedTime(targetDate, getRequestTimezone(request))
       query = query
         .gte("timeReceived", startOfMonth(zonedDate).toISOString())
         .lte("timeReceived", endOfMonth(zonedDate).toISOString())
@@ -80,6 +79,10 @@ export async function POST(request: NextRequest) {
     if (authError) return authError
 
     const body = await request.json()
+    const validation = validateBody(createCalloutSchema, body)
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
+    }
     const {
       incidentNumber,
       locationId,
@@ -91,15 +94,7 @@ export async function POST(request: NextRequest) {
       gpsAccuracy,
       description,
       resolution,
-    } = body
-
-    // Validate required fields
-    if (!incidentNumber || !locationId || !timeReceived) {
-      return NextResponse.json(
-        { error: "Missing required fields: incidentNumber, locationId, timeReceived" },
-        { status: 400 }
-      )
-    }
+    } = validation.data
 
     // Verify location exists
     const { data: location, error: locError } = await supabase

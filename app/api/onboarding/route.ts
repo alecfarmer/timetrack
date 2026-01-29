@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
+import { onboardingSchema, validateBody } from "@/lib/validations"
 
 // Shared company locations that every new user gets (everything except WFH)
 const COMPANY_LOCATIONS = [
@@ -122,7 +123,11 @@ export async function POST(request: NextRequest) {
     if (authError) return authError
 
     const body = await request.json()
-    const { wfhAddress, wfhLatitude, wfhLongitude } = body
+    const validation = validateBody(onboardingSchema, body)
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
+    }
+    const { wfhAddress, wfhLatitude, wfhLongitude } = validation.data
 
     // Check if already provisioned
     const { count } = await supabase

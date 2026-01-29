@@ -3,8 +3,7 @@ import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { startOfWeek, endOfWeek, eachDayOfInterval, format } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
-
-const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
+import { getRequestTimezone } from "@/lib/validations"
 
 // GET /api/workdays/week - Get weekly summary
 export async function GET(request: NextRequest) {
@@ -16,7 +15,7 @@ export async function GET(request: NextRequest) {
     const dateParam = searchParams.get("date")
 
     const targetDate = dateParam ? new Date(dateParam) : new Date()
-    const zonedDate = toZonedTime(targetDate, DEFAULT_TIMEZONE)
+    const zonedDate = toZonedTime(targetDate, getRequestTimezone(request))
 
     // Get week boundaries (Monday to Sunday)
     const weekStart = startOfWeek(zonedDate, { weekStartsOn: 1 })

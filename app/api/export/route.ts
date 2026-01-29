@@ -3,8 +3,7 @@ import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
-
-const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
+import { getRequestTimezone } from "@/lib/validations"
 
 // GET /api/export?format=csv&period=weekly&date=2025-01-20
 export async function GET(request: NextRequest) {
@@ -18,7 +17,7 @@ export async function GET(request: NextRequest) {
     const dateParam = params.get("date")
 
     const targetDate = dateParam ? new Date(dateParam) : new Date()
-    const zonedDate = toZonedTime(targetDate, DEFAULT_TIMEZONE)
+    const zonedDate = toZonedTime(targetDate, getRequestTimezone(request))
 
     let start: Date, end: Date, periodLabel: string
     if (period === "monthly") {

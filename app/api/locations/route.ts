@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
+import { createLocationSchema, updateLocationSchema, validateBody } from "@/lib/validations"
 
 // GET /api/locations - List locations for the authenticated user
 export async function GET() {
@@ -48,6 +49,10 @@ export async function POST(request: NextRequest) {
     if (authError) return authError
 
     const body = await request.json()
+    const validation = validateBody(createLocationSchema, body)
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
+    }
     const {
       name,
       code,
@@ -57,15 +62,7 @@ export async function POST(request: NextRequest) {
       longitude,
       geofenceRadius,
       isDefault,
-    } = body
-
-    // Validate required fields
-    if (!name || latitude === undefined || longitude === undefined || !category) {
-      return NextResponse.json(
-        { error: "Missing required fields: name, latitude, longitude, category" },
-        { status: 400 }
-      )
-    }
+    } = validation.data
 
     // If setting as default, unset other defaults for this user
     if (isDefault) {
@@ -117,14 +114,11 @@ export async function PATCH(request: NextRequest) {
     if (authError) return authError
 
     const body = await request.json()
-    const { id, latitude, longitude, geofenceRadius, name, code, address } = body
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing required field: id" },
-        { status: 400 }
-      )
+    const validation = validateBody(updateLocationSchema, body)
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
     }
+    const { id, latitude, longitude, geofenceRadius, name, code, address } = validation.data
 
     const updateData: Record<string, unknown> = {}
     if (latitude !== undefined) updateData.latitude = latitude

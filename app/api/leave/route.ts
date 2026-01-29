@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { format, eachDayOfInterval, parseISO } from "date-fns"
+import { createLeaveSchema, validateBody } from "@/lib/validations"
 
 // GET /api/leave?month=2025-01 - Get leave requests for a month
 export async function GET(request: NextRequest) {
@@ -77,11 +78,11 @@ export async function POST(request: NextRequest) {
     if (authError) return authError
 
     const body = await request.json()
-    const { type, date, endDate, notes } = body
-
-    if (!type || !date) {
-      return NextResponse.json({ error: "Type and date are required" }, { status: 400 })
+    const validation = validateBody(createLeaveSchema, body)
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
     }
+    const { type, date, endDate, notes } = validation.data
 
     // For date ranges, create individual records for each day
     const startDate = parseISO(date)

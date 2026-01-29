@@ -70,15 +70,69 @@ export async function removePendingEntry(id: string): Promise<void> {
   })
 }
 
-export async function syncPendingEntries(): Promise<{ synced: number; failed: number }> {
+const MAX_RETRIES = 5
+const STALE_ENTRY_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
+async function updateEntryRetries(id: string, retries: number): Promise<void> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite")
+    const store = tx.objectStore(STORE_NAME)
+    const getReq = store.get(id)
+    getReq.onsuccess = () => {
+      const record = getReq.result
+      if (record) {
+        record.retries = retries
+        store.put(record)
+      }
+      resolve()
+    }
+    getReq.onerror = () => reject(getReq.error)
+  })
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+export async function syncPendingEntries(): Promise<{ synced: number; failed: number; dropped: number }> {
   const entries = await getPendingEntries()
   let synced = 0
   let failed = 0
+  let dropped = 0
+  const now = Date.now()
 
   // Sort by timestamp to maintain order
   entries.sort((a, b) => new Date(a.timestampClient).getTime() - new Date(b.timestampClient).getTime())
 
   for (const entry of entries) {
+    // Drop stale entries older than 7 days
+    const age = now - new Date(entry.createdAt).getTime()
+    if (age > STALE_ENTRY_MS) {
+      await removePendingEntry(entry.id)
+      dropped++
+      continue
+    }
+
+    // Drop entries that exceeded max retries
+    if (entry.retries >= MAX_RETRIES) {
+      await removePendingEntry(entry.id)
+      dropped++
+      continue
+    }
+
+    // Stop syncing if we went offline mid-loop
+    if (!navigator.onLine) {
+      failed += entries.length - synced - dropped - failed
+      break
+    }
+
+    // Exponential backoff: wait before retrying (skip delay on first attempt)
+    if (entry.retries > 0) {
+      const backoffMs = Math.min(Math.pow(2, entry.retries) * 1000, 16000)
+      await delay(backoffMs)
+    }
+
     try {
       const res = await fetch("/api/entries", {
         method: "POST",
@@ -97,15 +151,21 @@ export async function syncPendingEntries(): Promise<{ synced: number; failed: nu
       if (res.ok) {
         await removePendingEntry(entry.id)
         synced++
+      } else if (res.status >= 400 && res.status < 500) {
+        // Client error — won't succeed on retry, drop it
+        await removePendingEntry(entry.id)
+        dropped++
       } else {
+        await updateEntryRetries(entry.id, entry.retries + 1)
         failed++
       }
     } catch {
+      await updateEntryRetries(entry.id, entry.retries + 1)
       failed++
     }
   }
 
-  return { synced, failed }
+  return { synced, failed, dropped }
 }
 
 export async function getPendingCount(): Promise<number> {
