@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { getAuthUser } from "@/lib/auth"
 
 // GET /api/callouts/[id] - Get a single callout
 export async function GET(
@@ -7,6 +8,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const { id } = await params
 
     const { data: callout, error } = await supabase
@@ -16,6 +20,7 @@ export async function GET(
         location:Location (id, name, code)
       `)
       .eq("id", id)
+      .eq("userId", user!.id)
       .single()
 
     if (error || !callout) {
@@ -41,6 +46,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const { id } = await params
     const body = await request.json()
     const {
@@ -56,11 +64,12 @@ export async function PATCH(
       resolution,
     } = body
 
-    // Check if callout exists
+    // Check if callout exists and belongs to user
     const { data: existingCallout } = await supabase
       .from("Callout")
       .select("id")
       .eq("id", id)
+      .eq("userId", user!.id)
       .single()
 
     if (!existingCallout) {
@@ -88,6 +97,7 @@ export async function PATCH(
       .from("Callout")
       .update(updateData)
       .eq("id", id)
+      .eq("userId", user!.id)
       .select(`
         *,
         location:Location (id, name, code)
@@ -118,13 +128,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const { id } = await params
 
-    // Check if callout exists
+    // Check if callout exists and belongs to user
     const { data: existingCallout } = await supabase
       .from("Callout")
       .select("id")
       .eq("id", id)
+      .eq("userId", user!.id)
       .single()
 
     if (!existingCallout) {
@@ -138,6 +152,7 @@ export async function DELETE(
       .from("Callout")
       .delete()
       .eq("id", id)
+      .eq("userId", user!.id)
 
     if (error) {
       console.error("Supabase error:", error)

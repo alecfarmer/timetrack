@@ -2,7 +2,8 @@
 -- ROW LEVEL SECURITY POLICIES FOR ONSITE APP
 -- =====================================================
 -- Run this in your Supabase SQL Editor
--- These policies allow full access via the anon key for this personal app
+-- Multi-user: Entry, WorkDay, Callout are scoped per user
+-- Shared: Location, PolicyConfig, AppConfig are accessible to all authenticated users
 -- =====================================================
 
 -- Enable RLS on all tables
@@ -14,175 +15,190 @@ ALTER TABLE "PolicyConfig" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "AppConfig" ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
--- LOCATION POLICIES
+-- Drop existing policies (safe re-run)
 -- =====================================================
--- Allow anyone to read locations
-CREATE POLICY "Allow public read access to locations"
+DROP POLICY IF EXISTS "Allow public read access to locations" ON "Location";
+DROP POLICY IF EXISTS "Allow public insert access to locations" ON "Location";
+DROP POLICY IF EXISTS "Allow public update access to locations" ON "Location";
+DROP POLICY IF EXISTS "Allow public delete access to locations" ON "Location";
+
+DROP POLICY IF EXISTS "Allow public read access to entries" ON "Entry";
+DROP POLICY IF EXISTS "Allow public insert access to entries" ON "Entry";
+DROP POLICY IF EXISTS "Allow public update access to entries" ON "Entry";
+DROP POLICY IF EXISTS "Allow public delete access to entries" ON "Entry";
+
+DROP POLICY IF EXISTS "Allow public read access to workdays" ON "WorkDay";
+DROP POLICY IF EXISTS "Allow public insert access to workdays" ON "WorkDay";
+DROP POLICY IF EXISTS "Allow public update access to workdays" ON "WorkDay";
+DROP POLICY IF EXISTS "Allow public delete access to workdays" ON "WorkDay";
+
+DROP POLICY IF EXISTS "Allow public read access to callouts" ON "Callout";
+DROP POLICY IF EXISTS "Allow public insert access to callouts" ON "Callout";
+DROP POLICY IF EXISTS "Allow public update access to callouts" ON "Callout";
+DROP POLICY IF EXISTS "Allow public delete access to callouts" ON "Callout";
+
+DROP POLICY IF EXISTS "Allow public read access to policy config" ON "PolicyConfig";
+DROP POLICY IF EXISTS "Allow public insert access to policy config" ON "PolicyConfig";
+DROP POLICY IF EXISTS "Allow public update access to policy config" ON "PolicyConfig";
+DROP POLICY IF EXISTS "Allow public delete access to policy config" ON "PolicyConfig";
+
+DROP POLICY IF EXISTS "Allow public read access to app config" ON "AppConfig";
+DROP POLICY IF EXISTS "Allow public insert access to app config" ON "AppConfig";
+DROP POLICY IF EXISTS "Allow public update access to app config" ON "AppConfig";
+DROP POLICY IF EXISTS "Allow public delete access to app config" ON "AppConfig";
+
+-- Also drop the new named policies in case of re-run
+DROP POLICY IF EXISTS "Authenticated users can read locations" ON "Location";
+DROP POLICY IF EXISTS "Authenticated users can insert locations" ON "Location";
+DROP POLICY IF EXISTS "Authenticated users can update locations" ON "Location";
+DROP POLICY IF EXISTS "Authenticated users can delete locations" ON "Location";
+
+DROP POLICY IF EXISTS "Users can read own entries" ON "Entry";
+DROP POLICY IF EXISTS "Users can insert own entries" ON "Entry";
+DROP POLICY IF EXISTS "Users can update own entries" ON "Entry";
+DROP POLICY IF EXISTS "Users can delete own entries" ON "Entry";
+
+DROP POLICY IF EXISTS "Users can read own workdays" ON "WorkDay";
+DROP POLICY IF EXISTS "Users can insert own workdays" ON "WorkDay";
+DROP POLICY IF EXISTS "Users can update own workdays" ON "WorkDay";
+DROP POLICY IF EXISTS "Users can delete own workdays" ON "WorkDay";
+
+DROP POLICY IF EXISTS "Users can read own callouts" ON "Callout";
+DROP POLICY IF EXISTS "Users can insert own callouts" ON "Callout";
+DROP POLICY IF EXISTS "Users can update own callouts" ON "Callout";
+DROP POLICY IF EXISTS "Users can delete own callouts" ON "Callout";
+
+DROP POLICY IF EXISTS "Authenticated users can read policy config" ON "PolicyConfig";
+DROP POLICY IF EXISTS "Authenticated users can read app config" ON "AppConfig";
+
+-- =====================================================
+-- LOCATION POLICIES (shared across all authenticated users)
+-- =====================================================
+CREATE POLICY "Authenticated users can read locations"
 ON "Location"
 FOR SELECT
-TO anon, authenticated
+TO authenticated
 USING (true);
 
--- Allow anyone to insert locations
-CREATE POLICY "Allow public insert access to locations"
+CREATE POLICY "Authenticated users can insert locations"
 ON "Location"
 FOR INSERT
-TO anon, authenticated
+TO authenticated
 WITH CHECK (true);
 
--- Allow anyone to update locations
-CREATE POLICY "Allow public update access to locations"
+CREATE POLICY "Authenticated users can update locations"
 ON "Location"
 FOR UPDATE
-TO anon, authenticated
+TO authenticated
 USING (true)
 WITH CHECK (true);
 
--- Allow anyone to delete locations
-CREATE POLICY "Allow public delete access to locations"
+CREATE POLICY "Authenticated users can delete locations"
 ON "Location"
 FOR DELETE
-TO anon, authenticated
+TO authenticated
 USING (true);
 
 -- =====================================================
--- ENTRY POLICIES
+-- ENTRY POLICIES (per-user)
 -- =====================================================
-CREATE POLICY "Allow public read access to entries"
+CREATE POLICY "Users can read own entries"
 ON "Entry"
 FOR SELECT
-TO anon, authenticated
-USING (true);
+TO authenticated
+USING (auth.uid()::text = "userId");
 
-CREATE POLICY "Allow public insert access to entries"
+CREATE POLICY "Users can insert own entries"
 ON "Entry"
 FOR INSERT
-TO anon, authenticated
-WITH CHECK (true);
+TO authenticated
+WITH CHECK (auth.uid()::text = "userId");
 
-CREATE POLICY "Allow public update access to entries"
+CREATE POLICY "Users can update own entries"
 ON "Entry"
 FOR UPDATE
-TO anon, authenticated
-USING (true)
-WITH CHECK (true);
+TO authenticated
+USING (auth.uid()::text = "userId")
+WITH CHECK (auth.uid()::text = "userId");
 
-CREATE POLICY "Allow public delete access to entries"
+CREATE POLICY "Users can delete own entries"
 ON "Entry"
 FOR DELETE
-TO anon, authenticated
-USING (true);
+TO authenticated
+USING (auth.uid()::text = "userId");
 
 -- =====================================================
--- WORKDAY POLICIES
+-- WORKDAY POLICIES (per-user)
 -- =====================================================
-CREATE POLICY "Allow public read access to workdays"
+CREATE POLICY "Users can read own workdays"
 ON "WorkDay"
 FOR SELECT
-TO anon, authenticated
-USING (true);
+TO authenticated
+USING (auth.uid()::text = "userId");
 
-CREATE POLICY "Allow public insert access to workdays"
+CREATE POLICY "Users can insert own workdays"
 ON "WorkDay"
 FOR INSERT
-TO anon, authenticated
-WITH CHECK (true);
+TO authenticated
+WITH CHECK (auth.uid()::text = "userId");
 
-CREATE POLICY "Allow public update access to workdays"
+CREATE POLICY "Users can update own workdays"
 ON "WorkDay"
 FOR UPDATE
-TO anon, authenticated
-USING (true)
-WITH CHECK (true);
+TO authenticated
+USING (auth.uid()::text = "userId")
+WITH CHECK (auth.uid()::text = "userId");
 
-CREATE POLICY "Allow public delete access to workdays"
+CREATE POLICY "Users can delete own workdays"
 ON "WorkDay"
 FOR DELETE
-TO anon, authenticated
-USING (true);
+TO authenticated
+USING (auth.uid()::text = "userId");
 
 -- =====================================================
--- CALLOUT POLICIES
+-- CALLOUT POLICIES (per-user)
 -- =====================================================
-CREATE POLICY "Allow public read access to callouts"
+CREATE POLICY "Users can read own callouts"
 ON "Callout"
 FOR SELECT
-TO anon, authenticated
-USING (true);
+TO authenticated
+USING (auth.uid()::text = "userId");
 
-CREATE POLICY "Allow public insert access to callouts"
+CREATE POLICY "Users can insert own callouts"
 ON "Callout"
 FOR INSERT
-TO anon, authenticated
-WITH CHECK (true);
+TO authenticated
+WITH CHECK (auth.uid()::text = "userId");
 
-CREATE POLICY "Allow public update access to callouts"
+CREATE POLICY "Users can update own callouts"
 ON "Callout"
 FOR UPDATE
-TO anon, authenticated
-USING (true)
-WITH CHECK (true);
+TO authenticated
+USING (auth.uid()::text = "userId")
+WITH CHECK (auth.uid()::text = "userId");
 
-CREATE POLICY "Allow public delete access to callouts"
+CREATE POLICY "Users can delete own callouts"
 ON "Callout"
 FOR DELETE
-TO anon, authenticated
-USING (true);
+TO authenticated
+USING (auth.uid()::text = "userId");
 
 -- =====================================================
--- POLICYCONFIG POLICIES
+-- POLICYCONFIG POLICIES (shared, read-only for authenticated)
 -- =====================================================
-CREATE POLICY "Allow public read access to policy config"
+CREATE POLICY "Authenticated users can read policy config"
 ON "PolicyConfig"
 FOR SELECT
-TO anon, authenticated
-USING (true);
-
-CREATE POLICY "Allow public insert access to policy config"
-ON "PolicyConfig"
-FOR INSERT
-TO anon, authenticated
-WITH CHECK (true);
-
-CREATE POLICY "Allow public update access to policy config"
-ON "PolicyConfig"
-FOR UPDATE
-TO anon, authenticated
-USING (true)
-WITH CHECK (true);
-
-CREATE POLICY "Allow public delete access to policy config"
-ON "PolicyConfig"
-FOR DELETE
-TO anon, authenticated
+TO authenticated
 USING (true);
 
 -- =====================================================
--- APPCONFIG POLICIES
+-- APPCONFIG POLICIES (shared, read-only for authenticated)
 -- =====================================================
-CREATE POLICY "Allow public read access to app config"
+CREATE POLICY "Authenticated users can read app config"
 ON "AppConfig"
 FOR SELECT
-TO anon, authenticated
-USING (true);
-
-CREATE POLICY "Allow public insert access to app config"
-ON "AppConfig"
-FOR INSERT
-TO anon, authenticated
-WITH CHECK (true);
-
-CREATE POLICY "Allow public update access to app config"
-ON "AppConfig"
-FOR UPDATE
-TO anon, authenticated
-USING (true)
-WITH CHECK (true);
-
-CREATE POLICY "Allow public delete access to app config"
-ON "AppConfig"
-FOR DELETE
-TO anon, authenticated
+TO authenticated
 USING (true);
 
 -- =====================================================

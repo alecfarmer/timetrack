@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { getAuthUser } from "@/lib/auth"
 import { startOfWeek, endOfWeek, eachDayOfInterval, format } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
@@ -8,6 +9,9 @@ const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 // GET /api/workdays/week - Get weekly summary
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const searchParams = request.nextUrl.searchParams
     const dateParam = searchParams.get("date")
 
@@ -24,6 +28,7 @@ export async function GET(request: NextRequest) {
         *,
         location:Location (id, name, code, category)
       `)
+      .eq("userId", user!.id)
       .gte("date", weekStart.toISOString().split("T")[0])
       .lte("date", weekEnd.toISOString().split("T")[0])
       .order("date", { ascending: true })

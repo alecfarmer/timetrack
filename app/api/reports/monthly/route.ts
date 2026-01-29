@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { getAuthUser } from "@/lib/auth"
 import { startOfMonth, endOfMonth, endOfWeek, eachWeekOfInterval, format } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
@@ -7,6 +8,9 @@ const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const searchParams = request.nextUrl.searchParams
     const monthParam = searchParams.get("month") // Format: YYYY-MM
 
@@ -41,13 +45,14 @@ export async function GET(request: NextRequest) {
 
     const requiredDays = policy?.requiredDaysPerWeek || 3
 
-    // Fetch all workdays in the month
+    // Fetch all workdays in the month for this user
     const { data: workDays, error } = await supabase
       .from("WorkDay")
       .select(`
         *,
         location:Location (id, name, code, category)
       `)
+      .eq("userId", user!.id)
       .gte("date", format(monthStart, "yyyy-MM-dd"))
       .lte("date", format(monthEnd, "yyyy-MM-dd"))
       .order("date", { ascending: true })

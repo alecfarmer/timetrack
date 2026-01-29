@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { getAuthUser } from "@/lib/auth"
 import { startOfDay, endOfDay } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
@@ -15,6 +16,9 @@ interface EntryWithLocation {
 // GET /api/entries/current - Get current clock status
 export async function GET() {
   try {
+    const { user, error: authError } = await getAuthUser()
+    if (authError) return authError
+
     const now = new Date()
     const zonedNow = toZonedTime(now, DEFAULT_TIMEZONE)
     const todayStart = startOfDay(zonedNow)
@@ -26,6 +30,7 @@ export async function GET() {
         id, type, timestampServer,
         location:Location (id, name, code)
       `)
+      .eq("userId", user!.id)
       .gte("timestampServer", todayStart.toISOString())
       .lte("timestampServer", todayEnd.toISOString())
       .order("timestampServer", { ascending: false })
