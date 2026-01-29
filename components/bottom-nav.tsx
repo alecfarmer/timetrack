@@ -13,8 +13,8 @@ interface BottomNavProps {
 const mobileNavItems = [
   { href: "/", icon: Home, label: "Home", shortcut: "1" },
   { href: "/history", icon: Clock, label: "History", shortcut: "2" },
-  { href: "/callouts", icon: Phone, label: "Callouts", shortcut: "3" },
-  { href: "/reports", icon: BarChart3, label: "Reports", shortcut: "4" },
+  { href: "/reports", icon: BarChart3, label: "Reports", shortcut: "3" },
+  { href: "/leave", icon: Palmtree, label: "Leave", shortcut: "4" },
   { href: "/settings", icon: Settings, label: "Settings", shortcut: "5" },
 ]
 

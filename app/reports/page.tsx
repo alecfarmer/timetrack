@@ -348,6 +348,105 @@ ${days.map((d) => `<tr><td>${d.date}</td><td>${d.dayName}</td><td>${d.location |
                     </motion.div>
                   </div>
 
+                  {/* Daily Hours Bar Chart */}
+                  <motion.div variants={staggerItem}>
+                    <Card className="border-0 shadow-lg">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <BarChart3 className="h-4.5 w-4.5 text-primary" />
+                          Daily Hours
+                          {weekSummary.weekStart && (
+                            <span className="text-sm font-normal text-muted-foreground ml-auto">
+                              {format(new Date(weekSummary.weekStart), "MMM d")} – {format(new Date(weekSummary.weekEnd), "MMM d")}
+                            </span>
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {/* Bar chart */}
+                        <div className="flex items-end gap-3 h-48 mb-2">
+                          {weekSummary.weekDays
+                            .filter((d) => d.dayNumber >= 1 && d.dayNumber <= 5)
+                            .map((day) => {
+                              const isToday = day.date === format(new Date(), "yyyy-MM-dd")
+                              const hours = day.minutes / 60
+                              const barHeight = Math.min(100, (day.minutes / 600) * 100) // 10h = full height
+
+                              return (
+                                <div key={day.date} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                                  {/* Hours label */}
+                                  <span className="text-xs tabular-nums font-medium text-muted-foreground">
+                                    {day.minutes > 0 ? `${hours.toFixed(1)}h` : ""}
+                                  </span>
+                                  {/* Bar */}
+                                  <motion.div
+                                    initial={{ height: 0 }}
+                                    animate={{ height: `${barHeight}%` }}
+                                    transition={{ duration: 0.6, ease: "easeOut" }}
+                                    className={cn(
+                                      "w-full rounded-t-lg min-h-[4px] relative",
+                                      day.minutes >= 480
+                                        ? "bg-success"
+                                        : day.minutes >= 360
+                                        ? "bg-primary"
+                                        : day.minutes > 0
+                                        ? "bg-warning"
+                                        : "bg-muted",
+                                      isToday && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                    )}
+                                  >
+                                    {/* 8h target line */}
+                                    {day.minutes > 0 && day.minutes < 480 && (
+                                      <div
+                                        className="absolute left-0 right-0 border-t-2 border-dashed border-muted-foreground/30"
+                                        style={{ bottom: `${((480 - day.minutes) / (day.minutes || 1)) * 100}%` }}
+                                      />
+                                    )}
+                                  </motion.div>
+                                  {/* Day label */}
+                                  <span className={cn(
+                                    "text-xs font-medium",
+                                    isToday ? "text-primary" : "text-muted-foreground"
+                                  )}>
+                                    {day.dayOfWeek}
+                                  </span>
+                                  {/* Location indicator */}
+                                  <div className="flex items-center gap-0.5">
+                                    {day.locationCode ? (
+                                      day.locationCategory === "HOME" ? (
+                                        <Home className="h-3 w-3 text-blue-500" />
+                                      ) : (
+                                        <MapPin className="h-3 w-3 text-primary" />
+                                      )
+                                    ) : (
+                                      <span className="h-3 w-3" />
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                        </div>
+                        {/* 8h target reference line label */}
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t">
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <span className="w-4 border-t-2 border-dashed border-muted-foreground/40" />
+                            8h target
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground ml-3">
+                            <MapPin className="h-3 w-3 text-primary" /> On-Site
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <Home className="h-3 w-3 text-blue-500" /> WFH
+                          </div>
+                          <div className="ml-auto text-sm font-bold tabular-nums">
+                            {formatHM(weekSummary.totalMinutes)}
+                            <span className="text-muted-foreground font-normal text-xs"> / 40h</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+
                   {/* Daily Breakdown Table */}
                   <motion.div variants={staggerItem}>
                     <Card className="border-0 shadow-lg">
@@ -355,11 +454,6 @@ ${days.map((d) => `<tr><td>${d.date}</td><td>${d.dayName}</td><td>${d.location |
                         <CardTitle className="flex items-center gap-2 text-base">
                           <Calendar className="h-4.5 w-4.5 text-primary" />
                           Daily Breakdown
-                          {weekSummary.weekStart && (
-                            <span className="text-sm font-normal text-muted-foreground ml-auto">
-                              {format(new Date(weekSummary.weekStart), "MMM d")} – {format(new Date(weekSummary.weekEnd), "MMM d")}
-                            </span>
-                          )}
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -555,7 +649,59 @@ ${days.map((d) => `<tr><td>${d.date}</td><td>${d.dayName}</td><td>${d.location |
                     </motion.div>
                   </div>
 
-                  {/* Weekly breakdown */}
+                  {/* Monthly Hours Chart */}
+                  {monthSummary.weeklyBreakdown && monthSummary.weeklyBreakdown.length > 0 && (
+                    <motion.div variants={staggerItem}>
+                      <Card className="border-0 shadow-lg">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-base">
+                            <BarChart3 className="h-4.5 w-4.5 text-primary" />
+                            Weekly Hours — {format(new Date(), "MMMM yyyy")}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-end gap-4 h-40 mb-2">
+                            {monthSummary.weeklyBreakdown.map((week, i) => {
+                              const hours = week.totalMinutes / 60
+                              const barHeight = Math.min(100, (week.totalMinutes / 2400) * 100)
+                              return (
+                                <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                                  <span className="text-xs tabular-nums font-medium text-muted-foreground">
+                                    {hours.toFixed(1)}h
+                                  </span>
+                                  <motion.div
+                                    initial={{ height: 0 }}
+                                    animate={{ height: `${barHeight}%` }}
+                                    transition={{ duration: 0.6, delay: i * 0.1, ease: "easeOut" }}
+                                    className={cn(
+                                      "w-full rounded-t-lg min-h-[4px]",
+                                      week.isCompliant ? "bg-success" : "bg-primary"
+                                    )}
+                                  />
+                                  <span className="text-[10px] text-muted-foreground text-center">
+                                    Wk {i + 1}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {week.daysWorked}/{week.requiredDays}d
+                                  </span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                          <div className="flex items-center gap-3 mt-2 pt-2 border-t text-[11px] text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-3 h-3 rounded-sm bg-success" /> 40h met
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-3 h-3 rounded-sm bg-primary" /> Under 40h
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )}
+
+                  {/* Weekly breakdown table */}
                   {monthSummary.weeklyBreakdown && monthSummary.weeklyBreakdown.length > 0 && (
                     <motion.div variants={staggerItem}>
                       <Card className="border-0 shadow-lg">
