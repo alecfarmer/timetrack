@@ -3,8 +3,7 @@ import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { startOfMonth, endOfMonth, endOfWeek, eachWeekOfInterval, format } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
-
-const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
+import { getRequestTimezone } from "@/lib/validations"
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
       targetDate = now
     }
 
-    const zonedDate = toZonedTime(targetDate, DEFAULT_TIMEZONE)
+    const zonedDate = toZonedTime(targetDate, getRequestTimezone(request))
     const monthStart = startOfMonth(zonedDate)
     const monthEnd = endOfMonth(zonedDate)
 

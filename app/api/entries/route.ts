@@ -3,8 +3,7 @@ import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { startOfDay, endOfDay } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
-
-const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
+import { createEntrySchema, validateBody, getRequestTimezone } from "@/lib/validations"
 
 // GET /api/entries - List entries with optional filters
 export async function GET(request: NextRequest) {
@@ -37,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     if (date) {
       const targetDate = new Date(date)
-      const zonedDate = toZonedTime(targetDate, DEFAULT_TIMEZONE)
+      const zonedDate = toZonedTime(targetDate, getRequestTimezone(request))
       query = query
         .gte("timestampServer", startOfDay(zonedDate).toISOString())
         .lte("timestampServer", endOfDay(zonedDate).toISOString())
@@ -79,6 +78,10 @@ export async function POST(request: NextRequest) {
     if (authError) return authError
 
     const body = await request.json()
+    const validation = validateBody(createEntrySchema, body)
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
+    }
     const {
       type,
       locationId,
@@ -87,22 +90,7 @@ export async function POST(request: NextRequest) {
       gpsLongitude,
       gpsAccuracy,
       notes,
-    } = body
-
-    // Validate required fields
-    if (!type || !locationId) {
-      return NextResponse.json(
-        { error: "Missing required fields: type, locationId" },
-        { status: 400 }
-      )
-    }
-
-    if (!["CLOCK_IN", "CLOCK_OUT"].includes(type)) {
-      return NextResponse.json(
-        { error: "Invalid entry type. Must be CLOCK_IN or CLOCK_OUT" },
-        { status: 400 }
-      )
-    }
+    } = validation.data
 
     // Verify location exists
     const { data: location, error: locError } = await supabase
@@ -149,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     // Update or create WorkDay
     const serverDate = new Date(entry.timestampServer)
-    const zonedDate = toZonedTime(serverDate, DEFAULT_TIMEZONE)
+    const zonedDate = toZonedTime(serverDate, getRequestTimezone(request))
     const workDayDate = startOfDay(zonedDate)
 
     const { data: existingWorkDay } = await supabase

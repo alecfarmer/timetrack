@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { startOfDay, endOfDay } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
-
-const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
+import { getRequestTimezone } from "@/lib/validations"
 
 interface EntryWithLocation {
   id: string
@@ -14,13 +13,13 @@ interface EntryWithLocation {
 }
 
 // GET /api/entries/current - Get current clock status
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const { user, error: authError } = await getAuthUser()
     if (authError) return authError
 
     const now = new Date()
-    const zonedNow = toZonedTime(now, DEFAULT_TIMEZONE)
+    const zonedNow = toZonedTime(now, getRequestTimezone(request))
     const todayStart = startOfDay(zonedNow)
     const todayEnd = endOfDay(zonedNow)
 
