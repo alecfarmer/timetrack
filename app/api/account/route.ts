@@ -54,7 +54,10 @@ export async function DELETE() {
       )
     }
 
-    // 4. Locations
+    // 4. Leave Requests
+    await supabase.from("LeaveRequest").delete().eq("userId", userId)
+
+    // 5. Locations
     const { error: locationsError } = await supabase
       .from("Location")
       .delete()

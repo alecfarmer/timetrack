@@ -129,6 +129,38 @@ model Callout {
   @@index([userId])
 }
 
+model LeaveRequest {
+  id       String    @id @default(cuid())
+  userId   String
+  type     LeaveType
+  date     DateTime  @db.Date
+  endDate  DateTime? @db.Date
+  notes    String?
+  status   LeaveStatus @default(APPROVED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+enum LeaveType {
+  PTO
+  SICK
+  HOLIDAY
+  PERSONAL
+  BEREAVEMENT
+  JURY_DUTY
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
 enum LocationCategory {
   OFFICE
   PLANT

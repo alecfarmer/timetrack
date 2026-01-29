@@ -11,12 +11,16 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Logo, LogoMark } from "@/components/logo"
 import { DesktopMonitor, useDesktopMonitor } from "@/components/desktop-monitor"
 import { Onboarding } from "@/components/onboarding"
+import { StreaksWidget } from "@/components/streaks-widget"
+import { OfflineBanner } from "@/components/offline-banner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useGeolocation } from "@/hooks/use-geolocation"
 import { useAuth } from "@/contexts/auth-context"
 import { formatDistance, calculateDistance } from "@/lib/geo"
+import { checkClockInReminder, checkForgotClockOutReminder, checkComplianceReminder, requestNotificationPermission } from "@/lib/notifications"
+import { queueOfflineEntry, getPendingCount } from "@/lib/offline"
 import {
   RefreshCw,
   MapPin,
@@ -107,6 +111,28 @@ export default function Dashboard() {
 
   const { position, loading: gpsLoading, error: gpsError, refresh: refreshGps } = useGeolocation(true)
   const desktopMonitor = useDesktopMonitor()
+
+  // Request notification permission on first load
+  useEffect(() => {
+    requestNotificationPermission()
+  }, [])
+
+  // Run notification checks when status changes
+  useEffect(() => {
+    if (!currentStatus) return
+    checkClockInReminder(currentStatus.isClockedIn)
+    checkForgotClockOutReminder(
+      currentStatus.isClockedIn,
+      currentStatus.currentSessionStart ? new Date(currentStatus.currentSessionStart) : null
+    )
+  }, [currentStatus])
+
+  // Check compliance reminders when week summary changes
+  useEffect(() => {
+    if (weekSummary) {
+      checkComplianceReminder(weekSummary.daysWorked, weekSummary.requiredDays)
+    }
+  }, [weekSummary])
 
   // Detect offline status
   useEffect(() => {
@@ -315,6 +341,20 @@ export default function Dashboard() {
       await Promise.all([fetchCurrentStatus(), fetchWeekSummary()])
       if (navigator.vibrate) navigator.vibrate(100)
     } catch (err) {
+      // If offline, queue the entry
+      if (!navigator.onLine) {
+        await queueOfflineEntry({
+          type: "CLOCK_IN",
+          locationId: selectedLocationId,
+          timestampClient: new Date().toISOString(),
+          gpsLatitude: position?.latitude || null,
+          gpsLongitude: position?.longitude || null,
+          gpsAccuracy: position?.accuracy || null,
+        })
+        setError("You're offline. Entry has been queued and will sync when you're back online.")
+        if (navigator.vibrate) navigator.vibrate(100)
+        return
+      }
       setError(err instanceof Error ? err.message : "Failed to clock in")
     }
   }
@@ -349,6 +389,19 @@ export default function Dashboard() {
       await Promise.all([fetchCurrentStatus(), fetchWeekSummary()])
       if (navigator.vibrate) navigator.vibrate([100, 50, 100])
     } catch (err) {
+      if (!navigator.onLine) {
+        await queueOfflineEntry({
+          type: "CLOCK_OUT",
+          locationId: selectedLocationId,
+          timestampClient: new Date().toISOString(),
+          gpsLatitude: position?.latitude || null,
+          gpsLongitude: position?.longitude || null,
+          gpsAccuracy: position?.accuracy || null,
+        })
+        setError("You're offline. Entry has been queued and will sync when you're back online.")
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100])
+        return
+      }
       setError(err instanceof Error ? err.message : "Failed to clock out")
     }
   }
@@ -483,6 +536,9 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="relative pb-24 lg:pb-4 lg:ml-64">
         <div className="max-w-6xl mx-auto px-4 py-4 lg:px-6 lg:py-4 space-y-4">
+          {/* Offline Sync Banner */}
+          <OfflineBanner onSyncComplete={() => Promise.all([fetchCurrentStatus(), fetchWeekSummary()])} />
+
           {/* Error Banner */}
           <AnimatePresence>
             {error && (
@@ -701,6 +757,8 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
+            {/* Streaks Widget (spans full desktop row below) */}
+
             {/* Column 3: Today's Activity (4 cols) */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -743,6 +801,11 @@ export default function Dashboard() {
                 </div>
               </div>
             </motion.div>
+          </div>
+
+          {/* Desktop Streaks */}
+          <div className="hidden lg:block mt-4">
+            <StreaksWidget />
           </div>
 
           {/* === MOBILE LAYOUT (below lg): Stacked === */}
@@ -902,6 +965,11 @@ export default function Dashboard() {
                   ))}
                 </div>
               </div>
+            </motion.div>
+
+            {/* Streaks Widget - Mobile */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.12 }}>
+              <StreaksWidget />
             </motion.div>
 
             {/* Today's Entries */}

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Home, Clock, BarChart3, Settings, Phone, Keyboard } from "lucide-react"
+import { Home, Clock, BarChart3, Settings, Phone, Keyboard, Palmtree, DollarSign } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
 
@@ -10,11 +10,21 @@ interface BottomNavProps {
   currentPath: string
 }
 
-const navItems = [
+const mobileNavItems = [
   { href: "/", icon: Home, label: "Home", shortcut: "1" },
   { href: "/history", icon: Clock, label: "History", shortcut: "2" },
   { href: "/callouts", icon: Phone, label: "Callouts", shortcut: "3" },
   { href: "/reports", icon: BarChart3, label: "Reports", shortcut: "4" },
+  { href: "/settings", icon: Settings, label: "Settings", shortcut: "5" },
+]
+
+const desktopNavItems = [
+  { href: "/", icon: Home, label: "Home", shortcut: "1" },
+  { href: "/history", icon: Clock, label: "History", shortcut: "2" },
+  { href: "/callouts", icon: Phone, label: "Callouts", shortcut: "3" },
+  { href: "/reports", icon: BarChart3, label: "Reports", shortcut: "4" },
+  { href: "/leave", icon: Palmtree, label: "Leave / PTO", shortcut: "6" },
+  { href: "/payroll", icon: DollarSign, label: "Payroll", shortcut: "7" },
   { href: "/settings", icon: Settings, label: "Settings", shortcut: "5" },
 ]
 
@@ -24,7 +34,7 @@ export function BottomNav({ currentPath }: BottomNavProps) {
       {/* Mobile Bottom Nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t safe-area-pb lg:hidden">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
-          {navItems.map((item) => {
+          {mobileNavItems.map((item) => {
             const isActive = currentPath === item.href
             const Icon = item.icon
 
@@ -70,7 +80,7 @@ export function BottomNav({ currentPath }: BottomNavProps) {
         {/* Nav Items */}
         <div className="flex-1 px-3 space-y-0.5">
           <div className="divider-text px-3 mb-2">Navigation</div>
-          {navItems.map((item) => {
+          {desktopNavItems.map((item) => {
             const isActive = currentPath === item.href
             const Icon = item.icon
 
