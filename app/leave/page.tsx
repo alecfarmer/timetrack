@@ -54,7 +54,7 @@ function getLeaveTypeConfig(type: string) {
 export default function LeavePage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [leaves, setLeaves] = useState<LeaveRequest[]>([])
-  const [summary, setSummary] = useState<LeaveSummary>({ totalDays: 0, byType: {} })
+  const [yearlySummary, setYearlySummary] = useState<LeaveSummary>({ totalDays: 0, byType: {} })
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [formType, setFormType] = useState("PTO")
@@ -68,6 +68,10 @@ export default function LeavePage() {
     fetchLeaves()
   }, [currentMonth])
 
+  useEffect(() => {
+    fetchYearlySummary()
+  }, [currentMonth])
+
   const fetchLeaves = async () => {
     setLoading(true)
     try {
@@ -76,12 +80,24 @@ export default function LeavePage() {
       if (res.ok) {
         const data = await res.json()
         setLeaves(data.leaves)
-        setSummary(data.summary)
       }
     } catch (error) {
       console.error("Failed to fetch leaves:", error)
     }
     setLoading(false)
+  }
+
+  const fetchYearlySummary = async () => {
+    try {
+      const year = format(currentMonth, "yyyy")
+      const res = await fetch(`/api/leave?year=${year}`)
+      if (res.ok) {
+        const data = await res.json()
+        setYearlySummary(data.summary)
+      }
+    } catch (error) {
+      console.error("Failed to fetch yearly summary:", error)
+    }
   }
 
   const handleSubmit = async () => {
@@ -103,7 +119,7 @@ export default function LeavePage() {
         setFormDate("")
         setFormEndDate("")
         setFormNotes("")
-        await fetchLeaves()
+        await Promise.all([fetchLeaves(), fetchYearlySummary()])
       }
     } catch (error) {
       console.error("Failed to create leave:", error)
@@ -114,7 +130,7 @@ export default function LeavePage() {
   const handleDelete = async (id: string) => {
     try {
       await fetch(`/api/leave?id=${id}`, { method: "DELETE" })
-      await fetchLeaves()
+      await Promise.all([fetchLeaves(), fetchYearlySummary()])
     } catch (error) {
       console.error("Failed to delete leave:", error)
     }
@@ -153,18 +169,18 @@ export default function LeavePage() {
 
       <main className="flex-1 pb-24 lg:pb-8 lg:ml-64">
         <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8">
-          {/* Summary Cards */}
+          {/* Summary Cards — Full Year */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             <Card className="border-0 shadow-lg">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold">{summary.totalDays}</p>
-                <p className="text-xs text-muted-foreground">Total Days</p>
+                <p className="text-2xl font-bold">{yearlySummary.totalDays}</p>
+                <p className="text-xs text-muted-foreground">Total Days ({format(currentMonth, "yyyy")})</p>
               </CardContent>
             </Card>
             {LEAVE_TYPES.slice(0, 3).map((type) => (
               <Card key={type.value} className="border-0 shadow-lg">
                 <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold">{summary.byType[type.value] || 0}</p>
+                  <p className="text-2xl font-bold">{yearlySummary.byType[type.value] || 0}</p>
                   <p className="text-xs text-muted-foreground">{type.label}</p>
                 </CardContent>
               </Card>
