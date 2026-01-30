@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabaseAdmin as supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { format, eachDayOfInterval, parseISO } from "date-fns"
 import { createLeaveSchema, validateBody } from "@/lib/validations"

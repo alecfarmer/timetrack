@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabaseAdmin as supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { startOfMonth, endOfMonth, endOfWeek, eachWeekOfInterval, format } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
