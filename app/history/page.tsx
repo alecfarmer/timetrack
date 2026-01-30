@@ -242,7 +242,7 @@ export default function HistoryPage() {
 
                   {/* Day headers */}
                   <div className="grid grid-cols-7 gap-1 mb-1">
-                    {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
+                    {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
                       <div key={i} className="text-center text-xs font-medium text-muted-foreground py-2">
                         {day}
                       </div>
@@ -253,7 +253,6 @@ export default function HistoryPage() {
                   <div className="grid grid-cols-7 gap-1">
                     {monthData.map((dayData, index) => {
                       const dayOfWeek = dayData.date.getDay()
-                      const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1
                       const isSelected =
                         selectedDate &&
                         format(selectedDate, "yyyy-MM-dd") === format(dayData.date, "yyyy-MM-dd")
@@ -279,7 +278,7 @@ export default function HistoryPage() {
                               : "hover:bg-muted/60",
                             isTodayDate && !isSelected && "ring-2 ring-primary/50 ring-offset-1 ring-offset-background"
                           )}
-                          style={index === 0 ? { gridColumnStart: adjustedDay + 1 } : undefined}
+                          style={index === 0 ? { gridColumnStart: dayOfWeek + 1 } : undefined}
                         >
                           <span className={cn("font-medium text-[13px]", isSelected && "text-primary-foreground")}>
                             {format(dayData.date, "d")}
