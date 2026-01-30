@@ -29,6 +29,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch members" }, { status: 500 })
     }
 
+    // Look up emails for all members via auth admin API
+    const memberIds = (members || []).map((m) => m.userId)
+    const emailMap: Record<string, string> = {}
+    if (memberIds.length > 0) {
+      const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+      if (authData?.users) {
+        for (const u of authData.users) {
+          if (memberIds.includes(u.id)) {
+            emailMap[u.id] = u.email || u.id
+          }
+        }
+      }
+    }
+
     // For admin: also fetch today's status for each member
     if (org.role === "ADMIN") {
       const today = new Date().toISOString().split("T")[0]
@@ -75,8 +89,8 @@ export async function GET(request: NextRequest) {
       )
 
       const enrichedMembers = (members || []).map((member) => {
-        const todayWork = (todayWorkDays || []).filter((wd) => wd.userId === member.userId)
-        const weekWork = (weekWorkDays || []).filter((wd) => wd.userId === member.userId)
+        const todayWork = (todayWorkDays || []).filter((wd: { userId: string }) => wd.userId === member.userId)
+        const weekWork = (weekWorkDays || []).filter((wd: { userId: string }) => wd.userId === member.userId)
         const status = memberStatuses.find((s) => s.userId === member.userId)
 
         // Count unique in-office days this week
@@ -100,6 +114,7 @@ export async function GET(request: NextRequest) {
 
         return {
           ...member,
+          email: emailMap[member.userId] || null,
           isClockedIn,
           todayMinutes,
           todayLocation: todayLocName,
@@ -111,8 +126,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(enrichedMembers)
     }
 
-    // Non-admin: return basic member list
-    return NextResponse.json(members || [])
+    // Non-admin: return basic member list with emails
+    const basicMembers = (members || []).map((m) => ({
+      ...m,
+      email: emailMap[m.userId] || null,
+    }))
+    return NextResponse.json(basicMembers)
   } catch (error) {
     console.error("Error fetching members:", error)
     return NextResponse.json({ error: "Failed to fetch members" }, { status: 500 })

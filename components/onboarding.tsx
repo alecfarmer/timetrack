@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
@@ -43,6 +43,26 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [geocoding, setGeocoding] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingInvites, setPendingInvites] = useState<Array<{ code: string; org: { name: string } | null }>>([])
+
+  useEffect(() => {
+    async function checkPendingInvites() {
+      try {
+        const res = await fetch("/api/onboarding")
+        if (res.ok) {
+          const data = await res.json()
+          if (data.pendingInvites?.length > 0) {
+            setPendingInvites(data.pendingInvites)
+            setOrgMode("join")
+            setInviteCode(data.pendingInvites[0].code)
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    checkPendingInvites()
+  }, [])
 
   const detectHomeLocation = () => {
     setDetectingLocation(true)
@@ -198,6 +218,17 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               <p className="text-xs text-muted-foreground">Use an invite code</p>
             </button>
           </div>
+
+          {pendingInvites.length > 0 && (
+            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <p className="text-sm font-medium text-primary">You have a pending invite!</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {pendingInvites[0].org
+                  ? `${(Array.isArray(pendingInvites[0].org) ? pendingInvites[0].org[0] : pendingInvites[0].org).name} has invited you to join.`
+                  : "An organization has invited you to join."}
+              </p>
+            </div>
+          )}
 
           <AnimatePresence mode="wait">
             {orgMode === "create" && (

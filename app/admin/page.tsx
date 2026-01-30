@@ -23,12 +23,14 @@ import {
   Trash2,
   Settings,
   AlertCircle,
+  Download,
 } from "lucide-react"
 import { format } from "date-fns"
 
 interface Member {
   id: string
   userId: string
+  email?: string | null
   role: string
   createdAt: string
   isClockedIn?: boolean
@@ -208,6 +210,22 @@ export default function AdminPage() {
     }
   }
 
+  const handleExportCSV = async () => {
+    try {
+      const res = await fetch("/api/org/export")
+      if (!res.ok) throw new Error("Export failed")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `compliance-export-${new Date().toISOString().split("T")[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setError("Failed to export compliance data")
+    }
+  }
+
   const formatMinutes = (minutes: number) => {
     const h = Math.floor(minutes / 60)
     const m = minutes % 60
@@ -288,7 +306,13 @@ export default function AdminPage() {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Members List */}
             <motion.div variants={staggerItem} className="lg:col-span-2 space-y-4">
-              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Team Members</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Team Members</h2>
+                <Button variant="outline" size="sm" className="gap-1.5 rounded-xl" onClick={handleExportCSV}>
+                  <Download className="h-3.5 w-3.5" />
+                  Export CSV
+                </Button>
+              </div>
               <div className="space-y-3">
                 {members.map((member) => (
                   <Card key={member.id} className="border-0 shadow-lg">
@@ -304,7 +328,7 @@ export default function AdminPage() {
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-medium text-sm">{member.userId.slice(0, 8)}...</p>
+                              <p className="font-medium text-sm">{member.email || `${member.userId.slice(0, 8)}...`}</p>
                               <Badge variant={member.role === "ADMIN" ? "default" : "secondary"} className="text-[10px]">
                                 {member.role}
                               </Badge>

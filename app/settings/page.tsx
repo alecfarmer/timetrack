@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { requestNotificationPermission, getReminderSettings, saveReminderSettings, canNotify } from "@/lib/notifications"
@@ -54,10 +54,23 @@ export default function SettingsPage() {
     }
     return false
   })
+  const [policy, setPolicy] = useState<{ requiredDaysPerWeek: number; minimumMinutesPerDay: number } | null>(null)
+
+  const fetchPolicy = useCallback(async () => {
+    try {
+      const res = await fetch("/api/org/policy")
+      if (res.ok) {
+        setPolicy(await res.json())
+      }
+    } catch {
+      // ignore - will show defaults
+    }
+  }, [])
 
   useEffect(() => {
     setNotifications(canNotify() && getReminderSettings().clockInReminder)
-  }, [])
+    fetchPolicy()
+  }, [fetchPolicy])
 
   const handleSignOut = async () => {
     await signOut()
@@ -194,11 +207,7 @@ export default function SettingsPage() {
                 <div className="bg-muted/50 rounded-xl p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">Required Days</p>
-                    <p className="font-medium">3 days / week</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">Weekly Hours Target</p>
-                    <p className="font-medium">40 hours</p>
+                    <p className="font-medium">{policy?.requiredDaysPerWeek ?? 3} days / week</p>
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">Compliance</p>
