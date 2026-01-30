@@ -64,7 +64,7 @@ export function sendNotification(title: string, body: string, tag?: string): voi
 }
 
 function getDateKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 }
 
 // Check if we should send a clock-in reminder

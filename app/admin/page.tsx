@@ -30,6 +30,9 @@ import {
   Bell,
   ScrollText,
   ClipboardCheck,
+  HeartPulse,
+  Scale,
+  DollarSign,
 } from "lucide-react"
 import { format } from "date-fns"
 
@@ -316,6 +319,10 @@ export default function AdminPage() {
               { href: "/admin/analytics", icon: BarChart3, label: "Analytics", color: "text-blue-500" },
               { href: "/admin/timesheets", icon: ClipboardCheck, label: "Timesheets", color: "text-emerald-500" },
               { href: "/admin/audit", icon: ScrollText, label: "Audit Log", color: "text-amber-500" },
+              { href: "/admin/wellbeing", icon: HeartPulse, label: "Well-Being", color: "text-rose-500" },
+              { href: "/admin/jurisdictions", icon: Scale, label: "Jurisdictions", color: "text-cyan-500" },
+              { href: "/admin/payroll-config", icon: DollarSign, label: "Payroll Config", color: "text-green-500" },
+              { href: "/admin/alerts", icon: Bell, label: "Alerts", color: "text-orange-500" },
             ].map((item) => (
               <Link key={item.href} href={item.href}>
                 <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow cursor-pointer">

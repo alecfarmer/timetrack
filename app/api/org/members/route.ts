@@ -73,20 +73,26 @@ export async function GET(request: NextRequest) {
         .gte("date", weekStart)
         .lte("date", today)
 
-      // Fetch latest entry for each member to determine clock-in status
-      const memberStatuses = await Promise.all(
-        memberIds.map(async (userId) => {
-          const { data: latestEntry } = await supabase
-            .from("Entry")
-            .select("type, timestampServer, location:Location(code, name)")
-            .eq("userId", userId)
-            .order("timestampServer", { ascending: false })
-            .limit(1)
-            .single()
+      // Fetch recent entries for all members in one batch query
+      const { data: recentEntries } = await supabase
+        .from("Entry")
+        .select("userId, type, timestampServer, location:Location(code, name)")
+        .in("userId", memberIds)
+        .order("timestampServer", { ascending: false })
+        .limit(memberIds.length * 2)
 
-          return { userId, latestEntry }
-        })
-      )
+      // Extract latest entry per member
+      const latestEntryMap = new Map<string, NonNullable<typeof recentEntries>[number]>()
+      for (const entry of recentEntries || []) {
+        if (!latestEntryMap.has(entry.userId)) {
+          latestEntryMap.set(entry.userId, entry)
+        }
+      }
+
+      const memberStatuses = memberIds.map((userId: string) => ({
+        userId,
+        latestEntry: latestEntryMap.get(userId) || null,
+      }))
 
       const enrichedMembers = (members || []).map((member) => {
         const todayWork = (todayWorkDays || []).filter((wd: { userId: string }) => wd.userId === member.userId)

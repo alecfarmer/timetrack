@@ -18,6 +18,16 @@ import {
   Globe,
   Zap,
   ChevronRight,
+  Camera,
+  Coffee,
+  ClipboardCheck,
+  Bell,
+  Brain,
+  Scale,
+  HeartPulse,
+  Eye,
+  FileCheck,
+  Sparkles,
 } from "lucide-react"
 
 const fadeUp = {
@@ -60,6 +70,57 @@ const features = [
     title: "Works Offline",
     description: "Clock in even without internet. Entries queue locally and sync automatically when connectivity returns.",
   },
+  {
+    icon: Camera,
+    title: "Photo Verification",
+    description: "Optional selfie verification at clock-in for high-security sites. Fully configurable per organization — never forced.",
+  },
+  {
+    icon: Coffee,
+    title: "Break & Lunch Tracking",
+    description: "Track break start/end times with policy enforcement. Auto-deduct breaks per jurisdiction rules so payroll is always accurate.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Timesheet Approval",
+    description: "Weekly submission and admin approval workflow. One-click approve or reject with audit trail for every decision.",
+  },
+  {
+    icon: Bell,
+    title: "Admin Alerts",
+    description: "Configurable rules for late arrivals, missed clock-outs, and overtime approaching. Real-time notifications before problems escalate.",
+  },
+  {
+    icon: BarChart3,
+    title: "Analytics Dashboard",
+    description: "Weekly trends, location breakdown, and member performance metrics. Data-driven workforce decisions at your fingertips.",
+  },
+  {
+    icon: FileCheck,
+    title: "Payroll Pipeline",
+    description: "Configurable pay codes, rounding rules, and break deductions. Preview everything before export — no payroll surprises.",
+  },
+]
+
+const enterpriseFeatures = [
+  {
+    icon: Scale,
+    title: "Multi-Jurisdiction Compliance",
+    description: "Automatically apply California meal break rules, Oregon predictive scheduling, or NYC Fair Workweek laws based on employee location. One dashboard, every jurisdiction.",
+    badge: "Compliance Engine",
+  },
+  {
+    icon: HeartPulse,
+    title: "Burnout & Well-Being Signals",
+    description: "Track consecutive work days, overtime patterns, and break skips to surface burnout risk before it becomes turnover. Privacy-first — not surveillance.",
+    badge: "Well-Being",
+  },
+  {
+    icon: Sparkles,
+    title: "Smart Corrections",
+    description: "AI auto-approves routine time corrections based on historical patterns. No more manager bottleneck for simple fixes — only edge cases need review.",
+    badge: "AI-Powered",
+  },
 ]
 
 const highlights = [
@@ -69,6 +130,10 @@ const highlights = [
   "Invite your team with a code",
   "WFH tracking included",
   "Leave & callout management",
+  "Multi-jurisdiction compliance",
+  "Burnout detection",
+  "Smart auto-corrections",
+  "Payroll-ready export",
 ]
 
 export default function LandingPage() {
@@ -248,9 +313,9 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center mb-12 sm:mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Everything you need to enforce on-site policy</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Everything you need to manage time & attendance</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              From GPS verification to compliance reports, OnSite handles the entire attendance workflow so you don&apos;t have to.
+              From GPS verification to payroll export, OnSite handles the entire attendance workflow — clock-in to paycheck.
             </p>
           </motion.div>
 
@@ -275,6 +340,144 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      {/* Enterprise-Grade Section */}
+      <section className="py-16 sm:py-24 bg-muted/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12 sm:mb-16"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+              <Sparkles className="h-3.5 w-3.5" />
+              Enterprise-Grade
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Built for complexity. Designed for clarity.</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Multi-state teams, shifting regulations, and growing headcount. OnSite scales with your workforce — not against it.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            variants={stagger}
+            className="grid lg:grid-cols-3 gap-8"
+          >
+            {enterpriseFeatures.map((feature) => (
+              <motion.div
+                key={feature.title}
+                variants={fadeUp}
+                className="group rounded-2xl border bg-card p-8 hover:shadow-xl transition-shadow relative overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-primary" />
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+                    <feature.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                    {feature.badge}
+                  </span>
+                </div>
+                <h3 className="text-lg font-semibold mb-3">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Trust-First Section */}
+      <section className="py-16 sm:py-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-success/10 text-success text-sm font-medium mb-4">
+                <Eye className="h-3.5 w-3.5" />
+                Trust-First Design
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                Anti-surveillance by design.
+              </h2>
+              <p className="text-lg text-muted-foreground mb-6">
+                OnSite tracks outcomes, not keystrokes. We believe transparency builds better teams than surveillance ever could. Your employees see exactly what data is collected — and nothing is collected behind their backs.
+              </p>
+              <div className="space-y-4">
+                {[
+                  {
+                    icon: Eye,
+                    title: "Full Data Transparency",
+                    desc: "Employees see exactly what data is collected about them. A dedicated transparency portal — because trust is earned.",
+                  },
+                  {
+                    icon: Shield,
+                    title: "No Screenshots. No Keystroke Logging.",
+                    desc: "We will never capture screens, log keystrokes, or monitor app usage. Period. It is not a feature we turned off — it was never built.",
+                  },
+                  {
+                    icon: Brain,
+                    title: "Outcome-Based Tracking",
+                    desc: "Were they on-site? Did they meet their hours? That is what matters. Not how many times they opened Slack.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="h-5 w-5 text-success" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{item.title}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-2xl border bg-card p-8 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-success to-emerald-400" />
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
+                  <Eye className="h-8 w-8 text-success" />
+                </div>
+                <h3 className="text-lg font-semibold">Employee Data Transparency Portal</h3>
+                <p className="text-sm text-muted-foreground mt-1">What your team members see</p>
+              </div>
+              <div className="space-y-3">
+                {[
+                  "Clock-in/out times and locations",
+                  "GPS coordinates collected at clock events",
+                  "Compliance status and history",
+                  "Break and lunch records",
+                  "All corrections and approval history",
+                  "Photo verification images (if enabled)",
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
+                    <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                      <Check className="h-3 w-3 text-success" />
+                    </div>
+                    <span className="text-sm">{item}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground text-center mt-4">
+                Every piece of data collected is visible to the employee it belongs to.
+              </p>
+            </motion.div>
+          </div>
         </div>
       </section>
 

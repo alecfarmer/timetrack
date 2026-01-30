@@ -26,6 +26,8 @@ model Organization {
   alertRules   AlertRule[]
   alertNotifications AlertNotification[]
   timesheets   TimesheetSubmission[]
+  wellBeingSnapshots WellBeingSnapshot[]
+  payrollMapping PayrollMapping?
 
   @@index([slug])
 }
@@ -149,10 +151,22 @@ model WorkDay {
 model PolicyConfig {
   id                   String   @id @default(cuid())
   name                 String
+  jurisdiction         String?
   requiredDaysPerWeek  Int      @default(3)
   minimumMinutesPerDay Int      @default(0)
   breakMinutesPerDay   Int      @default(0)
   autoDeductBreak      Boolean  @default(false)
+  overtimeThresholdDaily  Int   @default(0)
+  overtimeThresholdWeekly Int   @default(2400)
+  mealBreakRequired    Boolean  @default(false)
+  mealBreakAfterMinutes Int    @default(360)
+  mealBreakDuration    Int      @default(30)
+  restBreakRequired    Boolean  @default(false)
+  restBreakInterval    Int      @default(240)
+  restBreakDuration    Int      @default(10)
+  predictiveScheduling Boolean  @default(false)
+  advanceNoticeHours   Int      @default(0)
+  clopeningMinHours    Int      @default(0)
   effectiveDate        DateTime @default(now())
   isActive             Boolean  @default(true)
 
@@ -274,9 +288,50 @@ model EntryCorrection {
   fieldChanged String
   oldValue     String?
   newValue     String?
+  status       String   @default("APPROVED")
+  autoApproved Boolean  @default(false)
+  reviewedBy   String?
+  reviewedAt   DateTime?
   createdAt    DateTime @default(now())
 
   @@index([entryId])
+  @@index([correctedBy])
+}
+
+model WellBeingSnapshot {
+  id                   String   @id @default(cuid())
+  userId               String
+  orgId                String
+  org                  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  weekStart            DateTime @db.Date
+  consecutiveWorkDays  Int      @default(0)
+  overtimeMinutes      Int      @default(0)
+  breakSkipCount       Int      @default(0)
+  clopeningCount       Int      @default(0)
+  avgDailyMinutes      Int      @default(0)
+  scheduleVolatility   Float    @default(0)
+  burnoutScore         Int      @default(0)
+  createdAt            DateTime @default(now())
+
+  @@unique([userId, weekStart])
+  @@index([orgId])
+  @@index([userId, weekStart(sort: Desc)])
+}
+
+model PayrollMapping {
+  id                     String   @id @default(cuid())
+  orgId                  String   @unique
+  org                    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  provider               String   @default("csv")
+  regularPayCode         String   @default("REG")
+  overtimePayCode        String   @default("OT")
+  calloutPayCode         String   @default("CALL")
+  breakDeductionEnabled  Boolean  @default(false)
+  roundingRule           String   @default("none")
+  roundingIncrement      Int      @default(15)
+  config                 Json     @default("{}")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 }
 
 model TimesheetSubmission {

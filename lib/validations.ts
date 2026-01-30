@@ -59,8 +59,12 @@ export const createLeaveSchema = z.object({
 // ─── Helper: extract timezone from request ──────────────────────
 const FALLBACK_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 
+const IANA_TZ_RE = /^[A-Za-z_]+\/[A-Za-z_\/]+$/
+
 export function getRequestTimezone(request: { headers: { get(name: string): string | null } }): string {
-  return request.headers.get("x-timezone") || FALLBACK_TIMEZONE
+  const tz = request.headers.get("x-timezone")
+  if (tz && IANA_TZ_RE.test(tz)) return tz
+  return FALLBACK_TIMEZONE
 }
 
 // ─── Helper: validate request body ──────────────────────────────
