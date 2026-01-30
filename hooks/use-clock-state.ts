@@ -49,6 +49,7 @@ interface WeekDay {
   date: string
   dayOfWeek: string
   worked: boolean
+  minutes: number
 }
 
 interface WeekSummary {

@@ -12,6 +12,7 @@ import { Logo, LogoMark } from "@/components/logo"
 import { DesktopMonitor, useDesktopMonitor } from "@/components/desktop-monitor"
 import { Onboarding } from "@/components/onboarding"
 import { StreaksWidget } from "@/components/streaks-widget"
+import { WeeklyHoursMini } from "@/components/weekly-hours-mini"
 import { OfflineBanner } from "@/components/offline-banner"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { NotificationBell } from "@/components/notification-bell"
@@ -38,9 +39,14 @@ import {
   X,
   Coffee,
   Play,
+  BarChart3,
+  Phone,
+  Palmtree,
+  ArrowRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { BottomNav } from "@/components/bottom-nav"
 
 export default function Dashboard() {
@@ -168,7 +174,7 @@ export default function Dashboard() {
 
         {/* Header */}
         <header className="sticky top-0 z-50 glass border-b lg:ml-64">
-          <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
+          <div className="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto lg:px-8">
             <motion.div className="lg:hidden" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
               <Logo size="sm" />
             </motion.div>
@@ -216,7 +222,7 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <main className="relative pb-24 lg:pb-4 lg:ml-64">
-          <div className="max-w-6xl mx-auto px-4 py-4 lg:px-6 lg:py-4 space-y-4">
+          <div className="max-w-7xl mx-auto px-4 py-4 lg:px-6 lg:py-4 space-y-4">
             <OfflineBanner onSyncComplete={() => Promise.all([clock.fetchCurrentStatus(), clock.fetchWeekSummary()])} />
 
             {/* Error Banner */}
@@ -384,7 +390,7 @@ export default function Dashboard() {
 
               {/* Column 3: Today's Activity */}
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="lg:col-span-4">
-                <div className="card-elevated p-4 h-full">
+                <div className="card-elevated p-4 h-full min-h-[420px]">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-sm font-semibold">Today's Activity</h2>
                     <Badge variant="secondary" className="text-xs">{clock.currentStatus?.todayEntries?.length || 0}</Badge>
@@ -408,8 +414,45 @@ export default function Dashboard() {
               </motion.div>
             </div>
 
-            {/* Desktop Streaks */}
-            <div className="hidden lg:block mt-4"><ErrorBoundary><StreaksWidget /></ErrorBoundary></div>
+            {/* === DESKTOP ROW 2 === */}
+            <div className="hidden lg:grid lg:grid-cols-12 gap-4">
+              {/* Quick Links */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} className="lg:col-span-4">
+                <div className="card-elevated p-4 h-full">
+                  <h3 className="text-sm font-semibold mb-3">Quick Links</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { href: "/history", icon: Clock, label: "History", color: "text-blue-500 bg-blue-500/10" },
+                      { href: "/leave", icon: Palmtree, label: "Leave / PTO", color: "text-emerald-500 bg-emerald-500/10" },
+                      { href: "/callouts", icon: Phone, label: "Callouts", color: "text-amber-500 bg-amber-500/10" },
+                      { href: "/reports", icon: BarChart3, label: "Reports", color: "text-purple-500 bg-purple-500/10" },
+                    ].map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="flex items-center gap-2.5 p-3 rounded-xl hover:bg-muted/80 transition-colors group"
+                      >
+                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", link.color)}>
+                          <link.icon className="h-4 w-4" />
+                        </div>
+                        <span className="text-sm font-medium truncate">{link.label}</span>
+                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Weekly Hours Mini Chart */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }} className="lg:col-span-4">
+                <WeeklyHoursMini weekDays={clock.weekSummary?.weekDays} />
+              </motion.div>
+
+              {/* Streaks & Badges */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }} className="lg:col-span-4">
+                <ErrorBoundary><StreaksWidget /></ErrorBoundary>
+              </motion.div>
+            </div>
 
             {/* === MOBILE LAYOUT === */}
             <div className="lg:hidden space-y-4">
