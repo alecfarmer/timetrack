@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { rateLimit } from "@/lib/rate-limit"
-import { supabase } from "@/lib/supabase"
+import { supabaseAdmin as supabase } from "@/lib/supabase"
 
 interface OrgContext {
   orgId: string

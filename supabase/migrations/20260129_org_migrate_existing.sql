@@ -1,10 +1,14 @@
 -- =====================================================
 -- DATA MIGRATION: Move existing users into an organization
 -- =====================================================
--- This migrates the 2 existing users and their data into
--- a single organization. The first user found becomes ADMIN.
--- Shared locations (non-HOME) are consolidated so the org
--- has one set. Personal WFH locations are preserved per-user.
+-- NON-DESTRUCTIVE: No locations are deleted or remapped.
+-- Each user keeps their own location records and all
+-- existing foreign keys (Entry, WorkDay, Callout) are untouched.
+-- We simply:
+--   1. Create an org
+--   2. Add both users as members (first = ADMIN)
+--   3. Stamp orgId on every existing Location
+--   4. Stamp orgId on existing PolicyConfig
 -- =====================================================
 
 BEGIN;
@@ -19,7 +23,7 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM "Organization" WHERE "id" = 'org_default');
 
 -- ─── 2. Create memberships for all existing users ──────────────────
--- First user becomes ADMIN, rest become MEMBER
+-- First user (alphabetically) becomes ADMIN, rest become MEMBER
 DO $$
 DECLARE
   user_record RECORD;
@@ -39,78 +43,30 @@ BEGIN
   END LOOP;
 END $$;
 
--- ─── 3. Handle shared (non-HOME) locations ─────────────────────────
--- Strategy: For each unique location code, keep ONE canonical location
--- (from the first user), remap other users' entries/workdays/callouts,
--- then delete duplicates.
+-- ─── 2b. Ensure realalecfarmer@gmail.com is in the org as ADMIN ───
+INSERT INTO "Membership" ("userId", "orgId", "role")
+SELECT
+  id::text,
+  'org_default',
+  'ADMIN'
+FROM auth.users
+WHERE email = 'realalecfarmer@gmail.com'
+ON CONFLICT ("userId", "orgId") DO UPDATE SET "role" = 'ADMIN';
 
-DO $$
-DECLARE
-  loc_code TEXT;
-  canonical_id TEXT;
-  dup_record RECORD;
-BEGIN
-  -- For each unique location code (non-HOME)
-  FOR loc_code IN
-    SELECT DISTINCT "code" FROM "Location"
-    WHERE "category" != 'HOME' AND "code" IS NOT NULL
-  LOOP
-    -- Pick the canonical location (first by userId, then by createdAt)
-    SELECT "id" INTO canonical_id
-    FROM "Location"
-    WHERE "code" = loc_code AND "category" != 'HOME'
-    ORDER BY "userId", "createdAt"
-    LIMIT 1;
-
-    -- Set orgId and clear userId on the canonical location
-    UPDATE "Location"
-    SET "orgId" = 'org_default', "userId" = NULL
-    WHERE "id" = canonical_id;
-
-    -- For each duplicate of this location code
-    FOR dup_record IN
-      SELECT "id" FROM "Location"
-      WHERE "code" = loc_code AND "category" != 'HOME' AND "id" != canonical_id
-    LOOP
-      -- Remap entries
-      UPDATE "Entry"
-      SET "locationId" = canonical_id
-      WHERE "locationId" = dup_record."id";
-
-      -- Remap workdays
-      UPDATE "WorkDay"
-      SET "locationId" = canonical_id
-      WHERE "locationId" = dup_record."id";
-
-      -- Remap callouts
-      UPDATE "Callout"
-      SET "locationId" = canonical_id
-      WHERE "locationId" = dup_record."id";
-
-      -- Delete the duplicate location
-      DELETE FROM "Location" WHERE "id" = dup_record."id";
-    END LOOP;
-  END LOOP;
-
-  -- Handle any non-HOME locations without a code (shouldn't exist but safety)
-  UPDATE "Location"
-  SET "orgId" = 'org_default', "userId" = NULL
-  WHERE "category" != 'HOME' AND "orgId" IS NULL AND "code" IS NULL;
-END $$;
-
--- ─── 4. Handle personal (HOME/WFH) locations ──────────────────────
--- These stay user-scoped but get orgId added
+-- ─── 3. Stamp orgId on ALL existing locations ──────────────────────
+-- Every location (office sites AND WFH) gets orgId set.
+-- userId is NOT changed — each user keeps their own records.
+-- No locations are deleted. No foreign keys are touched.
 UPDATE "Location"
 SET "orgId" = 'org_default'
-WHERE "category" = 'HOME' AND "orgId" IS NULL;
+WHERE "orgId" IS NULL;
 
--- ─── 5. Create default policy for the org ──────────────────────────
--- Migrate existing active policy to be org-scoped
+-- ─── 4. Stamp orgId on existing PolicyConfig ───────────────────────
 UPDATE "PolicyConfig"
 SET "orgId" = 'org_default'
 WHERE "orgId" IS NULL;
 
--- If no policy exists, create a default one
+-- If no policy exists at all, create a default one
 INSERT INTO "PolicyConfig" ("id", "name", "requiredDaysPerWeek", "minimumMinutesPerDay", "isActive", "orgId")
 SELECT
   gen_random_uuid()::text,
@@ -123,10 +79,16 @@ WHERE NOT EXISTS (
   SELECT 1 FROM "PolicyConfig" WHERE "orgId" = 'org_default'
 );
 
--- ─── 6. Fix WorkDay unique constraint ──────────────────────────────
--- The old unique constraint is (date, locationId, userId).
--- After consolidating locations, there might be conflicts.
--- Handle by keeping the one with more totalMinutes.
--- (This is a safety measure; conflicts are unlikely with 2 users.)
+-- ─── 5. Pre-seed an invite code for the default org ─────────────
+INSERT INTO "Invite" ("id", "orgId", "code", "role", "expiresAt")
+SELECT
+  gen_random_uuid()::text,
+  'org_default',
+  'ONSITE24',
+  'MEMBER',
+  now() + interval '1 year'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "Invite" WHERE "code" = 'ONSITE24'
+);
 
 COMMIT;
