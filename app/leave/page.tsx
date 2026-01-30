@@ -39,6 +39,13 @@ interface LeaveSummary {
   byType: Record<string, number>
 }
 
+interface PtoBalance {
+  annualAllowance: number
+  carryover: number
+  taken: number
+  remaining: number
+}
+
 const LEAVE_TYPES = [
   { value: "PTO", label: "PTO / Vacation", icon: Palmtree, color: "text-blue-500 bg-blue-500/10" },
   { value: "SICK", label: "Sick Leave", icon: Stethoscope, color: "text-red-500 bg-red-500/10" },
@@ -55,6 +62,7 @@ export default function LeavePage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [leaves, setLeaves] = useState<LeaveRequest[]>([])
   const [yearlySummary, setYearlySummary] = useState<LeaveSummary>({ totalDays: 0, byType: {} })
+  const [ptoBalance, setPtoBalance] = useState<PtoBalance | null>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [formType, setFormType] = useState("PTO")
@@ -62,6 +70,7 @@ export default function LeavePage() {
   const [formEndDate, setFormEndDate] = useState("")
   const [formNotes, setFormNotes] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
   useEffect(() => {
@@ -94,6 +103,9 @@ export default function LeavePage() {
       if (res.ok) {
         const data = await res.json()
         setYearlySummary(data.summary)
+        if (data.balance) {
+          setPtoBalance(data.balance)
+        }
       }
     } catch (error) {
       console.error("Failed to fetch yearly summary:", error)
@@ -103,6 +115,7 @@ export default function LeavePage() {
   const handleSubmit = async () => {
     if (!formDate) return
     setSubmitting(true)
+    setSubmitError(null)
     try {
       const res = await fetch("/api/leave", {
         method: "POST",
@@ -119,10 +132,15 @@ export default function LeavePage() {
         setFormDate("")
         setFormEndDate("")
         setFormNotes("")
+        setSubmitError(null)
         await Promise.all([fetchLeaves(), fetchYearlySummary()])
+      } else {
+        const data = await res.json()
+        setSubmitError(data.error || "Failed to create leave request")
       }
     } catch (error) {
       console.error("Failed to create leave:", error)
+      setSubmitError("Failed to create leave request")
     }
     setSubmitting(false)
   }
@@ -171,20 +189,54 @@ export default function LeavePage() {
         <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8">
           {/* Summary Cards — Full Year */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold">{yearlySummary.totalDays}</p>
-                <p className="text-xs text-muted-foreground">Total Days ({format(currentMonth, "yyyy")})</p>
-              </CardContent>
-            </Card>
-            {LEAVE_TYPES.slice(0, 3).map((type) => (
-              <Card key={type.value} className="border-0 shadow-lg">
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold">{yearlySummary.byType[type.value] || 0}</p>
-                  <p className="text-xs text-muted-foreground">{type.label}</p>
-                </CardContent>
-              </Card>
-            ))}
+            {ptoBalance && ptoBalance.annualAllowance > 0 ? (
+              <>
+                <Card className="border-0 shadow-lg">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold">{ptoBalance.remaining}</p>
+                    <p className="text-xs text-muted-foreground">PTO Remaining</p>
+                    <p className="text-[10px] text-muted-foreground">of {ptoBalance.annualAllowance + ptoBalance.carryover}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-lg">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold">{ptoBalance.taken}</p>
+                    <p className="text-xs text-muted-foreground">PTO Used</p>
+                  </CardContent>
+                </Card>
+                {ptoBalance.carryover > 0 && (
+                  <Card className="border-0 shadow-lg">
+                    <CardContent className="p-4 text-center">
+                      <p className="text-2xl font-bold">{ptoBalance.carryover}</p>
+                      <p className="text-xs text-muted-foreground">Carryover</p>
+                    </CardContent>
+                  </Card>
+                )}
+                <Card className="border-0 shadow-lg">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold">{yearlySummary.byType["SICK"] || 0}</p>
+                    <p className="text-xs text-muted-foreground">Sick Used</p>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <>
+                <Card className="border-0 shadow-lg">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold">{yearlySummary.totalDays}</p>
+                    <p className="text-xs text-muted-foreground">Total Days ({format(currentMonth, "yyyy")})</p>
+                  </CardContent>
+                </Card>
+                {LEAVE_TYPES.slice(0, 3).map((type) => (
+                  <Card key={type.value} className="border-0 shadow-lg">
+                    <CardContent className="p-4 text-center">
+                      <p className="text-2xl font-bold">{yearlySummary.byType[type.value] || 0}</p>
+                      <p className="text-xs text-muted-foreground">{type.label}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            )}
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -447,6 +499,16 @@ export default function LeavePage() {
                     className="mt-1.5"
                   />
                 </div>
+
+                {formType === "PTO" && ptoBalance && ptoBalance.annualAllowance > 0 && (
+                  <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                    {ptoBalance.remaining} PTO day(s) remaining of {ptoBalance.annualAllowance + ptoBalance.carryover} total
+                  </p>
+                )}
+
+                {submitError && (
+                  <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{submitError}</p>
+                )}
 
                 <Button
                   onClick={handleSubmit}

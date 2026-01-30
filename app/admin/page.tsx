@@ -35,6 +35,7 @@ import {
   DollarSign,
   CalendarClock,
   Edit3,
+  Palmtree,
 } from "lucide-react"
 import { format } from "date-fns"
 
@@ -326,6 +327,7 @@ export default function AdminPage() {
               { href: "/admin/payroll-config", icon: DollarSign, label: "Payroll Config", color: "text-green-500" },
               { href: "/admin/shifts", icon: CalendarClock, label: "Shifts", color: "text-indigo-500" },
               { href: "/admin/bulk-edit", icon: Edit3, label: "Bulk Edit", color: "text-pink-500" },
+              { href: "/admin/leave-policy", icon: Palmtree, label: "Leave Policy", color: "text-teal-500" },
               { href: "/admin/alerts", icon: Bell, label: "Alerts", color: "text-orange-500" },
             ].map((item) => (
               <Link key={item.href} href={item.href}>

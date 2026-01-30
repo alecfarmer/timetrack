@@ -3,6 +3,7 @@ import { supabaseAdmin as supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { format, eachDayOfInterval, parseISO } from "date-fns"
 import { createLeaveSchema, validateBody } from "@/lib/validations"
+import { calculatePtoBalance } from "@/lib/leave-balance"
 
 // GET /api/leave?month=2025-01 - Get leave requests for a month
 export async function GET(request: NextRequest) {
@@ -55,7 +56,20 @@ export async function GET(request: NextRequest) {
       { totalDays: 0, byType: {} as Record<string, number> }
     )
 
-    return NextResponse.json({ leaves: leaves || [], summary })
+    // Include PTO balance when yearly summary is requested
+    let balance = null
+    if (year) {
+      const { user: authUser, org } = await getAuthUser()
+      if (authUser && org) {
+        try {
+          balance = await calculatePtoBalance(authUser.id, org.orgId)
+        } catch {
+          // Non-fatal: balance is supplementary info
+        }
+      }
+    }
+
+    return NextResponse.json({ leaves: leaves || [], summary, balance })
   } catch (error) {
     console.error("Error fetching leave:", error)
     return NextResponse.json({ error: "Failed to fetch leave requests" }, { status: 500 })
@@ -65,7 +79,7 @@ export async function GET(request: NextRequest) {
 // POST /api/leave - Create a leave request
 export async function POST(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthUser()
+    const { user, org, error: authError } = await getAuthUser()
     if (authError) return authError
 
     const body = await request.json()
@@ -80,8 +94,26 @@ export async function POST(request: NextRequest) {
     const end = endDate ? parseISO(endDate) : startDate
     const days = eachDayOfInterval({ start: startDate, end })
 
+    // Check PTO balance before creating records
+    if (type === "PTO" && org) {
+      try {
+        const balance = await calculatePtoBalance(user!.id, org.orgId)
+        if (balance.annualAllowance > 0 && days.length > balance.remaining) {
+          return NextResponse.json(
+            {
+              error: `Insufficient PTO balance. You have ${balance.remaining} day(s) remaining but requested ${days.length}.`,
+            },
+            { status: 400 }
+          )
+        }
+      } catch {
+        // Non-fatal: if balance check fails, allow the request
+      }
+    }
+
     const records = days.map((d) => ({
       userId: user!.id,
+      orgId: org?.orgId || null,
       type,
       date: format(d, "yyyy-MM-dd"),
       endDate: endDate || null,
