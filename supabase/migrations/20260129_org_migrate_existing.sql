@@ -43,6 +43,16 @@ BEGIN
   END LOOP;
 END $$;
 
+-- ─── 2b. Ensure realalecfarmer@gmail.com is in the org as ADMIN ───
+INSERT INTO "Membership" ("userId", "orgId", "role")
+SELECT
+  id::text,
+  'org_default',
+  'ADMIN'
+FROM auth.users
+WHERE email = 'realalecfarmer@gmail.com'
+ON CONFLICT ("userId", "orgId") DO UPDATE SET "role" = 'ADMIN';
+
 -- ─── 3. Stamp orgId on ALL existing locations ──────────────────────
 -- Every location (office sites AND WFH) gets orgId set.
 -- userId is NOT changed — each user keeps their own records.
