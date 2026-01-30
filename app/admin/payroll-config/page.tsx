@@ -107,7 +107,17 @@ export default function PayrollConfigPage() {
       const res = await fetch("/api/payroll/mapping")
       if (res.ok) {
         const data = await res.json()
-        setMapping(data)
+        setMapping({
+          provider: data.provider || "CSV",
+          payCodes: {
+            regular: data.regularPayCode || "REG",
+            overtime: data.overtimePayCode || "OT",
+            callout: data.calloutPayCode || "CALL",
+          },
+          breakDeduction: data.breakDeductionEnabled ?? false,
+          roundingRule: data.roundingRule || "None",
+          roundingIncrement: data.roundingIncrement ?? 15,
+        })
       }
     } catch (err) {
       console.error("Error fetching payroll mapping:", err)
@@ -151,7 +161,15 @@ export default function PayrollConfigPage() {
       const res = await fetch("/api/payroll/mapping", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(mapping),
+        body: JSON.stringify({
+          provider: mapping.provider,
+          regularPayCode: mapping.payCodes.regular,
+          overtimePayCode: mapping.payCodes.overtime,
+          calloutPayCode: mapping.payCodes.callout,
+          breakDeductionEnabled: mapping.breakDeduction,
+          roundingRule: mapping.roundingRule,
+          roundingIncrement: mapping.roundingIncrement,
+        }),
       })
       if (!res.ok) {
         const data = await res.json()
