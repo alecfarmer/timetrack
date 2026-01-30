@@ -79,4 +79,16 @@ WHERE NOT EXISTS (
   SELECT 1 FROM "PolicyConfig" WHERE "orgId" = 'org_default'
 );
 
+-- ─── 5. Pre-seed an invite code for the default org ─────────────
+INSERT INTO "Invite" ("id", "orgId", "code", "role", "expiresAt")
+SELECT
+  gen_random_uuid()::text,
+  'org_default',
+  'ONSITE24',
+  'MEMBER',
+  now() + interval '1 year'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "Invite" WHERE "code" = 'ONSITE24'
+);
+
 COMMIT;
