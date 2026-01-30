@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("Supabase error:", error)
       return NextResponse.json(
-        { error: "Failed to fetch entries", details: error.message },
+        { error: "Failed to fetch entries" },
         { status: 500 }
       )
     }
@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
       gpsLongitude,
       gpsAccuracy,
       notes,
+      photoUrl,
     } = validation.data
 
     // Verify location exists and belongs to user's org
@@ -127,6 +128,7 @@ export async function POST(request: NextRequest) {
         gpsLongitude,
         gpsAccuracy,
         notes,
+        photoUrl: photoUrl || null,
       })
       .select(`
         *,
@@ -137,7 +139,7 @@ export async function POST(request: NextRequest) {
     if (entryError) {
       console.error("Supabase error:", entryError)
       return NextResponse.json(
-        { error: "Failed to create entry", details: entryError.message },
+        { error: "Failed to create entry" },
         { status: 500 }
       )
     }

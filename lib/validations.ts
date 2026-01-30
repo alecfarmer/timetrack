@@ -2,13 +2,14 @@ import { z } from "zod"
 
 // ─── Entry Schemas ───────────────────────────────────────────────
 export const createEntrySchema = z.object({
-  type: z.enum(["CLOCK_IN", "CLOCK_OUT"]),
+  type: z.enum(["CLOCK_IN", "CLOCK_OUT", "BREAK_START", "BREAK_END"]),
   locationId: z.string().min(1, "locationId is required"),
   timestampClient: z.string().datetime().optional(),
   gpsLatitude: z.number().min(-90).max(90).nullable().optional(),
   gpsLongitude: z.number().min(-180).max(180).nullable().optional(),
   gpsAccuracy: z.number().min(0).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
+  photoUrl: z.string().max(500000).nullable().optional(),
 })
 
 // ─── Location Schemas ────────────────────────────────────────────
@@ -58,8 +59,12 @@ export const createLeaveSchema = z.object({
 // ─── Helper: extract timezone from request ──────────────────────
 const FALLBACK_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 
+const IANA_TZ_RE = /^[A-Za-z_]+\/[A-Za-z_\/]+$/
+
 export function getRequestTimezone(request: { headers: { get(name: string): string | null } }): string {
-  return request.headers.get("x-timezone") || FALLBACK_TIMEZONE
+  const tz = request.headers.get("x-timezone")
+  if (tz && IANA_TZ_RE.test(tz)) return tz
+  return FALLBACK_TIMEZONE
 }
 
 // ─── Helper: validate request body ──────────────────────────────

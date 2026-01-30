@@ -151,6 +151,10 @@ export async function syncPendingEntries(): Promise<{ synced: number; failed: nu
       if (res.ok) {
         await removePendingEntry(entry.id)
         synced++
+      } else if (res.status === 429) {
+        // Rate limited — retry later
+        await updateEntryRetries(entry.id, entry.retries + 1)
+        failed++
       } else if (res.status >= 400 && res.status < 500) {
         // Client error — won't succeed on retry, drop it
         await removePendingEntry(entry.id)
