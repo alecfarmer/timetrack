@@ -7,7 +7,7 @@ import { getRequestTimezone } from "@/lib/validations"
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthUser()
+    const { user, org, error: authError } = await getAuthUser()
     if (authError) return authError
 
     const searchParams = request.nextUrl.searchParams
@@ -33,14 +33,19 @@ export async function GET(request: NextRequest) {
       { weekStartsOn: 1 }
     )
 
-    // Fetch policy
-    const { data: policy } = await supabase
+    // Fetch policy (org-scoped if available)
+    let policyQuery = supabase
       .from("PolicyConfig")
       .select("*")
       .eq("isActive", true)
       .order("effectiveDate", { ascending: false })
       .limit(1)
-      .single()
+
+    if (org) {
+      policyQuery = policyQuery.eq("orgId", org.orgId)
+    }
+
+    const { data: policy } = await policyQuery.single()
 
     const requiredDays = policy?.requiredDaysPerWeek || 3
 

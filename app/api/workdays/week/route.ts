@@ -8,7 +8,7 @@ import { getRequestTimezone } from "@/lib/validations"
 // GET /api/workdays/week - Get weekly summary
 export async function GET(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthUser()
+    const { user, org, error: authError } = await getAuthUser()
     if (authError) return authError
 
     const searchParams = request.nextUrl.searchParams
@@ -40,13 +40,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { data: policy } = await supabase
+    let policyQuery = supabase
       .from("PolicyConfig")
       .select("*")
       .eq("isActive", true)
       .order("effectiveDate", { ascending: false })
       .limit(1)
-      .single()
+
+    if (org) {
+      policyQuery = policyQuery.eq("orgId", org.orgId)
+    }
+
+    const { data: policy } = await policyQuery.single()
 
     const requiredDays = policy?.requiredDaysPerWeek || 3
 

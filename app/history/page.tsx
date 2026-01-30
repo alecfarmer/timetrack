@@ -87,7 +87,7 @@ export default function HistoryPage() {
       const days = eachDayOfInterval({ start, end })
 
       const res = await fetch(
-        `/api/entries?startDate=${start.toISOString()}&endDate=${end.toISOString()}&limit=1000`
+        `/api/entries?startDate=${start.toISOString()}&endDate=${end.toISOString()}&limit=500`
       )
       const data = await res.json()
       const entries: Entry[] = data.entries || []

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
-import { onboardingSchema, validateBody } from "@/lib/validations"
+import { validateBody } from "@/lib/validations"
+import { z } from "zod"
 
-// Shared company locations that every new user gets (everything except WFH)
-const COMPANY_LOCATIONS = [
+// Default company locations for new orgs
+const DEFAULT_LOCATIONS = [
   {
     name: "US0",
     code: "US0",
@@ -71,41 +72,59 @@ const COMPANY_LOCATIONS = [
   },
 ]
 
+const onboardingSchema = z.object({
+  // Option A: Create a new org
+  orgName: z.string().min(1).max(100).optional(),
+  // Option B: Join existing org via invite code
+  inviteCode: z.string().min(1).max(50).optional(),
+  // WFH location (optional for both paths)
+  wfhAddress: z.string().max(500).optional(),
+  wfhLatitude: z.number().min(-90).max(90).optional(),
+  wfhLongitude: z.number().min(-180).max(180).optional(),
+})
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 50)
+}
+
 // GET /api/onboarding - Check onboarding status
 export async function GET() {
   try {
-    const { user, error: authError } = await getAuthUser()
+    const { user, org, error: authError } = await getAuthUser()
     if (authError) return authError
 
-    // Check if user has any locations
-    const { count, error } = await supabase
-      .from("Location")
-      .select("*", { count: "exact", head: true })
-      .eq("userId", user!.id)
+    if (org) {
+      const { data: wfhLocation } = await supabase
+        .from("Location")
+        .select("id")
+        .eq("orgId", org.orgId)
+        .eq("userId", user!.id)
+        .eq("category", "HOME")
+        .limit(1)
+        .single()
 
-    if (error) {
-      console.error("Supabase error:", error)
-      return NextResponse.json(
-        { error: "Failed to check onboarding status" },
-        { status: 500 }
-      )
+      return NextResponse.json({
+        needsOnboarding: false,
+        hasOrg: true,
+        hasWfhLocation: !!wfhLocation,
+      })
     }
 
-    const hasLocations = (count || 0) > 0
-
-    // Check if user has a WFH location
-    const { data: wfhLocation } = await supabase
-      .from("Location")
-      .select("id")
-      .eq("userId", user!.id)
-      .eq("category", "HOME")
-      .limit(1)
-      .single()
+    const { data: pendingInvites } = await supabase
+      .from("Invite")
+      .select("id, code, orgId, org:Organization(name)")
+      .eq("email", user!.email)
+      .is("usedBy", null)
+      .gt("expiresAt", new Date().toISOString())
 
     return NextResponse.json({
-      needsOnboarding: !hasLocations,
-      hasWfhLocation: !!wfhLocation,
-      locationCount: count || 0,
+      needsOnboarding: true,
+      hasOrg: false,
+      pendingInvites: pendingInvites || [],
     })
   } catch (error) {
     console.error("Error checking onboarding:", error)
@@ -116,71 +135,172 @@ export async function GET() {
   }
 }
 
-// POST /api/onboarding - Provision company locations + optionally WFH
+// POST /api/onboarding - Create org or join org + optionally set WFH
 export async function POST(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthUser()
+    const { user, org: existingOrg, error: authError } = await getAuthUser()
     if (authError) return authError
+
+    if (existingOrg) {
+      return NextResponse.json(
+        { error: "User already belongs to an organization" },
+        { status: 409 }
+      )
+    }
 
     const body = await request.json()
     const validation = validateBody(onboardingSchema, body)
     if (!validation.success) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
-    const { wfhAddress, wfhLatitude, wfhLongitude } = validation.data
+    const { orgName, inviteCode, wfhAddress, wfhLatitude, wfhLongitude } = validation.data
 
-    // Check if already provisioned
-    const { count } = await supabase
-      .from("Location")
-      .select("*", { count: "exact", head: true })
-      .eq("userId", user!.id)
-
-    if ((count || 0) > 0) {
+    if (!orgName && !inviteCode) {
       return NextResponse.json(
-        { error: "User already has locations provisioned" },
-        { status: 409 }
+        { error: "Provide either orgName (to create) or inviteCode (to join)" },
+        { status: 400 }
       )
     }
 
-    // Insert all company locations for this user
-    const locationsToInsert = COMPANY_LOCATIONS.map((loc) => ({
-      ...loc,
-      userId: user!.id,
-      isDefault: loc.isDefault || false,
-    }))
+    let orgId: string
 
-    // Add WFH if provided
+    if (inviteCode) {
+      // Join existing org via invite code
+      const { data: invite, error: inviteError } = await supabase
+        .from("Invite")
+        .select("*")
+        .eq("code", inviteCode)
+        .is("usedBy", null)
+        .gt("expiresAt", new Date().toISOString())
+        .single()
+
+      if (inviteError || !invite) {
+        return NextResponse.json(
+          { error: "Invalid or expired invite code" },
+          { status: 400 }
+        )
+      }
+
+      if (invite.email && invite.email !== user!.email) {
+        return NextResponse.json(
+          { error: "This invite is for a different email address" },
+          { status: 403 }
+        )
+      }
+
+      orgId = invite.orgId
+
+      const { error: memberError } = await supabase
+        .from("Membership")
+        .insert({
+          userId: user!.id,
+          orgId,
+          role: invite.role || "MEMBER",
+        })
+
+      if (memberError) {
+        console.error("Membership error:", memberError)
+        return NextResponse.json(
+          { error: "Failed to join organization" },
+          { status: 500 }
+        )
+      }
+
+      await supabase
+        .from("Invite")
+        .update({ usedBy: user!.id })
+        .eq("id", invite.id)
+
+    } else {
+      // Create new org
+      const slug = slugify(orgName!)
+      const { data: org, error: orgError } = await supabase
+        .from("Organization")
+        .insert({
+          name: orgName!,
+          slug: `${slug}-${Date.now().toString(36)}`,
+          createdBy: user!.id,
+        })
+        .select()
+        .single()
+
+      if (orgError || !org) {
+        console.error("Org creation error:", orgError)
+        return NextResponse.json(
+          { error: "Failed to create organization" },
+          { status: 500 }
+        )
+      }
+
+      orgId = org.id
+
+      const { error: memberError } = await supabase
+        .from("Membership")
+        .insert({
+          userId: user!.id,
+          orgId,
+          role: "ADMIN",
+        })
+
+      if (memberError) {
+        console.error("Membership error:", memberError)
+        await supabase.from("Organization").delete().eq("id", orgId)
+        return NextResponse.json(
+          { error: "Failed to create membership" },
+          { status: 500 }
+        )
+      }
+
+      // Create default locations for the org
+      const locationsToInsert = DEFAULT_LOCATIONS.map((loc) => ({
+        ...loc,
+        orgId,
+        userId: null as string | null,
+        isDefault: loc.isDefault || false,
+      }))
+
+      const { error: locError } = await supabase
+        .from("Location")
+        .insert(locationsToInsert)
+
+      if (locError) {
+        console.error("Location creation error:", locError)
+      }
+
+      // Create default policy
+      await supabase
+        .from("PolicyConfig")
+        .insert({
+          name: "Default Policy",
+          requiredDaysPerWeek: 3,
+          minimumMinutesPerDay: 0,
+          isActive: true,
+          orgId,
+        })
+    }
+
+    // Add WFH location if provided
     if (wfhLatitude !== undefined && wfhLongitude !== undefined) {
-      locationsToInsert.push({
-        name: "WFH",
-        code: "WFH",
-        category: "HOME",
-        address: wfhAddress || "",
-        latitude: wfhLatitude,
-        longitude: wfhLongitude,
-        geofenceRadius: 200,
-        isDefault: false,
-        userId: user!.id,
-      })
-    }
-
-    const { data: locations, error } = await supabase
-      .from("Location")
-      .insert(locationsToInsert)
-      .select()
-
-    if (error) {
-      console.error("Supabase error:", error)
-      return NextResponse.json(
-        { error: "Failed to provision locations", details: error.message },
-        { status: 500 }
-      )
+      await supabase
+        .from("Location")
+        .insert({
+          name: "WFH",
+          code: "WFH",
+          category: "HOME",
+          address: wfhAddress || "",
+          latitude: wfhLatitude,
+          longitude: wfhLongitude,
+          geofenceRadius: 200,
+          isDefault: false,
+          orgId,
+          userId: user!.id,
+        })
     }
 
     return NextResponse.json({
       success: true,
-      locationsCreated: locations?.length || 0,
-      hasWfh: wfhLatitude !== undefined,
+      orgId,
+      joined: !!inviteCode,
     }, { status: 201 })
   } catch (error) {
     console.error("Error during onboarding:", error)

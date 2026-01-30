@@ -57,7 +57,7 @@ export async function DELETE() {
     // 4. Leave Requests
     await supabase.from("LeaveRequest").delete().eq("userId", userId)
 
-    // 5. Locations
+    // 5. Personal locations only (userId-scoped, e.g. WFH)
     const { error: locationsError } = await supabase
       .from("Location")
       .delete()
@@ -71,7 +71,10 @@ export async function DELETE() {
       )
     }
 
-    // 5. Sign the user out
+    // 6. Remove membership
+    await supabase.from("Membership").delete().eq("userId", userId)
+
+    // 7. Sign the user out
     const serverSupabase = await createClient()
     await serverSupabase.auth.signOut()
 

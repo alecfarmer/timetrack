@@ -55,13 +55,6 @@ export const createLeaveSchema = z.object({
   notes: z.string().max(500).nullable().optional(),
 })
 
-// ─── Onboarding Schema ──────────────────────────────────────────
-export const onboardingSchema = z.object({
-  wfhAddress: z.string().max(500).optional(),
-  wfhLatitude: z.number().min(-90).max(90).optional(),
-  wfhLongitude: z.number().min(-180).max(180).optional(),
-})
-
 // ─── Helper: extract timezone from request ──────────────────────
 const FALLBACK_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 
