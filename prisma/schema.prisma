@@ -13,6 +13,7 @@ model Organization {
   name      String
   slug      String   @unique
   createdBy String
+  features  Json     @default("{\"photoVerification\":false,\"breakTracking\":false,\"timesheetApproval\":false,\"alerts\":true,\"analytics\":true,\"manualCorrections\":true,\"auditLog\":true}")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -21,6 +22,10 @@ model Organization {
   locations    Location[]
   policies     PolicyConfig[]
   invites      Invite[]
+  auditLogs    AuditLog[]
+  alertRules   AlertRule[]
+  alertNotifications AlertNotification[]
+  timesheets   TimesheetSubmission[]
 
   @@index([slug])
 }
@@ -105,6 +110,7 @@ model Entry {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   editHistory Json?
+  corrections EntryCorrection[]
 
   workDayId String?
   workDay   WorkDay? @relation(fields: [workDayId], references: [id])
@@ -127,7 +133,8 @@ model WorkDay {
   lastClockOut DateTime?
   totalMinutes Int?
 
-  meetsPolicy Boolean @default(false)
+  breakMinutes Int     @default(0)
+  meetsPolicy  Boolean @default(false)
 
   entries Entry[]
 
@@ -144,6 +151,8 @@ model PolicyConfig {
   name                 String
   requiredDaysPerWeek  Int      @default(3)
   minimumMinutesPerDay Int      @default(0)
+  breakMinutesPerDay   Int      @default(0)
+  autoDeductBreak      Boolean  @default(false)
   effectiveDate        DateTime @default(now())
   isActive             Boolean  @default(true)
 
@@ -238,7 +247,97 @@ enum LocationCategory {
   OTHER
 }
 
+model AuditLog {
+  id         String   @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId     String
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([orgId])
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@index([action])
+}
+
+model EntryCorrection {
+  id           String   @id @default(cuid())
+  entryId      String
+  entry        Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  correctedBy  String
+  reason       String
+  fieldChanged String
+  oldValue     String?
+  newValue     String?
+  createdAt    DateTime @default(now())
+
+  @@index([entryId])
+}
+
+model TimesheetSubmission {
+  id           String   @id @default(cuid())
+  userId       String
+  orgId        String
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  weekStart    DateTime @db.Date
+  weekEnd      DateTime @db.Date
+  status       String   @default("PENDING")
+  totalMinutes Int      @default(0)
+  totalDays    Int      @default(0)
+  submittedAt  DateTime @default(now())
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  reviewNotes  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, weekStart])
+  @@index([orgId])
+  @@index([status])
+}
+
+model AlertRule {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  type      String
+  config    Json     @default("{}")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notifications AlertNotification[]
+
+  @@index([orgId])
+}
+
+model AlertNotification {
+  id           String   @id @default(cuid())
+  orgId        String
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  ruleId       String?
+  rule         AlertRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  targetUserId String
+  type         String
+  title        String
+  message      String
+  isRead       Boolean  @default(false)
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([targetUserId])
+  @@index([targetUserId, isRead])
+  @@index([createdAt(sort: Desc)])
+}
+
 enum EntryType {
   CLOCK_IN
   CLOCK_OUT
+  BREAK_START
+  BREAK_END
 }

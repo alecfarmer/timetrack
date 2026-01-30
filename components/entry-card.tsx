@@ -5,11 +5,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatTimeWithZone, formatRelative } from "@/lib/dates"
 import { getAccuracyLevel } from "@/lib/geo"
-import { LogIn, LogOut, MapPin, AlertCircle } from "lucide-react"
+import { LogIn, LogOut, MapPin, AlertCircle, Coffee, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface EntryCardProps {
-  type: "CLOCK_IN" | "CLOCK_OUT"
+  type: "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END"
   timestamp: Date | string
   locationName: string
   gpsAccuracy?: number | null
@@ -28,6 +28,9 @@ export function EntryCard({
   index = 0,
 }: EntryCardProps) {
   const isClockIn = type === "CLOCK_IN"
+  const isBreakStart = type === "BREAK_START"
+  const isBreakEnd = type === "BREAK_END"
+  const isPositive = isClockIn || isBreakEnd
   const accuracyLevel = gpsAccuracy ? getAccuracyLevel(gpsAccuracy) : null
 
   return (
@@ -46,7 +49,7 @@ export function EntryCard({
       <Card
         className={cn(
           "cursor-pointer transition-shadow hover:shadow-md",
-          isClockIn ? "border-l-4 border-l-success" : "border-l-4 border-l-destructive"
+          isPositive ? "border-l-4 border-l-success" : isBreakStart ? "border-l-4 border-l-warning" : "border-l-4 border-l-destructive"
         )}
         onClick={onClick}
       >
@@ -56,7 +59,7 @@ export function EntryCard({
               <motion.div
                 className={cn(
                   "p-2 rounded-full",
-                  isClockIn ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                  isPositive ? "bg-success/10 text-success" : isBreakStart ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive"
                 )}
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
@@ -69,6 +72,10 @@ export function EntryCard({
               >
                 {isClockIn ? (
                   <LogIn className="h-5 w-5" />
+                ) : isBreakStart ? (
+                  <Coffee className="h-5 w-5" />
+                ) : isBreakEnd ? (
+                  <Play className="h-5 w-5" />
                 ) : (
                   <LogOut className="h-5 w-5" />
                 )}
@@ -77,7 +84,7 @@ export function EntryCard({
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">
-                    {isClockIn ? "Clock In" : "Clock Out"}
+                    {isClockIn ? "Clock In" : isBreakStart ? "Break Start" : isBreakEnd ? "Break End" : "Clock Out"}
                   </span>
                   <span className="text-lg font-mono">
                     {formatTimeWithZone(timestamp)}

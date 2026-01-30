@@ -11,6 +11,7 @@ import { BottomNav } from "@/components/bottom-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import {
   Users,
   UserPlus,
@@ -24,6 +25,11 @@ import {
   Settings,
   AlertCircle,
   Download,
+  Sliders,
+  BarChart3,
+  Bell,
+  ScrollText,
+  ClipboardCheck,
 } from "lucide-react"
 import { format } from "date-fns"
 
@@ -301,6 +307,27 @@ export default function AdminPage() {
                 <p className="text-xs text-muted-foreground">Pending Invites</p>
               </CardContent>
             </Card>
+          </motion.div>
+
+          {/* Quick Links */}
+          <motion.div variants={staggerItem} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { href: "/admin/features", icon: Sliders, label: "Features", color: "text-violet-500" },
+              { href: "/admin/analytics", icon: BarChart3, label: "Analytics", color: "text-blue-500" },
+              { href: "/admin/timesheets", icon: ClipboardCheck, label: "Timesheets", color: "text-emerald-500" },
+              { href: "/admin/audit", icon: ScrollText, label: "Audit Log", color: "text-amber-500" },
+            ].map((item) => (
+              <Link key={item.href} href={item.href}>
+                <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                      <item.icon className={`h-4.5 w-4.5 ${item.color}`} />
+                    </div>
+                    <p className="text-sm font-medium">{item.label}</p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
           </motion.div>
 
           <div className="grid lg:grid-cols-3 gap-6">

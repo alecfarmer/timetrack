@@ -22,7 +22,7 @@ interface Location {
 
 interface Entry {
   id: string
-  type: "CLOCK_IN" | "CLOCK_OUT"
+  type: "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END"
   timestampServer: string
   timestampClient: string
   gpsLatitude: number | null
@@ -74,8 +74,13 @@ interface UseClockStateReturn {
   setEightHourAlert: (v: boolean) => void
   distanceToSelected: number | null
   isWithinGeofence: boolean
+  pendingPhotoUrl: string | null
+  setPendingPhotoUrl: (url: string | null) => void
+  isOnBreak: boolean
   handleClockIn: () => Promise<void>
   handleClockOut: () => Promise<void>
+  handleBreakStart: () => Promise<void>
+  handleBreakEnd: () => Promise<void>
   handleRefresh: (refreshGps: () => Promise<void>) => Promise<void>
   handleOnboardingComplete: () => Promise<void>
   fetchCurrentStatus: () => Promise<void>
@@ -93,6 +98,7 @@ export function useClockState(position: GeoPosition | null): UseClockStateReturn
   const [isOffline, setIsOffline] = useState(false)
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
   const [eightHourAlert, setEightHourAlert] = useState(false)
+  const [pendingPhotoUrl, setPendingPhotoUrl] = useState<string | null>(null)
   const eightHourAlertShown = useRef(false)
   const statusFetchedAt = useRef<number>(Date.now())
 
@@ -268,22 +274,27 @@ export function useClockState(position: GeoPosition | null): UseClockStateReturn
       return
     }
     try {
+      const entryBody: Record<string, unknown> = {
+        type: "CLOCK_IN",
+        locationId: selectedLocationId,
+        timestampClient: new Date().toISOString(),
+        gpsLatitude: position?.latitude,
+        gpsLongitude: position?.longitude,
+        gpsAccuracy: position?.accuracy,
+      }
+      if (pendingPhotoUrl) {
+        entryBody.photoUrl = pendingPhotoUrl
+      }
       const res = await fetch("/api/entries", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...tzHeaders() },
-        body: JSON.stringify({
-          type: "CLOCK_IN",
-          locationId: selectedLocationId,
-          timestampClient: new Date().toISOString(),
-          gpsLatitude: position?.latitude,
-          gpsLongitude: position?.longitude,
-          gpsAccuracy: position?.accuracy,
-        }),
+        body: JSON.stringify(entryBody),
       })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || "Failed to clock in")
       }
+      setPendingPhotoUrl(null)
       await Promise.all([fetchCurrentStatus(), fetchWeekSummary()])
       if (navigator.vibrate) navigator.vibrate(100)
     } catch (err) {
@@ -351,6 +362,69 @@ export function useClockState(position: GeoPosition | null): UseClockStateReturn
     }
   }, [selectedLocationId, position, isWithinGeofence, distanceToSelected, selectedLocation, fetchCurrentStatus, fetchWeekSummary])
 
+  const handleBreakStart = useCallback(async () => {
+    if (!selectedLocationId || !position) return
+    try {
+      const res = await fetch("/api/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...tzHeaders() },
+        body: JSON.stringify({
+          type: "BREAK_START",
+          locationId: selectedLocationId,
+          timestampClient: new Date().toISOString(),
+          gpsLatitude: position.latitude,
+          gpsLongitude: position.longitude,
+          gpsAccuracy: position.accuracy,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Failed to start break")
+      }
+      await fetchCurrentStatus()
+      if (navigator.vibrate) navigator.vibrate(50)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start break")
+    }
+  }, [selectedLocationId, position, fetchCurrentStatus])
+
+  const handleBreakEnd = useCallback(async () => {
+    if (!selectedLocationId || !position) return
+    try {
+      const res = await fetch("/api/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...tzHeaders() },
+        body: JSON.stringify({
+          type: "BREAK_END",
+          locationId: selectedLocationId,
+          timestampClient: new Date().toISOString(),
+          gpsLatitude: position.latitude,
+          gpsLongitude: position.longitude,
+          gpsAccuracy: position.accuracy,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Failed to end break")
+      }
+      await fetchCurrentStatus()
+      if (navigator.vibrate) navigator.vibrate(50)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to end break")
+    }
+  }, [selectedLocationId, position, fetchCurrentStatus])
+
+  // Derive break status from today's entries
+  const isOnBreak = (() => {
+    if (!currentStatus?.todayEntries) return false
+    const entries = currentStatus.todayEntries
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (entries[i].type === "BREAK_START") return true
+      if (entries[i].type === "BREAK_END" || entries[i].type === "CLOCK_OUT") return false
+    }
+    return false
+  })()
+
   const handleRefresh = useCallback(async (refreshGps: () => Promise<void>) => {
     setRefreshing(true)
     await Promise.all([fetchCurrentStatus(), fetchWeekSummary(), refreshGps()])
@@ -381,8 +455,13 @@ export function useClockState(position: GeoPosition | null): UseClockStateReturn
     setEightHourAlert,
     distanceToSelected,
     isWithinGeofence,
+    pendingPhotoUrl,
+    setPendingPhotoUrl,
+    isOnBreak,
     handleClockIn,
     handleClockOut,
+    handleBreakStart,
+    handleBreakEnd,
     handleRefresh,
     handleOnboardingComplete,
     fetchCurrentStatus,

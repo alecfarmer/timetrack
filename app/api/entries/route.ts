@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
       gpsLongitude,
       gpsAccuracy,
       notes,
+      photoUrl,
     } = validation.data
 
     // Verify location exists and belongs to user's org
@@ -127,6 +128,7 @@ export async function POST(request: NextRequest) {
         gpsLongitude,
         gpsAccuracy,
         notes,
+        photoUrl: photoUrl || null,
       })
       .select(`
         *,

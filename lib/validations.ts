@@ -2,13 +2,14 @@ import { z } from "zod"
 
 // ─── Entry Schemas ───────────────────────────────────────────────
 export const createEntrySchema = z.object({
-  type: z.enum(["CLOCK_IN", "CLOCK_OUT"]),
+  type: z.enum(["CLOCK_IN", "CLOCK_OUT", "BREAK_START", "BREAK_END"]),
   locationId: z.string().min(1, "locationId is required"),
   timestampClient: z.string().datetime().optional(),
   gpsLatitude: z.number().min(-90).max(90).nullable().optional(),
   gpsLongitude: z.number().min(-180).max(180).nullable().optional(),
   gpsAccuracy: z.number().min(0).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
+  photoUrl: z.string().max(500000).nullable().optional(),
 })
 
 // ─── Location Schemas ────────────────────────────────────────────
