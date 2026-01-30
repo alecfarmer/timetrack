@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
 // POST /api/callouts - Create a new callout
 export async function POST(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthUser()
+    const { user, org, error: authError } = await getAuthUser()
     if (authError) return authError
 
     const body = await request.json()
@@ -96,14 +96,21 @@ export async function POST(request: NextRequest) {
       resolution,
     } = validation.data
 
-    // Verify location exists
+    // Verify location exists and belongs to user's org
     const { data: location, error: locError } = await supabase
       .from("Location")
-      .select("id")
+      .select("id, orgId")
       .eq("id", locationId)
       .single()
 
     if (locError || !location) {
+      return NextResponse.json(
+        { error: "Location not found" },
+        { status: 404 }
+      )
+    }
+
+    if (org && location.orgId !== org.orgId) {
       return NextResponse.json(
         { error: "Location not found" },
         { status: 404 }
