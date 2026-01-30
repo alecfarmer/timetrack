@@ -1,10 +1,12 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ClockButton } from "@/components/clock-button"
 import { TimerDisplay } from "@/components/timer-display"
 import { EntryCard } from "@/components/entry-card"
 import { LocationPicker } from "@/components/location-picker"
+import { PhotoCapture } from "@/components/photo-capture"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Logo, LogoMark } from "@/components/logo"
 import { DesktopMonitor, useDesktopMonitor } from "@/components/desktop-monitor"
@@ -12,6 +14,7 @@ import { Onboarding } from "@/components/onboarding"
 import { StreaksWidget } from "@/components/streaks-widget"
 import { OfflineBanner } from "@/components/offline-banner"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { NotificationBell } from "@/components/notification-bell"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useGeolocation } from "@/hooks/use-geolocation"
@@ -33,6 +36,8 @@ import {
   CheckCircle2,
   PartyPopper,
   X,
+  Coffee,
+  Play,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
@@ -40,11 +45,22 @@ import { BottomNav } from "@/components/bottom-nav"
 
 export default function Dashboard() {
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, org, signOut } = useAuth()
   const { position, loading: gpsLoading, refresh: refreshGps } = useGeolocation(true)
   const desktopMonitor = useDesktopMonitor()
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false)
 
   const clock = useClockState(position)
+
+  // Check if photo verification feature is enabled for the org
+  const [orgFeatures, setOrgFeatures] = useState<Record<string, boolean>>({})
+  useEffect(() => {
+    if (!org) return
+    fetch("/api/org/features")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setOrgFeatures(data) })
+      .catch(() => {})
+  }, [org])
 
   useNotifications(
     clock.currentStatus
@@ -58,6 +74,33 @@ export default function Dashboard() {
   )
 
   useKeyboardShortcuts()
+
+  // Derive break start time from today's entries
+  const breakStartTime = (() => {
+    if (!clock.isOnBreak || !clock.currentStatus?.todayEntries) return null
+    const entries = clock.currentStatus.todayEntries
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (entries[i].type === "BREAK_START") {
+        return new Date(entries[i].timestampServer)
+      }
+    }
+    return null
+  })()
+
+  const handleClockInWithPhoto = async () => {
+    if (orgFeatures.photoVerification && !clock.pendingPhotoUrl) {
+      setShowPhotoCapture(true)
+      return
+    }
+    await clock.handleClockIn()
+  }
+
+  const handlePhotoCapture = async (dataUrl: string) => {
+    clock.setPendingPhotoUrl(dataUrl)
+    setShowPhotoCapture(false)
+    // Proceed with clock-in after photo capture
+    await clock.handleClockIn()
+  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -95,6 +138,14 @@ export default function Dashboard() {
 
   return (
     <ErrorBoundary>
+      {/* Photo Capture Overlay */}
+      {showPhotoCapture && (
+        <PhotoCapture
+          onCapture={handlePhotoCapture}
+          onCancel={() => setShowPhotoCapture(false)}
+        />
+      )}
+
       <div className="min-h-screen bg-background">
         {/* Background gradient */}
         <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
@@ -107,7 +158,7 @@ export default function Dashboard() {
           clockInTime={clock.currentStatus?.currentSessionStart ? new Date(clock.currentStatus.currentSessionStart) : null}
           currentLocation={clock.selectedLocation?.name}
           locationCategory={clock.selectedLocation?.category}
-          onClockIn={clock.handleClockIn}
+          onClockIn={handleClockInWithPhoto}
           onClockOut={clock.handleClockOut}
           weeklyProgress={{
             daysWorked: clock.weekSummary?.daysWorked || 0,
@@ -145,6 +196,7 @@ export default function Dashboard() {
               <Button variant="ghost" size="icon" onClick={desktopMonitor.toggle} className="hidden lg:flex rounded-xl" title="Toggle Desktop Monitor">
                 <Monitor className={cn("h-5 w-5", desktopMonitor.isVisible && "text-primary")} />
               </Button>
+              <NotificationBell />
               <ThemeToggle />
               <Button variant="ghost" size="icon" onClick={() => clock.handleRefresh(refreshGps)} disabled={clock.refreshing} className="rounded-xl">
                 <RefreshCw className={cn("h-5 w-5", clock.refreshing && "animate-spin")} />
@@ -257,7 +309,32 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  <ClockButton isClockedIn={clock.currentStatus?.isClockedIn || false} onClockIn={clock.handleClockIn} onClockOut={clock.handleClockOut} disabled={!clock.selectedLocationId || !position || !clock.isWithinGeofence} />
+                  <ClockButton isClockedIn={clock.currentStatus?.isClockedIn || false} onClockIn={handleClockInWithPhoto} onClockOut={clock.handleClockOut} disabled={!clock.selectedLocationId || !position || !clock.isWithinGeofence} />
+
+                  {/* Break buttons - shown when clocked in */}
+                  {clock.currentStatus?.isClockedIn && (
+                    <div className="pt-1">
+                      {clock.isOnBreak ? (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2 border-success/30 text-success hover:bg-success/10"
+                          onClick={clock.handleBreakEnd}
+                        >
+                          <Play className="h-4 w-4" />
+                          End Break
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2 border-warning/30 text-warning hover:bg-warning/10"
+                          onClick={clock.handleBreakStart}
+                        >
+                          <Coffee className="h-4 w-4" />
+                          Start Break
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </motion.div>
 
@@ -266,7 +343,7 @@ export default function Dashboard() {
                 <div className={cn("relative overflow-hidden rounded-2xl p-5", clock.currentStatus?.isClockedIn ? "card-highlight" : "card-elevated")}>
                   {clock.currentStatus?.isClockedIn && <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-primary opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />}
                   <div className="relative">
-                    <TimerDisplay startTime={clock.currentStatus?.currentSessionStart ? new Date(clock.currentStatus.currentSessionStart) : null} label={clock.currentStatus?.isClockedIn ? "session time" : undefined} />
+                    <TimerDisplay startTime={clock.currentStatus?.currentSessionStart ? new Date(clock.currentStatus.currentSessionStart) : null} label={clock.currentStatus?.isClockedIn ? "session time" : undefined} isOnBreak={clock.isOnBreak} breakStartTime={breakStartTime} />
                   </div>
                 </div>
 
@@ -316,7 +393,7 @@ export default function Dashboard() {
                     <AnimatePresence mode="popLayout">
                       {clock.currentStatus?.todayEntries && clock.currentStatus.todayEntries.length > 0 ? (
                         clock.currentStatus.todayEntries.map((entry, index) => (
-                          <EntryCard key={entry.id} type={entry.type} timestamp={entry.timestampServer} locationName={entry.location.name} gpsAccuracy={entry.gpsAccuracy} notes={entry.notes} index={index} />
+                          <EntryCard key={entry.id} id={entry.id} type={entry.type} timestamp={entry.timestampServer} locationName={entry.location.name} gpsAccuracy={entry.gpsAccuracy} notes={entry.notes} photoUrl={entry.photoUrl} showCorrection={orgFeatures.manualCorrections} index={index} />
                         ))
                       ) : (
                         <div className="py-8 text-center">
@@ -350,7 +427,7 @@ export default function Dashboard() {
                         <p className="font-semibold">{clock.currentStatus?.isClockedIn && clock.selectedLocation ? clock.selectedLocation.name : "Ready to start"}</p>
                       </div>
                     </div>
-                    <TimerDisplay startTime={clock.currentStatus?.currentSessionStart ? new Date(clock.currentStatus.currentSessionStart) : null} label={clock.currentStatus?.isClockedIn ? "session time" : undefined} />
+                    <TimerDisplay startTime={clock.currentStatus?.currentSessionStart ? new Date(clock.currentStatus.currentSessionStart) : null} label={clock.currentStatus?.isClockedIn ? "session time" : undefined} isOnBreak={clock.isOnBreak} breakStartTime={breakStartTime} />
                     <div className="flex items-center gap-4">
                       <div><p className="text-2xl font-bold tabular-nums">{todayHours}h {todayMinutes}m</p><p className="text-xs text-muted-foreground">Today's total</p></div>
                       <div className="h-10 w-px bg-border" />
@@ -387,7 +464,33 @@ export default function Dashboard() {
                       <MapPin className="h-4 w-4" /><span>{formatDistance(clock.distanceToSelected)} from {clock.selectedLocation.name}</span>{clock.isWithinGeofence && <CheckCircle2 className="h-4 w-4 ml-auto" />}
                     </div>
                   )}
-                  <ClockButton isClockedIn={clock.currentStatus?.isClockedIn || false} onClockIn={clock.handleClockIn} onClockOut={clock.handleClockOut} disabled={!clock.selectedLocationId || !position || !clock.isWithinGeofence} />
+                  <ClockButton isClockedIn={clock.currentStatus?.isClockedIn || false} onClockIn={handleClockInWithPhoto} onClockOut={clock.handleClockOut} disabled={!clock.selectedLocationId || !position || !clock.isWithinGeofence} />
+
+                  {/* Break buttons - shown when clocked in */}
+                  {clock.currentStatus?.isClockedIn && (
+                    <div>
+                      {clock.isOnBreak ? (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2 border-success/30 text-success hover:bg-success/10"
+                          onClick={clock.handleBreakEnd}
+                        >
+                          <Play className="h-4 w-4" />
+                          End Break
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2 border-warning/30 text-warning hover:bg-warning/10"
+                          onClick={clock.handleBreakStart}
+                        >
+                          <Coffee className="h-4 w-4" />
+                          Start Break
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
                   <p className="text-xs text-center text-muted-foreground">GPS verification required</p>
                 </div>
               </motion.div>
@@ -422,7 +525,7 @@ export default function Dashboard() {
                   {clock.currentStatus?.todayEntries && clock.currentStatus.todayEntries.length > 0 ? (
                     <div className="grid sm:grid-cols-2 gap-2">
                       {clock.currentStatus.todayEntries.map((entry, index) => (
-                        <EntryCard key={entry.id} type={entry.type} timestamp={entry.timestampServer} locationName={entry.location.name} gpsAccuracy={entry.gpsAccuracy} notes={entry.notes} index={index} />
+                        <EntryCard key={entry.id} id={entry.id} type={entry.type} timestamp={entry.timestampServer} locationName={entry.location.name} gpsAccuracy={entry.gpsAccuracy} notes={entry.notes} photoUrl={entry.photoUrl} showCorrection={orgFeatures.manualCorrections} index={index} />
                       ))}
                     </div>
                   ) : (

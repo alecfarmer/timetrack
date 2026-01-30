@@ -29,6 +29,7 @@ interface Entry {
   gpsLongitude: number | null
   gpsAccuracy: number | null
   notes: string | null
+  photoUrl: string | null
   location: {
     id: string
     name: string

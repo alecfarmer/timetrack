@@ -187,7 +187,7 @@ export default function LeavePage() {
                   </div>
 
                   <div className="grid grid-cols-7 gap-1 mb-1">
-                    {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
+                    {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
                       <div key={i} className="text-center text-xs font-medium text-muted-foreground py-2">
                         {day}
                       </div>
@@ -199,7 +199,6 @@ export default function LeavePage() {
                       const dateStr = format(day, "yyyy-MM-dd")
                       const leave = leaveByDate.get(dateStr)
                       const dayOfWeek = day.getDay()
-                      const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1
                       const isSelected = selectedDate === dateStr
                       const typeConfig = leave ? getLeaveTypeConfig(leave.type) : null
 
@@ -216,7 +215,7 @@ export default function LeavePage() {
                               ? typeConfig?.color
                               : "hover:bg-muted/60"
                           )}
-                          style={index === 0 ? { gridColumnStart: adjustedDay + 1 } : undefined}
+                          style={index === 0 ? { gridColumnStart: dayOfWeek + 1 } : undefined}
                         >
                           <span className="font-medium text-[13px]">{format(day, "d")}</span>
                           {leave && !isSelected && (
@@ -292,24 +291,50 @@ export default function LeavePage() {
                   <h3 className="text-sm font-semibold mb-3">This Month</h3>
                   {leaves.length > 0 ? (
                     <div className="space-y-2">
-                      {leaves.map((leave) => {
-                        const config = getLeaveTypeConfig(leave.type)
-                        const Icon = config.icon
-                        return (
-                          <div key={leave.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
-                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", config.color)}>
-                              <Icon className="h-4 w-4" />
+                      {(() => {
+                        // Group consecutive same-type leaves into ranges for display
+                        const groups: { type: string; startDate: string; endDate: string; ids: string[] }[] = []
+                        for (const leave of leaves) {
+                          const prev = groups[groups.length - 1]
+                          if (prev && prev.type === leave.type && leave.endDate && prev.endDate === leave.endDate) {
+                            // Same range group — skip duplicate
+                            prev.ids.push(leave.id)
+                            continue
+                          }
+                          if (prev && prev.type === leave.type) {
+                            // Check if consecutive day
+                            const prevEnd = new Date(prev.endDate)
+                            const curStart = new Date(leave.date)
+                            const diffMs = curStart.getTime() - prevEnd.getTime()
+                            if (diffMs <= 86400000) {
+                              prev.endDate = leave.date
+                              prev.ids.push(leave.id)
+                              continue
+                            }
+                          }
+                          groups.push({ type: leave.type, startDate: leave.date, endDate: leave.date, ids: [leave.id] })
+                        }
+                        return groups.map((group) => {
+                          const config = getLeaveTypeConfig(group.type)
+                          const Icon = config.icon
+                          const dayCount = group.ids.length
+                          return (
+                            <div key={group.ids[0]} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
+                              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", config.color)}>
+                                <Icon className="h-4 w-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium">{config.label}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {format(new Date(group.startDate + "T00:00"), "MMM d")}
+                                  {group.startDate !== group.endDate && ` – ${format(new Date(group.endDate + "T00:00"), "MMM d")}`}
+                                  {dayCount > 1 && ` (${dayCount} days)`}
+                                </p>
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium">{config.label}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {format(new Date(leave.date), "MMM d")}
-                                {leave.endDate && leave.endDate !== leave.date && ` – ${format(new Date(leave.endDate), "MMM d")}`}
-                              </p>
-                            </div>
-                          </div>
-                        )
-                      })}
+                          )
+                        })
+                      })()}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">No leave this month</p>

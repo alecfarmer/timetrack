@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BottomNav } from "@/components/bottom-nav"
+import { TimesheetSubmit } from "@/components/timesheet-submit"
 
 interface Entry {
   id: string
@@ -484,6 +485,9 @@ export default function HistoryPage() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Timesheet Submission */}
+              <TimesheetSubmit />
             </div>
           </div>
         </div>

@@ -9,6 +9,10 @@ import { BottomNav } from "@/components/bottom-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
+import { WeeklyHoursChart } from "@/components/charts/weekly-hours-chart"
+import { ComplianceTrendChart } from "@/components/charts/compliance-trend-chart"
+import { LocationPieChart } from "@/components/charts/location-pie-chart"
+import { MemberComparisonChart } from "@/components/charts/member-comparison-chart"
 import {
   BarChart3,
   ArrowLeft,
@@ -16,7 +20,6 @@ import {
   TrendingUp,
   Users,
   Clock,
-  MapPin,
   AlertCircle,
   CheckCircle2,
 } from "lucide-react"
@@ -185,84 +188,47 @@ export default function AnalyticsPage() {
             </div>
           )}
 
+          {/* Charts Row 1 */}
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Weekly Trends */}
             <Card className="border-0 shadow-lg">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium">Weekly Trends</CardTitle>
+                <CardTitle className="text-base font-medium">Weekly Hours</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {data?.weeklyTrends?.map((week) => (
-                  <div key={week.weekStart} className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                    <div>
-                      <p className="text-sm font-medium">Week of {new Date(week.weekStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
-                      <p className="text-xs text-muted-foreground">{week.totalHours.toFixed(0)}h total, {week.avgHoursPerMember.toFixed(1)}h/member</p>
-                    </div>
-                    <Badge variant={week.complianceRate >= 80 ? "default" : "secondary"} className="tabular-nums">
-                      {Math.round(week.complianceRate)}%
-                    </Badge>
-                  </div>
-                ))}
-                {(!data?.weeklyTrends || data.weeklyTrends.length === 0) && (
-                  <p className="text-sm text-muted-foreground text-center py-4">No data yet</p>
-                )}
+              <CardContent>
+                <WeeklyHoursChart data={data?.weeklyTrends || []} />
               </CardContent>
             </Card>
 
-            {/* Location Breakdown */}
             <Card className="border-0 shadow-lg">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium">Location Usage</CardTitle>
+                <CardTitle className="text-base font-medium">Compliance Trend</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {data?.locationBreakdown?.map((loc) => (
-                  <div key={loc.locationCode} className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <MapPin className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{loc.locationName}</p>
-                        <p className="text-xs text-muted-foreground">{loc.locationCode}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium tabular-nums">{loc.totalHours.toFixed(0)}h</p>
-                      <p className="text-xs text-muted-foreground">{loc.visitCount} visits</p>
-                    </div>
-                  </div>
-                ))}
-                {(!data?.locationBreakdown || data.locationBreakdown.length === 0) && (
-                  <p className="text-sm text-muted-foreground text-center py-4">No data yet</p>
-                )}
+              <CardContent>
+                <ComplianceTrendChart data={data?.weeklyTrends || []} />
               </CardContent>
             </Card>
           </div>
 
-          {/* Member Summary */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Member Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {data?.memberSummary?.map((member) => (
-                  <div key={member.userId} className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                    <div>
-                      <p className="text-sm font-medium">{member.email}</p>
-                      <p className="text-xs text-muted-foreground">{member.totalDays} days, {member.totalHours.toFixed(1)}h</p>
-                    </div>
-                    <Badge variant={member.complianceRate >= 80 ? "default" : member.complianceRate >= 50 ? "secondary" : "destructive"}>
-                      {Math.round(member.complianceRate)}% compliant
-                    </Badge>
-                  </div>
-                ))}
-                {(!data?.memberSummary || data.memberSummary.length === 0) && (
-                  <p className="text-sm text-muted-foreground text-center py-4">No data yet</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Charts Row 2 */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium">Location Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <LocationPieChart data={data?.locationBreakdown || []} />
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium">Member Comparison</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MemberComparisonChart data={data?.memberSummary || []} />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
 

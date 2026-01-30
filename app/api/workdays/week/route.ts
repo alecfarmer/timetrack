@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth"
 import { startOfWeek, endOfWeek, eachDayOfInterval, format } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 import { getRequestTimezone } from "@/lib/validations"
+import { calculateWeeklyOvertime, resolveOvertimePolicy, isWeeklyOvertime, type DayEntry } from "@/lib/overtime"
 
 // GET /api/workdays/week - Get weekly summary
 export async function GET(request: NextRequest) {
@@ -98,6 +99,15 @@ export async function GET(request: NextRequest) {
     const requiredMinutesPerWeek = 40 * 60 // 40 hours
     const hoursOnTrack = totalMinutes >= requiredMinutesPerWeek
 
+    // Calculate overtime using jurisdiction-aware engine
+    const dayEntries: DayEntry[] = weekDaysData.map((d) => ({
+      date: d.date,
+      totalMinutes: d.minutes,
+    }))
+    const otPolicy = resolveOvertimePolicy()
+    const overtime = calculateWeeklyOvertime(dayEntries, otPolicy)
+    const hasOvertime = isWeeklyOvertime(totalMinutes, otPolicy)
+
     return NextResponse.json({
       weekStart: weekStart.toISOString(),
       weekEnd: weekEnd.toISOString(),
@@ -107,6 +117,12 @@ export async function GET(request: NextRequest) {
       totalMinutes,
       requiredMinutesPerWeek,
       hoursOnTrack,
+      hasOvertime,
+      overtime: {
+        regularMinutes: overtime.regularMinutes,
+        overtimeMinutes: overtime.overtimeMinutes,
+        doubleTimeMinutes: overtime.doubleTimeMinutes,
+      },
       weekDays: weekDaysData,
       workDays,
     })

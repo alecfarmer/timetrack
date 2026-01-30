@@ -33,6 +33,8 @@ import {
   HeartPulse,
   Scale,
   DollarSign,
+  CalendarClock,
+  Edit3,
 } from "lucide-react"
 import { format } from "date-fns"
 
@@ -322,6 +324,8 @@ export default function AdminPage() {
               { href: "/admin/wellbeing", icon: HeartPulse, label: "Well-Being", color: "text-rose-500" },
               { href: "/admin/jurisdictions", icon: Scale, label: "Jurisdictions", color: "text-cyan-500" },
               { href: "/admin/payroll-config", icon: DollarSign, label: "Payroll Config", color: "text-green-500" },
+              { href: "/admin/shifts", icon: CalendarClock, label: "Shifts", color: "text-indigo-500" },
+              { href: "/admin/bulk-edit", icon: Edit3, label: "Bulk Edit", color: "text-pink-500" },
               { href: "/admin/alerts", icon: Bell, label: "Alerts", color: "text-orange-500" },
             ].map((item) => (
               <Link key={item.href} href={item.href}>

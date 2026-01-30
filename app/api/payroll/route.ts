@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth"
 import { format, startOfWeek, endOfWeek, eachWeekOfInterval, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 import { getRequestTimezone } from "@/lib/validations"
+import { calculateWeeklyOvertime, resolveOvertimePolicy, type DayEntry } from "@/lib/overtime"
 const REGULAR_HOURS_PER_WEEK = 40
 const REGULAR_MINUTES_PER_WEEK = REGULAR_HOURS_PER_WEEK * 60
 
@@ -114,15 +115,27 @@ export async function GET(request: NextRequest) {
       })
 
       const calloutMinutes = calloutMinutesByWeek.get(weekKey) || 0
+
+      // Use jurisdiction-aware overtime calculation
+      const dayEntries: DayEntry[] = days.map((day) => {
+        const dateStr = format(day, "yyyy-MM-dd")
+        const wd = workDayMap.get(dateStr)
+        return { date: dateStr, totalMinutes: wd?.totalMinutes || 0 }
+      })
+      const otPolicy = resolveOvertimePolicy()
+      const otResult = calculateWeeklyOvertime(dayEntries, otPolicy)
+
       const totalMinutes = regularMinutes + calloutMinutes
-      const overtimeMinutes = Math.max(0, totalMinutes - REGULAR_MINUTES_PER_WEEK)
-      const regularCapped = Math.min(regularMinutes, REGULAR_MINUTES_PER_WEEK)
+      const overtimeMinutes = otResult.overtimeMinutes
+      const doubleTimeMinutes = otResult.doubleTimeMinutes
+      const regularCapped = otResult.regularMinutes
 
       return {
         weekStart: format(weekStartDate, "yyyy-MM-dd"),
         weekEnd: format(weekEndDate, "yyyy-MM-dd"),
         regularMinutes: regularCapped,
         overtimeMinutes,
+        doubleTimeMinutes,
         calloutMinutes,
         onsiteMinutes,
         wfhMinutes,

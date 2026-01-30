@@ -42,23 +42,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Calculate summary
+    // Calculate summary — each record represents one day
+    // (multi-day ranges are expanded into individual records on creation)
     const summary = (leaves || []).reduce(
       (acc, leave) => {
         const type = leave.type as string
         if (!acc.byType[type]) acc.byType[type] = 0
-        // Count multi-day ranges
-        if (leave.endDate && leave.endDate !== leave.date) {
-          const days = eachDayOfInterval({
-            start: parseISO(leave.date),
-            end: parseISO(leave.endDate),
-          }).length
-          acc.byType[type] += days
-          acc.totalDays += days
-        } else {
-          acc.byType[type] += 1
-          acc.totalDays += 1
-        }
+        acc.byType[type] += 1
+        acc.totalDays += 1
         return acc
       },
       { totalDays: 0, byType: {} as Record<string, number> }
