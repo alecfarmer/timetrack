@@ -71,10 +71,11 @@ export default function AnalyticsPage() {
     setLoading(true)
     try {
       const res = await fetch(`/api/analytics?period=${period}`)
+      const json = await res.json()
       if (res.ok) {
-        setData(await res.json())
+        setData(json)
       } else {
-        setError("Failed to load analytics")
+        setError(json?.error || "Failed to load analytics")
       }
     } catch {
       setError("Failed to load analytics")
@@ -141,8 +142,11 @@ export default function AnalyticsPage() {
         <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8 space-y-6">
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-              <p className="text-sm text-destructive">{error}</p>
+              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+              <p className="text-sm text-destructive flex-1">{error}</p>
+              <Button variant="outline" size="sm" onClick={() => { setError(null); fetchAnalytics() }}>
+                Retry
+              </Button>
             </div>
           )}
 

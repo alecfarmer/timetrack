@@ -91,8 +91,9 @@ export async function GET(request: NextRequest) {
       .eq("orgId", org.orgId);
 
     if (membersError) {
+      console.error("Analytics: members query failed:", membersError.message);
       return NextResponse.json(
-        { error: "Failed to fetch members" },
+        { error: `Failed to fetch members: ${membersError.message}` },
         { status: 500 }
       );
     }
@@ -132,8 +133,9 @@ export async function GET(request: NextRequest) {
       .lte("date", endStr);
 
     if (workDaysError) {
+      console.error("Analytics: workdays query failed:", workDaysError.message);
       return NextResponse.json(
-        { error: "Failed to fetch work days" },
+        { error: `Failed to fetch work days: ${workDaysError.message}` },
         { status: 500 }
       );
     }
@@ -362,9 +364,10 @@ export async function GET(request: NextRequest) {
       overview,
     });
   } catch (error) {
-    console.error("Analytics error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Analytics error:", message);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Internal server error: ${message}` },
       { status: 500 }
     );
   }
