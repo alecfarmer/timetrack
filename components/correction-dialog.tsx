@@ -39,6 +39,7 @@ interface CorrectionDialogProps {
   entryType: string
   entryTimestamp: string
   locationName: string
+  onCorrectionSubmitted?: () => void
 }
 
 const FIELD_OPTIONS = [
@@ -54,6 +55,7 @@ export function CorrectionDialog({
   entryType,
   entryTimestamp,
   locationName,
+  onCorrectionSubmitted,
 }: CorrectionDialogProps) {
   const [field, setField] = useState("")
   const [newValue, setNewValue] = useState("")
@@ -102,6 +104,7 @@ export function CorrectionDialog({
       setField("")
       setNewValue("")
       setReason("")
+      onCorrectionSubmitted?.()
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit correction")

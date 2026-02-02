@@ -22,6 +22,7 @@ interface EntryCardProps {
   showCorrection?: boolean
   onClick?: () => void
   index?: number
+  onCorrectionSubmitted?: () => void
 }
 
 export function EntryCard({
@@ -35,6 +36,7 @@ export function EntryCard({
   showCorrection,
   onClick,
   index = 0,
+  onCorrectionSubmitted,
 }: EntryCardProps) {
   const [correctionOpen, setCorrectionOpen] = useState(false)
   const isClockIn = type === "CLOCK_IN"
@@ -176,6 +178,7 @@ export function EntryCard({
           entryType={type}
           entryTimestamp={typeof timestamp === "string" ? timestamp : timestamp.toISOString()}
           locationName={locationName}
+          onCorrectionSubmitted={onCorrectionSubmitted}
         />
       )}
     </>

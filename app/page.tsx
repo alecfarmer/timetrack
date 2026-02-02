@@ -399,7 +399,7 @@ export default function Dashboard() {
                     <AnimatePresence mode="popLayout">
                       {clock.currentStatus?.todayEntries && clock.currentStatus.todayEntries.length > 0 ? (
                         clock.currentStatus.todayEntries.map((entry, index) => (
-                          <EntryCard key={entry.id} id={entry.id} type={entry.type} timestamp={entry.timestampServer} locationName={entry.location.name} gpsAccuracy={entry.gpsAccuracy} notes={entry.notes} photoUrl={entry.photoUrl} showCorrection={orgFeatures.manualCorrections} index={index} />
+                          <EntryCard key={entry.id} id={entry.id} type={entry.type} timestamp={entry.timestampServer} locationName={entry.location.name} gpsAccuracy={entry.gpsAccuracy} notes={entry.notes} photoUrl={entry.photoUrl} showCorrection={orgFeatures.manualCorrections} index={index} onCorrectionSubmitted={clock.fetchCurrentStatus} />
                         ))
                       ) : (
                         <div className="py-8 text-center">
@@ -568,7 +568,7 @@ export default function Dashboard() {
                   {clock.currentStatus?.todayEntries && clock.currentStatus.todayEntries.length > 0 ? (
                     <div className="grid sm:grid-cols-2 gap-2">
                       {clock.currentStatus.todayEntries.map((entry, index) => (
-                        <EntryCard key={entry.id} id={entry.id} type={entry.type} timestamp={entry.timestampServer} locationName={entry.location.name} gpsAccuracy={entry.gpsAccuracy} notes={entry.notes} photoUrl={entry.photoUrl} showCorrection={orgFeatures.manualCorrections} index={index} />
+                        <EntryCard key={entry.id} id={entry.id} type={entry.type} timestamp={entry.timestampServer} locationName={entry.location.name} gpsAccuracy={entry.gpsAccuracy} notes={entry.notes} photoUrl={entry.photoUrl} showCorrection={orgFeatures.manualCorrections} index={index} onCorrectionSubmitted={clock.fetchCurrentStatus} />
                       ))}
                     </div>
                   ) : (
