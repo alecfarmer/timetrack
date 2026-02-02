@@ -102,9 +102,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to record correction" }, { status: 500 })
     }
 
+    // When correcting timestampClient, also update timestampServer so the
+    // displayed time (which reads timestampServer) reflects the correction.
+    const updateFields: Record<string, string> = { [field]: newValue }
+    if (field === "timestampClient") {
+      updateFields.timestampServer = new Date(newValue).toISOString()
+    }
+
     const { error: updateError } = await supabase
       .from("Entry")
-      .update({ [field]: newValue })
+      .update(updateFields)
       .eq("id", entryId)
 
     if (updateError) {
