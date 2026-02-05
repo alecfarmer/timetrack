@@ -405,7 +405,20 @@ export default function LeavePage() {
                       })()}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No leave this month</p>
+                    <div className="text-center py-6">
+                      <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center mx-auto mb-2">
+                        <Palmtree className="h-5 w-5 text-muted-foreground/40" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">No leave this month</p>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="text-xs mt-1 h-auto p-0"
+                        onClick={() => setShowForm(true)}
+                      >
+                        Request time off
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>

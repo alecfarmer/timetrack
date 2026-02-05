@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatTimeWithZone, formatRelative } from "@/lib/dates"
 import { getAccuracyLevel } from "@/lib/geo"
-import { LogIn, LogOut, MapPin, AlertCircle, Coffee, Play, Pencil } from "lucide-react"
+import { LogIn, LogOut, MapPin, AlertCircle, Coffee, Play, Pencil, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { CorrectionDialog } from "@/components/correction-dialog"
+import { NotesDialog } from "@/components/notes-dialog"
 
 interface EntryCardProps {
   id?: string
@@ -39,6 +40,7 @@ export function EntryCard({
   onCorrectionSubmitted,
 }: EntryCardProps) {
   const [correctionOpen, setCorrectionOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
   const isClockIn = type === "CLOCK_IN"
   const isBreakStart = type === "BREAK_START"
   const isBreakEnd = type === "BREAK_END"
@@ -150,19 +152,35 @@ export function EntryCard({
                   </motion.div>
                 )}
 
-                {showCorrection && id && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setCorrectionOpen(true)
-                    }}
-                  >
-                    <Pencil className="h-3 w-3" />
-                    Correct
-                  </Button>
+                {id && (
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setNotesOpen(true)
+                      }}
+                    >
+                      <MessageSquare className="h-3 w-3" />
+                      {notes ? "Edit" : "Note"}
+                    </Button>
+                    {showCorrection && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setCorrectionOpen(true)
+                        }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                        Correct
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -171,15 +189,24 @@ export function EntryCard({
       </motion.div>
 
       {id && (
-        <CorrectionDialog
-          open={correctionOpen}
-          onOpenChange={setCorrectionOpen}
-          entryId={id}
-          entryType={type}
-          entryTimestamp={typeof timestamp === "string" ? timestamp : timestamp.toISOString()}
-          locationName={locationName}
-          onCorrectionSubmitted={onCorrectionSubmitted}
-        />
+        <>
+          <CorrectionDialog
+            open={correctionOpen}
+            onOpenChange={setCorrectionOpen}
+            entryId={id}
+            entryType={type}
+            entryTimestamp={typeof timestamp === "string" ? timestamp : timestamp.toISOString()}
+            locationName={locationName}
+            onCorrectionSubmitted={onCorrectionSubmitted}
+          />
+          <NotesDialog
+            open={notesOpen}
+            onOpenChange={setNotesOpen}
+            entryId={id}
+            currentNotes={notes}
+            onNotesUpdated={onCorrectionSubmitted}
+          />
+        </>
       )}
     </>
   )

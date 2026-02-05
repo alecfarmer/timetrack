@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { BarChart3, Download, FileText } from "lucide-react"
+import { BarChart3, Download, FileText, Clock } from "lucide-react"
 import { BottomNav } from "@/components/bottom-nav"
 import { WeeklyReport } from "@/components/reports/weekly-report"
 import { MonthlyReport } from "@/components/reports/monthly-report"
@@ -160,11 +161,19 @@ export default function ReportsPage() {
             </TabsList>
 
             <TabsContent value="weekly" className="mt-6">
-              {weekSummary && <WeeklyReport weekSummary={weekSummary} />}
+              {weekSummary ? (
+                <WeeklyReport weekSummary={weekSummary} />
+              ) : (
+                <EmptyReportState period="week" />
+              )}
             </TabsContent>
 
             <TabsContent value="monthly" className="mt-6">
-              {monthSummary && <MonthlyReport monthSummary={monthSummary} />}
+              {monthSummary ? (
+                <MonthlyReport monthSummary={monthSummary} />
+              ) : (
+                <EmptyReportState period="month" />
+              )}
             </TabsContent>
           </Tabs>
         </div>
@@ -172,6 +181,24 @@ export default function ReportsPage() {
 
       <BottomNav currentPath="/reports" />
     </motion.div>
+  )
+}
+
+function EmptyReportState({ period }: { period: "week" | "month" }) {
+  return (
+    <Card className="border-dashed">
+      <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+          <Clock className="h-7 w-7 text-muted-foreground/40" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">No Data Yet</h3>
+        <p className="text-muted-foreground text-sm max-w-xs">
+          {period === "week"
+            ? "Clock in to start building your weekly report. Your time entries will appear here."
+            : "Work data from this month will appear here once you start tracking time."}
+        </p>
+      </CardContent>
+    </Card>
   )
 }
 

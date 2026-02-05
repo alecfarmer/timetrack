@@ -13,6 +13,7 @@ import { DesktopMonitor, useDesktopMonitor } from "@/components/desktop-monitor"
 import { Onboarding } from "@/components/onboarding"
 import { StreaksWidget } from "@/components/streaks-widget"
 import { WeeklyHoursMini } from "@/components/weekly-hours-mini"
+import { TeamOnSite } from "@/components/team-on-site"
 import { OfflineBanner } from "@/components/offline-banner"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { NotificationBell } from "@/components/notification-bell"
@@ -451,6 +452,11 @@ export default function Dashboard() {
               {/* Streaks & Badges */}
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }} className="lg:col-span-4">
                 <ErrorBoundary><StreaksWidget /></ErrorBoundary>
+              </motion.div>
+
+              {/* Team On-Site */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }} className="lg:col-span-4">
+                <TeamOnSite />
               </motion.div>
             </div>
 

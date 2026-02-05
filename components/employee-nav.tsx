@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Home, Clock, BarChart3, Settings, Palmtree, Keyboard } from "lucide-react"
+import { Home, Clock, BarChart3, Settings, Palmtree, Keyboard, CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
 
@@ -12,18 +12,19 @@ interface EmployeeNavProps {
 
 const mobileNavItems = [
   { href: "/app", icon: Home, label: "Home", shortcut: "1" },
-  { href: "/app/history", icon: Clock, label: "History", shortcut: "2" },
-  { href: "/app/leave", icon: Palmtree, label: "Leave", shortcut: "3" },
-  { href: "/app/reports", icon: BarChart3, label: "Reports", shortcut: "4" },
+  { href: "/app/schedule", icon: CalendarDays, label: "Schedule", shortcut: "2" },
+  { href: "/app/history", icon: Clock, label: "History", shortcut: "3" },
+  { href: "/app/leave", icon: Palmtree, label: "Leave", shortcut: "4" },
   { href: "/app/settings", icon: Settings, label: "Settings", shortcut: "5" },
 ]
 
 const desktopNavItems = [
   { href: "/app", icon: Home, label: "Home", shortcut: "1" },
-  { href: "/app/history", icon: Clock, label: "History", shortcut: "2" },
-  { href: "/app/leave", icon: Palmtree, label: "Leave", shortcut: "3" },
-  { href: "/app/reports", icon: BarChart3, label: "Reports", shortcut: "4" },
-  { href: "/app/settings", icon: Settings, label: "Settings", shortcut: "5" },
+  { href: "/app/schedule", icon: CalendarDays, label: "Schedule", shortcut: "2" },
+  { href: "/app/history", icon: Clock, label: "History", shortcut: "3" },
+  { href: "/app/leave", icon: Palmtree, label: "Leave", shortcut: "4" },
+  { href: "/app/reports", icon: BarChart3, label: "Reports", shortcut: "5" },
+  { href: "/app/settings", icon: Settings, label: "Settings", shortcut: "6" },
 ]
 
 export function EmployeeNav({ currentPath }: EmployeeNavProps) {
