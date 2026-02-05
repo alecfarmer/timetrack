@@ -118,6 +118,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to apply correction" }, { status: 500 })
     }
 
+    // Recalculate WorkDay totals if timestamp was corrected
+    if (field === "timestampClient" && entry.workDayId) {
+      const newTimestamp = new Date(newValue)
+
+      // Get all entries for this workday to recalculate totals
+      const { data: workDayEntries } = await supabase
+        .from("Entry")
+        .select("id, type, timestampServer")
+        .eq("workDayId", entry.workDayId)
+        .order("timestampServer", { ascending: true })
+
+      if (workDayEntries && workDayEntries.length > 0) {
+        // Find first clock in and last clock out, using the corrected timestamp for this entry
+        let firstClockIn: Date | null = null
+        let lastClockOut: Date | null = null
+
+        for (const e of workDayEntries) {
+          // Use the new timestamp for the corrected entry
+          const ts = e.id === entryId ? newTimestamp : new Date(e.timestampServer)
+
+          if (e.type === "CLOCK_IN") {
+            if (!firstClockIn || ts < firstClockIn) {
+              firstClockIn = ts
+            }
+          } else if (e.type === "CLOCK_OUT") {
+            if (!lastClockOut || ts > lastClockOut) {
+              lastClockOut = ts
+            }
+          }
+        }
+
+        const workDayUpdate: Record<string, unknown> = {}
+        if (firstClockIn) {
+          workDayUpdate.firstClockIn = firstClockIn.toISOString()
+        }
+        if (lastClockOut) {
+          workDayUpdate.lastClockOut = lastClockOut.toISOString()
+        }
+        if (firstClockIn && lastClockOut) {
+          workDayUpdate.totalMinutes = Math.floor(
+            (lastClockOut.getTime() - firstClockIn.getTime()) / 60000
+          )
+        }
+
+        if (Object.keys(workDayUpdate).length > 0) {
+          await supabase
+            .from("WorkDay")
+            .update(workDayUpdate)
+            .eq("id", entry.workDayId)
+        }
+      }
+    }
+
     return NextResponse.json(correction, { status: 201 })
   } catch (error) {
     console.error("Error creating correction:", error)
