@@ -49,10 +49,17 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from public pages to dashboard
+  // Redirect authenticated users away from public pages to employee app
   if (user && isPublicRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = "/"
+    url.pathname = "/app"
+    return NextResponse.redirect(url)
+  }
+
+  // Redirect root to /app for authenticated users
+  if (user && request.nextUrl.pathname === "/") {
+    const url = request.nextUrl.clone()
+    url.pathname = "/app"
     return NextResponse.redirect(url)
   }
 
