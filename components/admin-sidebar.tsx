@@ -77,12 +77,12 @@ const navSections: NavSection[] = [
   {
     title: "Settings",
     items: [
-      { href: "/admin/settings/features", icon: Shield, label: "Features" },
-      { href: "/admin/settings/policies", icon: FileText, label: "Policies" },
-      { href: "/admin/settings/jurisdictions", icon: MapPin, label: "Jurisdictions" },
-      { href: "/admin/settings/leave", icon: Palmtree, label: "Leave Policy" },
-      { href: "/admin/settings/payroll", icon: DollarSign, label: "Payroll" },
-      { href: "/admin/settings/alerts", icon: Bell, label: "Alerts" },
+      { href: "/admin/settings", icon: Settings, label: "All Settings" },
+      { href: "/admin/features", icon: Shield, label: "Features" },
+      { href: "/admin/jurisdictions", icon: MapPin, label: "Policies" },
+      { href: "/admin/leave-policy", icon: Palmtree, label: "Leave & PTO" },
+      { href: "/admin/payroll-config", icon: DollarSign, label: "Payroll" },
+      { href: "/admin/alerts", icon: Bell, label: "Alerts" },
     ],
   },
   {
@@ -118,7 +118,7 @@ export function AdminSidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-72 border-r bg-card flex flex-col z-40">
+    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-72 border-r bg-card flex-col z-40">
       {/* Header */}
       <div className="p-6 border-b">
         <div className="flex items-center gap-3">

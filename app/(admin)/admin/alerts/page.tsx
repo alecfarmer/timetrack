@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { BottomNav } from "@/components/bottom-nav"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import {
@@ -137,7 +136,7 @@ export default function AlertsPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+      <header className="sticky top-0 z-50 glass border-b">
         <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
           <div className="flex items-center gap-3">
             <Link href="/admin">
@@ -174,7 +173,7 @@ export default function AlertsPage() {
         </div>
       </header>
 
-      <main className="flex-1 pb-24 lg:pb-8 lg:ml-64">
+      <main className="flex-1 pb-24 lg:pb-8">
         <div className="max-w-3xl mx-auto px-4 py-6 lg:px-8">
           {loading ? (
             <div className="flex justify-center py-20">
@@ -240,8 +239,6 @@ export default function AlertsPage() {
           )}
         </div>
       </main>
-
-      <BottomNav currentPath="/admin" />
     </motion.div>
   )
 }

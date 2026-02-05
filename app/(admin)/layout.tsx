@@ -38,7 +38,7 @@ export default function AdminLayout({
   return (
     <>
       <AdminSidebar />
-      <main className="ml-72 min-h-screen bg-muted/30">
+      <main className="lg:ml-72 min-h-screen bg-muted/30">
         {children}
       </main>
     </>

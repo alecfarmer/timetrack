@@ -20,7 +20,6 @@ import {
   ArrowRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { BottomNav } from "@/components/bottom-nav"
 import { TimesheetSubmit } from "@/components/timesheet-submit"
 
 interface Entry {
@@ -175,7 +174,7 @@ export default function HistoryPage() {
       variants={pageVariants}
     >
       {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+      <header className="sticky top-0 z-50 glass border-b">
         <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
           <div className="flex items-center gap-3 lg:hidden">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -189,7 +188,7 @@ export default function HistoryPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-8 lg:ml-64">
+      <main className="flex-1 pb-24 lg:pb-8">
         <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8">
           {/* Month Stats Row */}
           <div className="grid grid-cols-3 gap-3 mb-6">
@@ -492,7 +491,6 @@ export default function HistoryPage() {
         </div>
       </main>
 
-      <BottomNav currentPath="/history" />
     </motion.div>
   )
 }

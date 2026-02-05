@@ -48,7 +48,6 @@ import {
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { BottomNav } from "@/components/bottom-nav"
 
 export default function Dashboard() {
   const router = useRouter()
@@ -174,7 +173,7 @@ export default function Dashboard() {
         />
 
         {/* Header */}
-        <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+        <header className="sticky top-0 z-50 glass border-b">
           <div className="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto lg:px-8">
             <motion.div className="lg:hidden" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
               <Logo size="sm" />
@@ -222,7 +221,7 @@ export default function Dashboard() {
         </header>
 
         {/* Main Content */}
-        <main className="relative pb-24 lg:pb-4 lg:ml-64">
+        <main className="relative pb-24 lg:pb-4">
           <div className="max-w-7xl mx-auto px-4 py-4 lg:px-6 lg:py-4 space-y-4">
             <OfflineBanner onSyncComplete={() => Promise.all([clock.fetchCurrentStatus(), clock.fetchWeekSummary()])} />
 
@@ -603,7 +602,6 @@ export default function Dashboard() {
           </div>
         </main>
 
-        <BottomNav currentPath="/" />
       </div>
     </ErrorBoundary>
   )

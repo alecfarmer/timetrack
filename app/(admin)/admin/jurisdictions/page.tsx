@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { BottomNav } from "@/components/bottom-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
@@ -247,7 +246,7 @@ export default function JurisdictionsPage() {
       animate="animate"
       variants={pageVariants}
     >
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+      <header className="sticky top-0 z-50 glass border-b">
         <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
           <div className="flex items-center gap-3">
             <Button
@@ -282,7 +281,7 @@ export default function JurisdictionsPage() {
       </header>
 
       <motion.main
-        className="flex-1 pb-24 lg:pb-8 lg:ml-64"
+        className="flex-1 pb-24 lg:pb-8"
         variants={staggerContainer}
         initial="initial"
         animate="animate"
@@ -751,8 +750,6 @@ export default function JurisdictionsPage() {
           </motion.div>
         </div>
       </motion.main>
-
-      <BottomNav currentPath="/admin" />
     </motion.div>
   )
 }

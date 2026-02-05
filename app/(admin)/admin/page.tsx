@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { BottomNav } from "@/components/bottom-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { AdminActivityFeed } from "@/components/admin-activity-feed"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -36,6 +36,8 @@ import {
   CalendarClock,
   Edit3,
   Palmtree,
+  TrendingUp,
+  LogIn,
 } from "lucide-react"
 import { format } from "date-fns"
 
@@ -67,6 +69,16 @@ interface Policy {
   minimumMinutesPerDay: number
 }
 
+interface AdminMetrics {
+  totalMembers: number
+  currentlyOnSite: number
+  todayClockIns: number
+  pendingTimesheets: number
+  complianceRate: number
+  weeklyCompliant: number
+  weeklyTotal: number
+}
+
 const pageVariants = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
@@ -88,6 +100,7 @@ export default function AdminPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [invites, setInvites] = useState<Invite[]>([])
   const [policy, setPolicy] = useState<Policy>({ requiredDaysPerWeek: 3, minimumMinutesPerDay: 0 })
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -100,10 +113,11 @@ export default function AdminPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [membersRes, invitesRes, policyRes] = await Promise.all([
+      const [membersRes, invitesRes, policyRes, metricsRes] = await Promise.all([
         fetch("/api/org/members"),
         fetch("/api/org/invite"),
         fetch("/api/org/policy"),
+        fetch("/api/admin/metrics"),
       ])
 
       if (membersRes.ok) setMembers(await membersRes.json())
@@ -113,6 +127,7 @@ export default function AdminPage() {
         setPolicy(p)
         setPolicyDays(p.requiredDaysPerWeek)
       }
+      if (metricsRes.ok) setMetrics(await metricsRes.json())
     } catch (err) {
       console.error("Error fetching admin data:", err)
       setError("Failed to load team data")
@@ -262,7 +277,7 @@ export default function AdminPage() {
 
   return (
     <motion.div className="flex flex-col min-h-screen bg-background" initial="initial" animate="animate" variants={pageVariants}>
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+      <header className="sticky top-0 z-50 glass border-b">
         <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
           <div className="flex items-center gap-3 lg:hidden">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -283,7 +298,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <motion.main className="flex-1 pb-24 lg:pb-8 lg:ml-64" variants={staggerContainer} initial="initial" animate="animate">
+      <motion.main className="flex-1 pb-24 lg:pb-8" variants={staggerContainer} initial="initial" animate="animate">
         <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8 space-y-6">
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3">
@@ -294,22 +309,63 @@ export default function AdminPage() {
           )}
 
           {/* Stats Row */}
-          <motion.div variants={staggerItem} className="grid grid-cols-3 gap-4">
+          <motion.div variants={staggerItem} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <Card className="border-0 shadow-lg">
               <CardContent className="p-4 text-center">
-                <p className="text-3xl font-bold">{members.length}</p>
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-2xl font-bold">{metrics?.totalMembers || members.length}</p>
                 <p className="text-xs text-muted-foreground">Members</p>
               </CardContent>
             </Card>
             <Card className="border-0 shadow-lg">
               <CardContent className="p-4 text-center">
-                <p className="text-3xl font-bold text-success">{clockedInCount}</p>
-                <p className="text-xs text-muted-foreground">Clocked In</p>
+                <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center mx-auto mb-2">
+                  <MapPin className="h-5 w-5 text-success" />
+                </div>
+                <p className="text-2xl font-bold text-success">{metrics?.currentlyOnSite || clockedInCount}</p>
+                <p className="text-xs text-muted-foreground">On-Site Now</p>
               </CardContent>
             </Card>
             <Card className="border-0 shadow-lg">
               <CardContent className="p-4 text-center">
-                <p className="text-3xl font-bold">{activeInvites.length}</p>
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mx-auto mb-2">
+                  <LogIn className="h-5 w-5 text-blue-500" />
+                </div>
+                <p className="text-2xl font-bold text-blue-500">{metrics?.todayClockIns || 0}</p>
+                <p className="text-xs text-muted-foreground">Today's Clock-ins</p>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-lg relative">
+              <CardContent className="p-4 text-center">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center mx-auto mb-2">
+                  <ClipboardCheck className="h-5 w-5 text-amber-500" />
+                </div>
+                <p className="text-2xl font-bold text-amber-500">{metrics?.pendingTimesheets || 0}</p>
+                <p className="text-xs text-muted-foreground">Pending Approvals</p>
+                {(metrics?.pendingTimesheets || 0) > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                    !
+                  </Badge>
+                )}
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-4 text-center">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
+                  <TrendingUp className="h-5 w-5 text-emerald-500" />
+                </div>
+                <p className="text-2xl font-bold text-emerald-500">{metrics?.complianceRate || 100}%</p>
+                <p className="text-xs text-muted-foreground">Compliance Rate</p>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-4 text-center">
+                <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center mx-auto mb-2">
+                  <UserPlus className="h-5 w-5 text-violet-500" />
+                </div>
+                <p className="text-2xl font-bold text-violet-500">{activeInvites.length}</p>
                 <p className="text-xs text-muted-foreground">Pending Invites</p>
               </CardContent>
             </Card>
@@ -341,6 +397,11 @@ export default function AdminPage() {
                 </Card>
               </Link>
             ))}
+          </motion.div>
+
+          {/* Activity Feed - Full width on mobile, sidebar on desktop */}
+          <motion.div variants={staggerItem} className="lg:hidden">
+            <AdminActivityFeed limit={10} />
           </motion.div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -421,6 +482,11 @@ export default function AdminPage() {
 
             {/* Right sidebar */}
             <motion.div variants={staggerItem} className="space-y-6">
+              {/* Activity Feed - Desktop only */}
+              <div className="hidden lg:block">
+                <AdminActivityFeed limit={10} />
+              </div>
+
               {/* Invite Section */}
               <Card className="border-0 shadow-lg">
                 <CardHeader className="pb-2">
@@ -554,8 +620,6 @@ export default function AdminPage() {
           </div>
         </div>
       </motion.main>
-
-      <BottomNav currentPath="/admin" />
     </motion.div>
   )
 }

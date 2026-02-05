@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { BottomNav } from "@/components/bottom-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { CalloutCard, Callout } from "@/components/callout-card"
 import { useGeolocation } from "@/hooks/use-geolocation"
@@ -210,7 +209,7 @@ export default function CalloutsPage() {
 
   return (
     <motion.div className="flex flex-col min-h-screen bg-background" initial="initial" animate="animate" exit="exit" variants={pageVariants}>
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+      <header className="sticky top-0 z-50 glass border-b">
         <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
           <div className="flex items-center gap-3 lg:hidden">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -228,7 +227,7 @@ export default function CalloutsPage() {
         </div>
       </header>
 
-      <motion.main className="flex-1 pb-24 lg:pb-8 lg:ml-64" variants={staggerContainer} initial="initial" animate="animate">
+      <motion.main className="flex-1 pb-24 lg:pb-8" variants={staggerContainer} initial="initial" animate="animate">
         <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8">
           <AnimatePresence>
             {error && (
@@ -367,7 +366,6 @@ export default function CalloutsPage() {
         </div>
       </motion.main>
 
-      <BottomNav currentPath="/callouts" />
     </motion.div>
   )
 }

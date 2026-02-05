@@ -27,7 +27,6 @@ import {
   Users,
   Building2,
 } from "lucide-react"
-import { BottomNav } from "@/components/bottom-nav"
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -82,7 +81,7 @@ export default function SettingsPage() {
       className="flex flex-col min-h-screen bg-background"
       initial="initial" animate="animate" exit="exit" variants={pageVariants}
     >
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+      <header className="sticky top-0 z-50 glass border-b">
         <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
           <div className="flex items-center gap-3 lg:hidden">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -96,7 +95,7 @@ export default function SettingsPage() {
       </header>
 
       <motion.main
-        className="flex-1 pb-24 lg:pb-8 lg:ml-64"
+        className="flex-1 pb-24 lg:pb-8"
         variants={staggerContainer} initial="initial" animate="animate"
       >
         <div className="max-w-3xl mx-auto px-4 py-6 lg:px-8 space-y-6">
@@ -316,7 +315,6 @@ export default function SettingsPage() {
         </div>
       </motion.main>
 
-      <BottomNav currentPath="/settings" />
     </motion.div>
   )
 }

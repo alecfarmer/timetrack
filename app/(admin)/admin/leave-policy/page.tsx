@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { BottomNav } from "@/components/bottom-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
@@ -195,7 +194,7 @@ export default function LeavePolicyPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+      <header className="sticky top-0 z-50 glass border-b">
         <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
           <div className="flex items-center gap-3">
             <Link href="/admin" className="lg:hidden">
@@ -214,7 +213,7 @@ export default function LeavePolicyPage() {
         </div>
       </header>
 
-      <main className="flex-1 pb-24 lg:pb-8 lg:ml-64">
+      <main className="flex-1 pb-24 lg:pb-8">
         <div className="max-w-4xl mx-auto px-4 py-6 lg:px-8 space-y-6">
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3">
@@ -413,8 +412,6 @@ export default function LeavePolicyPage() {
           </Card>
         </div>
       </main>
-
-      <BottomNav currentPath="/admin" />
     </motion.div>
   )
 }

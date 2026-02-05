@@ -5,7 +5,6 @@ import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { BottomNav } from "@/components/bottom-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { formatRelative } from "@/lib/dates"
 import {
@@ -121,7 +120,7 @@ export default function NotificationsPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+      <header className="sticky top-0 z-50 glass border-b">
         <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center lg:hidden">
@@ -150,7 +149,7 @@ export default function NotificationsPage() {
         </div>
       </header>
 
-      <main className="flex-1 pb-24 lg:pb-8 lg:ml-64">
+      <main className="flex-1 pb-24 lg:pb-8">
         <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8">
           {notifications.length === 0 ? (
             <div className="text-center py-16">
@@ -210,7 +209,6 @@ export default function NotificationsPage() {
         </div>
       </main>
 
-      <BottomNav currentPath="/notifications" />
     </motion.div>
   )
 }
