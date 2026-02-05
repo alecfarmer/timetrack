@@ -184,7 +184,7 @@ export default function SettingsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Link href="/settings/locations">
+                <Link href="/app/settings/locations">
                   <Button variant="ghost" className="w-full justify-between rounded-xl h-12">
                     <span>Manage Locations</span>
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />

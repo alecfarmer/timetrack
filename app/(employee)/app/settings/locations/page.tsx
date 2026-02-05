@@ -94,7 +94,7 @@ export default function LocationsPage() {
     <div className="flex flex-col min-h-screen">
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="flex items-center gap-3 px-4 h-14">
-          <Link href="/settings">
+          <Link href="/app/settings">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
