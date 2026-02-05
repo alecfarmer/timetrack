@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Loader2, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react"
-import { formatDateTime } from "@/lib/dates"
+import { formatDateTime, toLocalTime, getTimezone } from "@/lib/dates"
+import { fromZonedTime } from "date-fns-tz"
 
 interface Correction {
   id: string
@@ -66,6 +67,25 @@ export function CorrectionDialog({
   const [corrections, setCorrections] = useState<Correction[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
 
+  // Convert entry timestamp to datetime-local format in user's timezone
+  const getLocalDateTimeValue = (isoTimestamp: string): string => {
+    const localDate = toLocalTime(isoTimestamp)
+    // Format as YYYY-MM-DDTHH:mm for datetime-local input
+    const year = localDate.getFullYear()
+    const month = String(localDate.getMonth() + 1).padStart(2, "0")
+    const day = String(localDate.getDate()).padStart(2, "0")
+    const hours = String(localDate.getHours()).padStart(2, "0")
+    const minutes = String(localDate.getMinutes()).padStart(2, "0")
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+
+  // Pre-populate timestamp field when selecting timestamp correction
+  useEffect(() => {
+    if (field === "timestampClient" && entryTimestamp && !newValue) {
+      setNewValue(getLocalDateTimeValue(entryTimestamp))
+    }
+  }, [field, entryTimestamp, newValue])
+
   useEffect(() => {
     if (open && entryId) {
       setLoadingHistory(true)
@@ -87,10 +107,23 @@ export function CorrectionDialog({
     setError(null)
 
     try {
+      // Convert local datetime to ISO for timestamp fields
+      let submittedValue = newValue
+      if (field === "timestampClient" && newValue) {
+        // Parse the datetime-local value as a local date in user's timezone
+        const [datePart, timePart] = newValue.split("T")
+        const [year, month, day] = datePart.split("-").map(Number)
+        const [hours, minutes] = timePart.split(":").map(Number)
+        const localDate = new Date(year, month - 1, day, hours, minutes)
+        // Convert to UTC
+        const utcDate = fromZonedTime(localDate, getTimezone())
+        submittedValue = utcDate.toISOString()
+      }
+
       const res = await fetch("/api/entries/corrections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entryId, field, newValue, reason }),
+        body: JSON.stringify({ entryId, field, newValue: submittedValue, reason }),
       })
 
       if (!res.ok) {
@@ -143,7 +176,12 @@ export function CorrectionDialog({
 
           {/* New Value */}
           <div className="space-y-2">
-            <Label>New Value</Label>
+            <Label>
+              New Value
+              {field === "timestampClient" && (
+                <span className="text-muted-foreground font-normal ml-1">({getTimezone()})</span>
+              )}
+            </Label>
             {field === "type" ? (
               <Select value={newValue} onValueChange={setNewValue}>
                 <SelectTrigger>
