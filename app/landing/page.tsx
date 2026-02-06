@@ -28,6 +28,12 @@ import {
   Eye,
   FileCheck,
   Sparkles,
+  Trophy,
+  Target,
+  Flame,
+  Star,
+  TrendingUp,
+  Award,
 } from "lucide-react"
 
 const fadeUp = {
@@ -61,9 +67,9 @@ const features = [
     description: "Admins see every team member's status, location, hours today, and weekly compliance at a glance.",
   },
   {
-    icon: BarChart3,
-    title: "Reports & Export",
-    description: "Weekly, monthly, and payroll reports. Export CSV for any date range. Compliance summaries for the whole team.",
+    icon: Trophy,
+    title: "Rewards & Gamification",
+    description: "24 badges, 10 XP levels, and weekly challenges turn attendance into engagement. Celebrate consistency, not just compliance.",
   },
   {
     icon: Wifi,
@@ -91,9 +97,9 @@ const features = [
     description: "Configurable rules for late arrivals, missed clock-outs, and overtime approaching. Real-time notifications before problems escalate.",
   },
   {
-    icon: BarChart3,
-    title: "Analytics Dashboard",
-    description: "Weekly trends, location breakdown, and member performance metrics. Data-driven workforce decisions at your fingertips.",
+    icon: TrendingUp,
+    title: "Productivity Analytics",
+    description: "Clock-in patterns, day-of-week breakdown, punctuality scores, and period-over-period comparison. Insights that drive improvement.",
   },
   {
     icon: FileCheck,
@@ -134,6 +140,10 @@ const highlights = [
   "Burnout detection",
   "Smart auto-corrections",
   "Payroll-ready export",
+  "24 achievement badges",
+  "Weekly challenges & XP",
+  "Productivity scoring",
+  "Real-time analytics",
 ]
 
 export default function LandingPage() {
@@ -274,26 +284,55 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Fake compliance bar */}
-              <div className="rounded-xl bg-muted/50 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Weekly Compliance</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-success text-success-foreground font-medium">On Track</span>
+              {/* Fake compliance and rewards row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-muted/50 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Weekly Compliance</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-success text-success-foreground font-medium">On Track</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full w-full rounded-full bg-success" />
+                  </div>
+                  <div className="flex gap-1 mt-2">
+                    {["Mo", "Tu", "We", "Th", "Fr"].map((day, i) => (
+                      <div
+                        key={day}
+                        className={`flex-1 h-6 rounded-md flex items-center justify-center text-[11px] font-medium ${
+                          i < 3 ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {day}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full w-full rounded-full bg-success" />
-                </div>
-                <div className="flex gap-1 mt-2">
-                  {["Mo", "Tu", "We", "Th", "Fr"].map((day, i) => (
-                    <div
-                      key={day}
-                      className={`flex-1 h-6 rounded-md flex items-center justify-center text-[11px] font-medium ${
-                        i < 3 ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {day}
+
+                {/* Fake rewards preview */}
+                <div className="rounded-xl bg-muted/50 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium flex items-center gap-1.5">
+                      <Flame className="h-4 w-4 text-orange-500" />
+                      Rewards
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-medium">Lv.4</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                        <span>520 XP</span>
+                        <span>1000 XP</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500" />
+                      </div>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex items-center gap-1 mt-2">
+                    <span className="text-lg">🔥</span>
+                    <span className="text-sm font-bold text-orange-500">7</span>
+                    <span className="text-xs text-muted-foreground">day streak</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -392,8 +431,134 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust-First Section */}
+      {/* Gamification Section */}
       <section className="py-16 sm:py-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-500 text-sm font-medium mb-4">
+                <Trophy className="h-3.5 w-3.5" />
+                Gamification
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                Turn attendance into achievement.
+              </h2>
+              <p className="text-lg text-muted-foreground mb-6">
+                Why just track time when you can celebrate it? OnSite transforms daily clock-ins into a rewarding experience with badges, levels, and challenges that keep your team engaged.
+              </p>
+              <div className="space-y-4">
+                {[
+                  {
+                    icon: Award,
+                    title: "24 Achievement Badges",
+                    desc: "From First Day to Legend status. Streak badges, milestone badges, time-based achievements, and rare legendary rewards.",
+                  },
+                  {
+                    icon: Star,
+                    title: "10-Level XP System",
+                    desc: "Progress from Newcomer to Legend. Each badge earned adds XP, unlocking new levels with unique titles.",
+                  },
+                  {
+                    icon: Target,
+                    title: "Weekly & Monthly Challenges",
+                    desc: "Dynamic goals like \"Clock in 5 days this week\" or \"Build a 5-day streak\" with XP rewards.",
+                  },
+                  {
+                    icon: Flame,
+                    title: "Streak Tracking",
+                    desc: "Visual streak counters that celebrate consistency. Watch the fire grow as attendance streaks build.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{item.title}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-2xl border bg-card p-6 sm:p-8 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
+
+              {/* Level display */}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex flex-col items-center justify-center text-white shadow-lg">
+                  <span className="text-2xl font-bold">7</span>
+                  <span className="text-[8px] uppercase tracking-wider opacity-80">Level</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-bold text-lg">Star</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-medium">4,250 XP</span>
+                  </div>
+                  <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-amber-500 to-orange-500" />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1">1,250 XP to Champion</p>
+                </div>
+              </div>
+
+              {/* Badge preview */}
+              <div className="mb-6">
+                <p className="text-xs font-medium text-muted-foreground mb-3">RECENT BADGES</p>
+                <div className="flex gap-2">
+                  {[
+                    { icon: "🔥", name: "On Fire", rarity: "epic", color: "bg-purple-500/20 border-purple-500/30" },
+                    { icon: "🐦", name: "Early Bird", rarity: "uncommon", color: "bg-green-500/20 border-green-500/30" },
+                    { icon: "💯", name: "Century", rarity: "rare", color: "bg-blue-500/20 border-blue-500/30" },
+                    { icon: "✅", name: "Perfect Week", rarity: "common", color: "bg-slate-500/20 border-slate-500/30" },
+                  ].map((badge) => (
+                    <div
+                      key={badge.name}
+                      className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border ${badge.color}`}
+                    >
+                      <span className="text-2xl">{badge.icon}</span>
+                      <span className="text-[9px] font-medium">{badge.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Active challenge */}
+              <div className="p-4 rounded-xl bg-muted/50 border">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⭐</span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-sm font-medium">Perfect Week</p>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/10 text-amber-500">+50 XP</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mb-2">Clock in all 5 weekdays</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div className="h-full w-3/5 rounded-full bg-primary" />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">3/5</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust-First Section */}
+      <section className="py-16 sm:py-24 bg-muted/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
@@ -482,7 +647,7 @@ export default function LandingPage() {
       </section>
 
       {/* Highlights / Checklist */}
-      <section className="py-16 sm:py-24 bg-muted/30">
+      <section className="py-16 sm:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
