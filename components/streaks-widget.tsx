@@ -357,11 +357,9 @@ export function StreaksWidget() {
                           </motion.button>
                         ))}
                       </div>
-                      {lockedBadges.length > 10 && (
-                        <Link href="/rewards" className="block text-center text-xs text-primary mt-2 hover:underline">
-                          View all {lockedBadges.length} locked badges &rarr;
-                        </Link>
-                      )}
+                      <Link href="/rewards" className="block text-center text-xs text-primary mt-2 hover:underline">
+                        View all badges &rarr;
+                      </Link>
                     </div>
                   </motion.div>
                 )}

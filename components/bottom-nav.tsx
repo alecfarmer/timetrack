@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Home, Clock, BarChart3, Settings, Phone, Keyboard, Palmtree, DollarSign, Users } from "lucide-react"
+import { Home, Clock, BarChart3, Settings, Phone, Keyboard, Palmtree, DollarSign, Users, Trophy } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
 import { useAuth } from "@/contexts/auth-context"
@@ -14,7 +14,7 @@ interface BottomNavProps {
 const mobileNavItems = [
   { href: "/", icon: Home, label: "Home", shortcut: "1" },
   { href: "/history", icon: Clock, label: "History", shortcut: "2" },
-  { href: "/callouts", icon: Phone, label: "Callouts", shortcut: "3" },
+  { href: "/rewards", icon: Trophy, label: "Rewards", shortcut: "3" },
   { href: "/reports", icon: BarChart3, label: "Reports", shortcut: "4" },
   { href: "/settings", icon: Settings, label: "Settings", shortcut: "5" },
 ]
@@ -23,7 +23,7 @@ const mobileNavItemsAdmin = [
   { href: "/", icon: Home, label: "Home", shortcut: "1" },
   { href: "/history", icon: Clock, label: "History", shortcut: "2" },
   { href: "/admin", icon: Users, label: "Team", shortcut: "3" },
-  { href: "/reports", icon: BarChart3, label: "Reports", shortcut: "4" },
+  { href: "/rewards", icon: Trophy, label: "Rewards", shortcut: "4" },
   { href: "/settings", icon: Settings, label: "Settings", shortcut: "5" },
 ]
 
@@ -32,6 +32,7 @@ const desktopNavItems = [
   { href: "/history", icon: Clock, label: "History", shortcut: "2" },
   { href: "/callouts", icon: Phone, label: "Callouts", shortcut: "3" },
   { href: "/reports", icon: BarChart3, label: "Reports", shortcut: "4" },
+  { href: "/rewards", icon: Trophy, label: "Rewards", shortcut: "9" },
   { href: "/leave", icon: Palmtree, label: "Leave / PTO", shortcut: "6" },
   { href: "/payroll", icon: DollarSign, label: "Payroll", shortcut: "7" },
   { href: "/settings", icon: Settings, label: "Settings", shortcut: "5" },
@@ -42,6 +43,7 @@ const desktopNavItemsAdmin = [
   { href: "/history", icon: Clock, label: "History", shortcut: "2" },
   { href: "/callouts", icon: Phone, label: "Callouts", shortcut: "3" },
   { href: "/reports", icon: BarChart3, label: "Reports", shortcut: "4" },
+  { href: "/rewards", icon: Trophy, label: "Rewards", shortcut: "9" },
   { href: "/admin", icon: Users, label: "Team", shortcut: "8" },
   { href: "/leave", icon: Palmtree, label: "Leave / PTO", shortcut: "6" },
   { href: "/payroll", icon: DollarSign, label: "Payroll", shortcut: "7" },
