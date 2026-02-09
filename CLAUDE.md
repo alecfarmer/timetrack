@@ -21,11 +21,41 @@ npm run typecheck    # TypeScript type checking (tsc --noEmit)
 
 ## Architecture
 
-**OnSite** is a mobile-first PWA for time and attendance tracking with multi-tenant organization support, geofencing, and offline-first sync.
+**OnSite** is a SaaS for time and attendance tracking with separate admin portal and employee app, multi-tenant organization support, geofencing, and offline-first sync.
+
+### Route Structure
+
+The app uses Next.js route groups to separate admin and employee experiences:
+
+```
+/                     -> Landing page (marketing)
+/login, /signup       -> Auth pages
+/app/                 -> Employee app (mobile-first, protected)
+  /app/history        -> Time history calendar
+  /app/leave          -> Leave/PTO requests
+  /app/reports        -> Personal reports & stats
+  /app/settings       -> User settings
+/admin/               -> Admin portal (desktop-first, admin role required)
+  /admin/             -> Dashboard with live activity & metrics
+  /admin/team         -> Member management
+  /admin/analytics    -> Team analytics
+  /admin/timesheets   -> Timesheet approval
+  /admin/wellbeing    -> Burnout monitoring
+  /admin/shifts       -> Shift scheduling
+  /admin/bulk-edit    -> Entry corrections
+  /admin/audit        -> Audit log
+  /admin/settings     -> Settings hub (features, policies, leave, payroll, alerts)
+```
+
+### Layouts & Navigation
+
+- `app/(employee)/layout.tsx` — Employee layout with `EmployeeNav` (bottom nav on mobile, slim sidebar on desktop)
+- `app/(admin)/layout.tsx` — Admin layout with `AdminSidebar` (full sidebar, desktop-only, hidden on mobile)
+- Navigation components: `components/employee-nav.tsx`, `components/admin-sidebar.tsx`
 
 ### Auth Flow
 
-Supabase Auth with email/password and OAuth. Middleware (`middleware.ts`) refreshes sessions on every request and redirects unauthenticated users to `/landing`. Public routes: `/login`, `/signup`, `/auth`, `/landing`.
+Supabase Auth with email/password and OAuth. Middleware (`middleware.ts`) refreshes sessions on every request, redirects unauthenticated users to `/landing`, and protects `/admin/*` routes (requires ADMIN role). Public routes: `/login`, `/signup`, `/auth`, `/landing`.
 
 ### Supabase Client Pattern
 
@@ -83,6 +113,23 @@ Org-level feature flags stored as JSONB on `Organization.features`. Managed via 
 ### Well-Being Monitoring
 
 Burnout scoring computed from consecutive work days, overtime, break skips, and avg daily hours. Admin dashboard at `/admin/wellbeing`.
+
+### Gamification System
+
+Employee engagement via XP, badges, streaks, and challenges:
+- **XP** — Earned from clock-ins, full days, streaks, and badge unlocks
+- **Badges** — Early Bird (before 7am), Night Owl (after 8pm), Streak Master, Iron Will, etc.
+- **Streaks** — Consecutive work days tracked with milestone rewards
+- **Challenges** — Weekly/monthly goals (e.g., "5 full days this week")
+
+API: `/api/streaks` returns current streak, XP, level, badges, and active challenges. All time-based calculations use the user's timezone (via `x-timezone` header) for accurate badge/streak awards.
+
+### Admin Dashboard
+
+Live activity feed and at-a-glance metrics:
+- **Activity Feed** — Real-time clock in/out events (`/api/admin/activity`)
+- **Metrics** — On-site count, today's clock-ins, pending approvals, compliance rate (`/api/admin/metrics`)
+- **Settings Hub** — Consolidated org settings at `/admin/settings`
 
 ### UI Components
 
