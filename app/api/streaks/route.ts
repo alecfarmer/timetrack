@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin as supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { format, subDays, differenceInCalendarDays, startOfMonth, endOfMonth, startOfWeek, getDay, getHours } from "date-fns"
+import { toZonedTime } from "date-fns-tz"
+import { getRequestTimezone } from "@/lib/validations"
 
 interface Badge {
   id: string
@@ -50,9 +52,10 @@ const LEVELS: Level[] = [
 ]
 
 // GET /api/streaks - Get user's streaks, achievements, XP and challenges
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const { user, error: authError } = await getAuthUser()
+    const timezone = getRequestTimezone(request)
     if (authError) return authError
 
     // Fetch all workdays for this user, ordered by date
@@ -75,7 +78,7 @@ export async function GET() {
         xp: 0,
         level: LEVELS[0],
         nextLevel: LEVELS[1],
-        challenges: generateChallenges(0, 0, 0),
+        challenges: generateChallenges(0, 0, 0, timezone),
       })
     }
 
@@ -92,7 +95,8 @@ export async function GET() {
 
     // Calculate current streak (consecutive weekdays with on-site work)
     let currentStreak = 0
-    let checkDate = new Date()
+    const nowUtc = new Date()
+    let checkDate = toZonedTime(nowUtc, timezone)
     const todayStr = format(checkDate, "yyyy-MM-dd")
     if (!onsiteDateSet.has(todayStr)) {
       checkDate = subDays(checkDate, 1)
@@ -137,14 +141,14 @@ export async function GET() {
       longestStreak = Math.max(longestStreak, tempStreak)
     }
 
-    // This month stats
-    const now = new Date()
-    const monthStart = format(startOfMonth(now), "yyyy-MM-dd")
-    const monthEnd = format(endOfMonth(now), "yyyy-MM-dd")
+    // This month stats (using user's timezone)
+    const zonedNow = toZonedTime(new Date(), timezone)
+    const monthStart = format(startOfMonth(zonedNow), "yyyy-MM-dd")
+    const monthEnd = format(endOfMonth(zonedNow), "yyyy-MM-dd")
     const thisMonthDays = onsiteDays.filter((d) => d >= monthStart && d <= monthEnd).length
 
-    // This week stats
-    const weekStart = format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd")
+    // This week stats (using user's timezone)
+    const weekStart = format(startOfWeek(zonedNow, { weekStartsOn: 1 }), "yyyy-MM-dd")
     const thisWeekDays = onsiteDays.filter((d) => d >= weekStart).length
 
     // Total hours
@@ -163,7 +167,7 @@ export async function GET() {
     }
     const perfectWeeks = [...weekMap.values()].filter((count) => count >= 3).length
 
-    // Early bird / night owl analysis
+    // Early bird / night owl analysis (convert UTC timestamps to user's timezone)
     let earlyBirdCount = 0
     let nightOwlCount = 0
     let onTimeCount = 0
@@ -171,13 +175,15 @@ export async function GET() {
 
     for (const wd of workDays) {
       if (wd.firstClockIn) {
-        const hour = getHours(new Date(wd.firstClockIn))
+        const zonedClockIn = toZonedTime(new Date(wd.firstClockIn), timezone)
+        const hour = getHours(zonedClockIn)
         clockInTimes.push(hour)
         if (hour < 8) earlyBirdCount++
         if (hour >= 9 && hour <= 10) onTimeCount++
       }
       if (wd.lastClockOut) {
-        const hour = getHours(new Date(wd.lastClockOut))
+        const zonedClockOut = toZonedTime(new Date(wd.lastClockOut), timezone)
+        const hour = getHours(zonedClockOut)
         if (hour >= 19) nightOwlCount++
       }
     }
@@ -224,8 +230,8 @@ export async function GET() {
     const currentLevel = LEVELS.findLast((l) => xp >= l.minXp) || LEVELS[0]
     const nextLevel = LEVELS.find((l) => l.minXp > xp) || LEVELS[LEVELS.length - 1]
 
-    // Generate challenges
-    const challenges = generateChallenges(thisWeekDays, thisMonthDays, currentStreak)
+    // Generate challenges (pass timezone for proper expiration dates)
+    const challenges = generateChallenges(thisWeekDays, thisMonthDays, currentStreak, timezone)
 
     return NextResponse.json({
       currentStreak,
@@ -576,11 +582,11 @@ function calculateBadges(stats: Stats): Badge[] {
   ]
 }
 
-function generateChallenges(thisWeekDays: number, thisMonthDays: number, currentStreak: number): Challenge[] {
-  const now = new Date()
-  const weekEnd = new Date(now)
-  weekEnd.setDate(weekEnd.getDate() + (7 - getDay(now)))
-  const monthEnd = endOfMonth(now)
+function generateChallenges(thisWeekDays: number, thisMonthDays: number, currentStreak: number, timezone: string): Challenge[] {
+  const zonedNow = toZonedTime(new Date(), timezone)
+  const weekEnd = new Date(zonedNow)
+  weekEnd.setDate(weekEnd.getDate() + (7 - getDay(zonedNow)))
+  const monthEnd = endOfMonth(zonedNow)
 
   return [
     {
