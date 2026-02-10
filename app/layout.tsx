@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { AuthProvider } from "@/contexts/auth-context"
 import { ThemeProvider } from "@/components/theme-provider"
+import { SWRProvider } from "@/components/swr-provider"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -52,7 +53,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>{children}</AuthProvider>
+          <SWRProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </SWRProvider>
         </ThemeProvider>
       </body>
     </html>

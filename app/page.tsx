@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Logo, LogoMark } from "@/components/logo"
 import { DesktopMonitor, useDesktopMonitor } from "@/components/desktop-monitor"
 import { Onboarding } from "@/components/onboarding"
-import { StreaksWidget } from "@/components/streaks-widget"
+import { StreaksWidgetLazy } from "@/components/streaks-widget-lazy"
 import { OfflineBanner } from "@/components/offline-banner"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { Button } from "@/components/ui/button"
@@ -332,7 +332,7 @@ export default function Dashboard() {
             </div>
 
             {/* Desktop Streaks */}
-            <div className="hidden lg:block mt-4"><ErrorBoundary><StreaksWidget /></ErrorBoundary></div>
+            <div className="hidden lg:block mt-4"><ErrorBoundary><StreaksWidgetLazy /></ErrorBoundary></div>
 
             {/* === MOBILE LAYOUT === */}
             <div className="lg:hidden space-y-4">
@@ -410,7 +410,7 @@ export default function Dashboard() {
                 </div>
               </motion.div>
 
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.12 }}><ErrorBoundary><StreaksWidget /></ErrorBoundary></motion.div>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.12 }}><ErrorBoundary><StreaksWidgetLazy /></ErrorBoundary></motion.div>
 
               {/* Today's Entries */}
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }} className="space-y-3">
