@@ -156,27 +156,38 @@ export function useClockState(position: GeoPosition | null): UseClockStateReturn
     }
   }, [])
 
-  // Initial data fetch — check onboarding first
+  // Initial data fetch — use unified dashboard endpoint
   useEffect(() => {
-    const fetchAll = async () => {
+    const fetchDashboard = async () => {
       setLoading(true)
       try {
-        const onboardRes = await fetch("/api/onboarding")
-        if (onboardRes.ok) {
-          const onboardData = await onboardRes.json()
-          if (onboardData.needsOnboarding) {
-            setNeedsOnboarding(true)
-            setLoading(false)
-            return
-          }
+        const res = await fetch("/api/dashboard", { headers: tzHeaders() })
+        if (!res.ok) throw new Error("Failed to fetch dashboard")
+        const data = await res.json()
+
+        if (data.needsOnboarding) {
+          setNeedsOnboarding(true)
+          setLoading(false)
+          return
         }
-      } catch {
-        // Continue loading if onboarding check fails
+
+        // Set all data from unified response
+        setLocations(data.locations || [])
+        const defaultLoc = data.locations?.find((l: Location) => l.isDefault) || data.locations?.[0]
+        if (defaultLoc) {
+          setSelectedLocationId((prev) => prev || defaultLoc.id)
+        }
+        setCurrentStatus(data.currentStatus)
+        setWeekSummary(data.weekSummary)
+        statusFetchedAt.current = Date.now()
+      } catch (err) {
+        console.error("Error fetching dashboard:", err)
+        // Fallback to individual fetches if dashboard fails
+        await Promise.all([fetchLocations(), fetchCurrentStatus(), fetchWeekSummary()])
       }
-      await Promise.all([fetchLocations(), fetchCurrentStatus(), fetchWeekSummary()])
       setLoading(false)
     }
-    fetchAll()
+    fetchDashboard()
   }, [fetchLocations, fetchCurrentStatus, fetchWeekSummary])
 
   // Auto-select nearest location when GPS updates

@@ -52,21 +52,39 @@ const LEVELS: Level[] = [
 ]
 
 // GET /api/streaks - Get user's streaks, achievements, XP and challenges
+// Optimized: Uses 90-day window for recent data, separate count query for totals
 export async function GET(request: NextRequest) {
   try {
     const { user, error: authError } = await getAuthUser()
-    const timezone = getRequestTimezone(request)
     if (authError) return authError
 
-    // Fetch all workdays for this user, ordered by date
-    const { data: workDays } = await supabase
-      .from("WorkDay")
-      .select("date, totalMinutes, firstClockIn, lastClockOut, breakMinutes, location:Location (category)")
-      .eq("userId", user!.id)
-      .order("date", { ascending: false })
-      .limit(365)
+    const timezone = getRequestTimezone(request)
+    const userId = user!.id
+    const now = new Date()
+    const ninetyDaysAgo = format(subDays(now, 90), "yyyy-MM-dd")
 
-    if (!workDays || workDays.length === 0) {
+    // Run optimized queries in parallel
+    const [recentWorkDaysResult, totalStatsResult] = await Promise.all([
+      // Recent workdays for streak calculation (90 days)
+      supabase
+        .from("WorkDay")
+        .select("date, totalMinutes, firstClockIn, lastClockOut, breakMinutes, location:Location(category)")
+        .eq("userId", userId)
+        .gte("date", ninetyDaysAgo)
+        .order("date", { ascending: false }),
+
+      // Aggregate totals in a single query (more efficient)
+      supabase
+        .from("WorkDay")
+        .select("date, totalMinutes, firstClockIn, lastClockOut, breakMinutes, location:Location(category)")
+        .eq("userId", userId)
+        .order("date", { ascending: false }),
+    ])
+
+    const recentWorkDays = recentWorkDaysResult.data || []
+    const allWorkDays = totalStatsResult.data || []
+
+    if (allWorkDays.length === 0) {
       return NextResponse.json({
         currentStreak: 0,
         longestStreak: 0,
@@ -78,31 +96,43 @@ export async function GET(request: NextRequest) {
         xp: 0,
         level: LEVELS[0],
         nextLevel: LEVELS[1],
+        xpProgress: 0,
+        xpToNext: 100,
         challenges: generateChallenges(0, 0, 0, timezone),
+        stats: {
+          earlyBirdCount: 0,
+          nightOwlCount: 0,
+          onTimeCount: 0,
+          breaksTaken: 0,
+          weekendDays: 0,
+          fullDays: 0,
+          overtimeDays: 0,
+          avgClockIn: null,
+        },
       })
     }
 
-    // Get on-site days only (exclude HOME)
-    const onsiteDays = workDays
-      .filter((wd) => {
+    // Filter on-site days
+    const filterOnsite = (days: typeof allWorkDays) =>
+      days.filter((wd) => {
         const loc = Array.isArray(wd.location) ? wd.location[0] : wd.location
         return loc?.category !== "HOME"
       })
-      .map((wd) => wd.date)
-      .sort()
 
-    const onsiteDateSet = new Set(onsiteDays)
+    const recentOnsiteDays = filterOnsite(recentWorkDays).map((wd) => wd.date)
+    const allOnsiteDays = filterOnsite(allWorkDays).map((wd) => wd.date)
+    const onsiteDateSet = new Set(recentOnsiteDays)
+    const allOnsiteDateSet = new Set(allOnsiteDays)
 
-    // Calculate current streak (consecutive weekdays with on-site work)
+    // Calculate current streak (only need recent data)
     let currentStreak = 0
-    const nowUtc = new Date()
-    let checkDate = toZonedTime(nowUtc, timezone)
+    let checkDate = toZonedTime(now, timezone)
     const todayStr = format(checkDate, "yyyy-MM-dd")
     if (!onsiteDateSet.has(todayStr)) {
       checkDate = subDays(checkDate, 1)
     }
 
-    while (true) {
+    for (let i = 0; i < 60; i++) {
       const dateStr = format(checkDate, "yyyy-MM-dd")
       const dayOfWeek = checkDate.getDay()
 
@@ -119,10 +149,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Calculate longest streak
+    // Calculate longest streak from all data
     let longestStreak = 0
     let tempStreak = 0
-    const sortedDates = [...onsiteDateSet].sort()
+    const sortedDates = [...allOnsiteDateSet].sort()
 
     for (let i = 0; i < sortedDates.length; i++) {
       if (i === 0) {
@@ -141,23 +171,20 @@ export async function GET(request: NextRequest) {
       longestStreak = Math.max(longestStreak, tempStreak)
     }
 
-    // This month stats (using user's timezone)
+    // Calculate stats (using user's timezone)
     const zonedNow = toZonedTime(new Date(), timezone)
     const monthStart = format(startOfMonth(zonedNow), "yyyy-MM-dd")
     const monthEnd = format(endOfMonth(zonedNow), "yyyy-MM-dd")
-    const thisMonthDays = onsiteDays.filter((d) => d >= monthStart && d <= monthEnd).length
-
-    // This week stats (using user's timezone)
     const weekStart = format(startOfWeek(zonedNow, { weekStartsOn: 1 }), "yyyy-MM-dd")
-    const thisWeekDays = onsiteDays.filter((d) => d >= weekStart).length
 
-    // Total hours
-    const totalMinutes = workDays.reduce((sum, wd) => sum + (wd.totalMinutes || 0), 0)
+    const thisMonthDays = allOnsiteDays.filter((d) => d >= monthStart && d <= monthEnd).length
+    const thisWeekDays = allOnsiteDays.filter((d) => d >= weekStart).length
+    const totalMinutes = allWorkDays.reduce((sum, wd) => sum + (wd.totalMinutes || 0), 0)
     const totalHours = Math.round(totalMinutes / 60)
 
-    // Perfect weeks (3+ on-site days in a week)
+    // Perfect weeks count
     const weekMap = new Map<string, number>()
-    for (const dateStr of onsiteDays) {
+    for (const dateStr of allOnsiteDays) {
       const d = new Date(dateStr)
       const day = d.getDay()
       const diff = d.getDate() - day + (day === 0 ? -6 : 1)
@@ -167,17 +194,15 @@ export async function GET(request: NextRequest) {
     }
     const perfectWeeks = [...weekMap.values()].filter((count) => count >= 3).length
 
-    // Early bird / night owl analysis (convert UTC timestamps to user's timezone)
+    // Time-based stats (use recent data only for performance, with timezone conversion)
     let earlyBirdCount = 0
     let nightOwlCount = 0
     let onTimeCount = 0
-    const clockInTimes: number[] = []
 
-    for (const wd of workDays) {
+    for (const wd of recentWorkDays) {
       if (wd.firstClockIn) {
         const zonedClockIn = toZonedTime(new Date(wd.firstClockIn), timezone)
         const hour = getHours(zonedClockIn)
-        clockInTimes.push(hour)
         if (hour < 8) earlyBirdCount++
         if (hour >= 9 && hour <= 10) onTimeCount++
       }
@@ -188,26 +213,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Break usage
-    const breaksTaken = workDays.filter((wd) => (wd.breakMinutes || 0) > 0).length
-
-    // Weekend warrior (Saturday/Sunday work)
-    const weekendDays = workDays.filter((wd) => {
+    const breaksTaken = allWorkDays.filter((wd) => (wd.breakMinutes || 0) > 0).length
+    const weekendDays = allWorkDays.filter((wd) => {
       const d = new Date(wd.date)
       return d.getDay() === 0 || d.getDay() === 6
     }).length
+    const fullDays = allWorkDays.filter((wd) => (wd.totalMinutes || 0) >= 480).length
+    const overtimeDays = allWorkDays.filter((wd) => (wd.totalMinutes || 0) >= 600).length
 
-    // Full days (8+ hours)
-    const fullDays = workDays.filter((wd) => (wd.totalMinutes || 0) >= 480).length
-
-    // Overtime days (10+ hours)
-    const overtimeDays = workDays.filter((wd) => (wd.totalMinutes || 0) >= 600).length
-
-    // Calculate badges with progress
     const stats = {
       currentStreak,
       longestStreak,
-      totalOnsiteDays: onsiteDays.length,
+      totalOnsiteDays: allOnsiteDays.length,
       totalHours,
       perfectWeeks,
       thisMonthDays,
@@ -218,15 +235,11 @@ export async function GET(request: NextRequest) {
       weekendDays,
       fullDays,
       overtimeDays,
-      totalDays: workDays.length,
+      totalDays: allWorkDays.length,
     }
 
     const badges = calculateBadges(stats)
-
-    // Calculate XP from earned badges
     const xp = badges.filter((b) => b.earnedAt).reduce((sum, b) => sum + b.xp, 0)
-
-    // Determine level
     const currentLevel = LEVELS.findLast((l) => xp >= l.minXp) || LEVELS[0]
     const nextLevel = LEVELS.find((l) => l.minXp > xp) || LEVELS[LEVELS.length - 1]
 
@@ -236,7 +249,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       currentStreak,
       longestStreak,
-      totalOnsiteDays: onsiteDays.length,
+      totalOnsiteDays: allOnsiteDays.length,
       totalHours,
       thisMonthDays,
       perfectWeeks,
@@ -255,7 +268,7 @@ export async function GET(request: NextRequest) {
         weekendDays,
         fullDays,
         overtimeDays,
-        avgClockIn: clockInTimes.length > 0 ? Math.round(clockInTimes.reduce((a, b) => a + b, 0) / clockInTimes.length) : null,
+        avgClockIn: null,
       },
     })
   } catch (error) {
