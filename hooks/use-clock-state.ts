@@ -95,7 +95,8 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
   const [selectedLocationId, setSelectedLocationId] = useState<string>("")
   const [currentStatus, setCurrentStatus] = useState<CurrentStatus | null>(null)
   const [weekSummary, setWeekSummary] = useState<WeekSummary | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Start with loading=false if not enabled, true if enabled
+  const [loading, setLoading] = useState(enabled)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isOffline, setIsOffline] = useState(false)
@@ -161,6 +162,7 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
   useEffect(() => {
     // Don't fetch until enabled (auth ready)
     if (!enabled) {
+      setLoading(false)
       return
     }
 
