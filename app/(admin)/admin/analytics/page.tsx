@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationCenter } from "@/components/notification-center"
+import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { WeeklyHoursChart } from "@/components/charts/weekly-hours-chart"
@@ -14,8 +15,6 @@ import { LocationPieChart } from "@/components/charts/location-pie-chart"
 import { MemberComparisonChart } from "@/components/charts/member-comparison-chart"
 import {
   BarChart3,
-  ArrowLeft,
-  Loader2,
   TrendingUp,
   Users,
   Clock,
@@ -59,11 +58,12 @@ interface Analytics {
 }
 
 export default function AnalyticsPage() {
-  const { isAdmin, loading: authLoading } = useAuth()
+  const { org, isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
   const [data, setData] = useState<Analytics | null>(null)
   const [period, setPeriod] = useState("4weeks")
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const fetchAnalytics = useCallback(async () => {
@@ -93,10 +93,28 @@ export default function AnalyticsPage() {
     }
   }, [authLoading, isAdmin, router, fetchAnalytics])
 
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await fetchAnalytics()
+    setRefreshing(false)
+  }
+
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-primary/20 animate-ping absolute inset-0" />
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <BarChart3 className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <p className="text-muted-foreground font-medium">Loading analytics...</p>
+        </motion.div>
       </div>
     )
   }
@@ -104,96 +122,126 @@ export default function AnalyticsPage() {
   const overview = data?.overview
 
   return (
-    <motion.div className="flex flex-col min-h-screen bg-background" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <header className="sticky top-0 z-50 glass border-b">
-        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => router.push("/admin")}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <BarChart3 className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold">Analytics</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex bg-muted rounded-lg p-0.5">
-              {[
-                { value: "1week", label: "1W" },
-                { value: "4weeks", label: "4W" },
-                { value: "3months", label: "3M" },
-              ].map((p) => (
-                <button
-                  key={p.value}
-                  onClick={() => setPeriod(p.value)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                    period === p.value ? "bg-background shadow text-foreground" : "text-muted-foreground"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
+    <motion.div
+      className="flex flex-col min-h-screen bg-background"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      {/* Premium Dark Hero Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-cyan-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+
+        <header className="relative z-10 safe-area-pt">
+          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                <BarChart3 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-white">Analytics</h1>
+                {org && (
+                  <p className="text-xs text-white/60">{org.orgName}</p>
+                )}
+              </div>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              {/* Period Selector */}
+              <div className="flex bg-white/10 backdrop-blur-sm rounded-lg p-0.5 border border-white/10">
+                {[
+                  { value: "1week", label: "1W" },
+                  { value: "4weeks", label: "4W" },
+                  { value: "3months", label: "3M" },
+                ].map((p) => (
+                  <button
+                    key={p.value}
+                    onClick={() => setPeriod(p.value)}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                      period === p.value ? "bg-white/20 text-white" : "text-white/60 hover:text-white"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
+              <ThemeToggle />
+              <NotificationCenter />
+            </div>
+          </div>
+        </header>
+
+        {/* Stats Cards in Hero */}
+        <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mx-auto mb-2">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <p className="text-2xl font-bold text-white">{overview?.totalMembers || 0}</p>
+              <p className="text-xs text-white/60">Members</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-bold text-emerald-400">{overview ? Math.round(overview.avgComplianceRate) : 0}%</p>
+              <p className="text-xs text-white/60">Avg Compliance</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
+                <Clock className="h-5 w-5 text-blue-400" />
+              </div>
+              <p className="text-2xl font-bold text-blue-400">{overview ? Math.round(overview.totalHoursTracked) : 0}</p>
+              <p className="text-xs text-white/60">Total Hours</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center mx-auto mb-2">
+                <TrendingUp className="h-5 w-5 text-cyan-400" />
+              </div>
+              <p className="text-2xl font-bold text-cyan-400">{overview?.avgHoursPerDay?.toFixed(1) || '0.0'}</p>
+              <p className="text-xs text-white/60">Avg Hrs/Day</p>
+            </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="flex-1 pb-24 lg:pb-8">
-        <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8 space-y-6">
+      {/* Main Content */}
+      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+        <div className="max-w-6xl mx-auto px-4 lg:px-8 space-y-6">
           {error && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
+            >
               <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
               <p className="text-sm text-destructive flex-1">{error}</p>
-              <Button variant="outline" size="sm" onClick={() => { setError(null); fetchAnalytics() }}>
+              <Button variant="ghost" size="sm" onClick={() => { setError(null); fetchAnalytics() }}>
                 Retry
               </Button>
-            </div>
-          )}
-
-          {/* Overview Cards */}
-          {overview && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">Members</p>
-                  </div>
-                  <p className="text-2xl font-bold">{overview.totalMembers}</p>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">Avg Compliance</p>
-                  </div>
-                  <p className="text-2xl font-bold">{Math.round(overview.avgComplianceRate)}%</p>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">Total Hours</p>
-                  </div>
-                  <p className="text-2xl font-bold">{Math.round(overview.totalHoursTracked)}</p>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">Avg Hrs/Day</p>
-                  </div>
-                  <p className="text-2xl font-bold">{overview.avgHoursPerDay.toFixed(1)}</p>
-                </CardContent>
-              </Card>
-            </div>
+            </motion.div>
           )}
 
           {/* Charts Row 1 */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Card className="border-0 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="grid lg:grid-cols-2 gap-6"
+          >
+            <Card className="border-0 shadow-lg rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium">Weekly Hours</CardTitle>
               </CardHeader>
@@ -202,7 +250,7 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-lg rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium">Compliance Trend</CardTitle>
               </CardHeader>
@@ -210,11 +258,16 @@ export default function AnalyticsPage() {
                 <ComplianceTrendChart data={data?.weeklyTrends || []} />
               </CardContent>
             </Card>
-          </div>
+          </motion.div>
 
           {/* Charts Row 2 */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Card className="border-0 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="grid lg:grid-cols-2 gap-6"
+          >
+            <Card className="border-0 shadow-lg rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium">Location Distribution</CardTitle>
               </CardHeader>
@@ -223,7 +276,7 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-lg rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium">Member Comparison</CardTitle>
               </CardHeader>
@@ -231,7 +284,7 @@ export default function AnalyticsPage() {
                 <MemberComparisonChart data={data?.memberSummary || []} />
               </CardContent>
             </Card>
-          </div>
+          </motion.div>
         </div>
       </main>
     </motion.div>

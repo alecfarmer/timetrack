@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths } from "date-fns"
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from "date-fns"
 import { formatTime, formatDateInZone, formatDuration } from "@/lib/dates"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationCenter } from "@/components/notification-center"
+import { RefreshButton } from "@/components/pull-to-refresh"
+import { TimesheetSubmit } from "@/components/timesheet-submit"
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,9 +20,9 @@ import {
   Home,
   TrendingUp,
   ArrowRight,
+  CalendarDays,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { TimesheetSubmit } from "@/components/timesheet-submit"
 
 interface Entry {
   id: string
@@ -41,12 +43,6 @@ interface DayData {
   isWfh: boolean
   totalMinutes: number
   locations: string[]
-}
-
-const pageVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
 }
 
 function calculateDayMinutes(entries: Entry[]): number {
@@ -74,6 +70,7 @@ export default function HistoryPage() {
   const [monthData, setMonthData] = useState<DayData[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     fetchMonthData()
@@ -128,6 +125,12 @@ export default function HistoryPage() {
     setLoading(false)
   }
 
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await fetchMonthData()
+    setRefreshing(false)
+  }
+
   const previousMonth = () => setCurrentMonth((prev) => subMonths(prev, 1))
   const nextMonth = () => setCurrentMonth((prev) => addMonths(prev, 1))
 
@@ -168,77 +171,101 @@ export default function HistoryPage() {
   return (
     <motion.div
       className="flex flex-col min-h-screen bg-background"
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={pageVariants}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
     >
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b">
-        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-primary" />
+      {/* Premium Dark Hero Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+
+        <header className="relative z-10 safe-area-pt">
+          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                <CalendarDays className="h-5 w-5 text-white" />
+              </div>
+              <h1 className="text-lg font-semibold text-white">History</h1>
             </div>
-            <h1 className="text-lg font-bold">History</h1>
+            <div className="flex items-center gap-2">
+              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
+              <NotificationCenter />
+            </div>
           </div>
-          <h1 className="hidden lg:block text-xl font-semibold">History</h1>
-          <ThemeToggle />
+        </header>
+
+        {/* Month Navigation & Stats */}
+        <div className="relative z-10 px-4 pt-2 pb-6 max-w-6xl mx-auto lg:px-8">
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={previousMonth}
+              className="rounded-xl h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <h2 className="text-xl font-semibold text-white min-w-[180px] text-center">
+              {format(currentMonth, "MMMM yyyy")}
+            </h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={nextMonth}
+              className="rounded-xl h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
+                <Building2 className="h-5 w-5 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-bold text-white">{stats.daysOnsite}</p>
+              <p className="text-xs text-white/60">On-Site Days</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
+                <Home className="h-5 w-5 text-blue-400" />
+              </div>
+              <p className="text-2xl font-bold text-white">{stats.daysWfh}</p>
+              <p className="text-xs text-white/60">WFH Days</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
+                <TrendingUp className="h-5 w-5 text-amber-400" />
+              </div>
+              <p className="text-2xl font-bold text-white">
+                {stats.totalHours}<span className="text-base font-medium">h</span>
+              </p>
+              <p className="text-xs text-white/60">Total Hours</p>
+            </div>
+          </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-8">
-        <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8">
-          {/* Month Stats Row */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-4 text-center">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
-                  <Building2 className="h-5 w-5 text-primary" />
-                </div>
-                <p className="text-2xl font-bold text-primary">{stats.daysOnsite}</p>
-                <p className="text-xs text-muted-foreground">On-Site</p>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-4 text-center">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mx-auto mb-2">
-                  <Home className="h-5 w-5 text-blue-500" />
-                </div>
-                <p className="text-2xl font-bold text-blue-500">{stats.daysWfh}</p>
-                <p className="text-xs text-muted-foreground">WFH</p>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-4 text-center">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center mx-auto mb-2">
-                  <TrendingUp className="h-5 w-5 text-amber-500" />
-                </div>
-                <p className="text-2xl font-bold text-amber-500">
-                  {stats.totalHours}<span className="text-base font-medium">h</span>
-                </p>
-                <p className="text-xs text-muted-foreground">Total Hours</p>
-              </CardContent>
-            </Card>
-          </div>
-
+      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+        <div className="max-w-6xl mx-auto px-4 lg:px-8">
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Calendar */}
             <div className="lg:col-span-2">
-              <Card className="border-0 shadow-xl">
+              <Card className="border-0 shadow-xl rounded-2xl">
                 <CardContent className="p-5">
-                  {/* Month navigation */}
-                  <div className="flex items-center justify-between mb-5">
-                    <Button variant="ghost" size="icon" onClick={previousMonth} className="rounded-xl h-9 w-9">
-                      <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    <h2 className="text-lg font-semibold">{format(currentMonth, "MMMM yyyy")}</h2>
-                    <Button variant="ghost" size="icon" onClick={nextMonth} className="rounded-xl h-9 w-9">
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
-                  </div>
-
                   {/* Day headers */}
                   <div className="grid grid-cols-7 gap-1 mb-1">
                     {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
@@ -271,9 +298,9 @@ export default function HistoryPage() {
                             isSelected
                               ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
                               : dayData.isOnsite
-                              ? "bg-success/15 hover:bg-success/25 text-success-foreground"
+                              ? "bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400"
                               : dayData.isWfh
-                              ? "bg-blue-500/10 hover:bg-blue-500/20"
+                              ? "bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400"
                               : "hover:bg-muted/60",
                             isTodayDate && !isSelected && "ring-2 ring-primary/50 ring-offset-1 ring-offset-background"
                           )}
@@ -286,7 +313,7 @@ export default function HistoryPage() {
                             <div
                               className={cn(
                                 "absolute bottom-1 w-1 h-1 rounded-full",
-                                dayData.isOnsite ? "bg-success" : "bg-blue-500"
+                                dayData.isOnsite ? "bg-emerald-500" : "bg-blue-500"
                               )}
                             />
                           )}
@@ -301,7 +328,7 @@ export default function HistoryPage() {
                   {/* Legend */}
                   <div className="flex items-center justify-center gap-5 mt-4 pt-3 border-t">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-success" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                       <span className="text-xs text-muted-foreground">On-Site</span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -328,7 +355,7 @@ export default function HistoryPage() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Card className="border-0 shadow-xl">
+                    <Card className="border-0 shadow-xl rounded-2xl">
                       <CardContent className="p-5">
                         {/* Day header */}
                         <div className="flex items-center justify-between mb-4">
@@ -342,8 +369,13 @@ export default function HistoryPage() {
                           </div>
                           {selectedDayData.hasWork && (
                             <Badge
-                              variant={selectedDayData.isOnsite ? "success" : "secondary"}
-                              className="text-xs"
+                              variant={selectedDayData.isOnsite ? "default" : "secondary"}
+                              className={cn(
+                                "text-xs",
+                                selectedDayData.isOnsite
+                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                  : ""
+                              )}
                             >
                               {selectedDayData.isOnsite ? (
                                 <><Building2 className="h-3 w-3 mr-1" />On-Site</>
@@ -394,7 +426,7 @@ export default function HistoryPage() {
                                         <div
                                           className={cn(
                                             "w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0",
-                                            isClockIn ? "bg-success" : "bg-destructive"
+                                            isClockIn ? "bg-emerald-500" : "bg-rose-500"
                                           )}
                                         />
                                         {!isLast && (
@@ -408,8 +440,11 @@ export default function HistoryPage() {
                                             {formatTime(entry.timestampServer)}
                                           </span>
                                           <Badge
-                                            variant={isClockIn ? "success" : "destructive"}
-                                            className="text-[10px] px-1.5 py-0"
+                                            variant={isClockIn ? "default" : "destructive"}
+                                            className={cn(
+                                              "text-[10px] px-1.5 py-0",
+                                              isClockIn && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0"
+                                            )}
                                           >
                                             {isClockIn ? "IN" : "OUT"}
                                           </Badge>
@@ -440,7 +475,7 @@ export default function HistoryPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <Card className="border-0 shadow-lg border-dashed">
+                    <Card className="border-0 shadow-lg border-dashed rounded-2xl">
                       <CardContent className="p-6 text-center">
                         <div className="w-12 h-12 rounded-xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
                           <ArrowRight className="h-5 w-5 text-muted-foreground/40" />
@@ -456,7 +491,7 @@ export default function HistoryPage() {
 
               {/* Monthly breakdown by location */}
               {stats.totalDays > 0 && (
-                <Card className="border-0 shadow-lg">
+                <Card className="border-0 shadow-lg rounded-2xl">
                   <CardContent className="p-5">
                     <h3 className="text-sm font-semibold mb-3">Month Summary</h3>
                     <div className="space-y-2.5">
@@ -466,11 +501,11 @@ export default function HistoryPage() {
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">On-Site Days</span>
-                        <span className="font-medium text-success">{stats.daysOnsite}</span>
+                        <span className="font-medium text-emerald-600 dark:text-emerald-400">{stats.daysOnsite}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">WFH Days</span>
-                        <span className="font-medium text-blue-500">{stats.daysWfh}</span>
+                        <span className="font-medium text-blue-600 dark:text-blue-400">{stats.daysWfh}</span>
                       </div>
                       <div className="h-px bg-border my-1" />
                       <div className="flex items-center justify-between text-sm">
@@ -490,7 +525,6 @@ export default function HistoryPage() {
           </div>
         </div>
       </main>
-
     </motion.div>
   )
 }

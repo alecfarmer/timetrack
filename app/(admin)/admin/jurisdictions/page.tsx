@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationCenter } from "@/components/notification-center"
+import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import {
@@ -19,13 +21,14 @@ import {
   Clock,
   Shield,
   AlertTriangle,
-  ArrowLeft,
-  Loader2,
   Plus,
   Pencil,
   X,
   Save,
   AlertCircle,
+  Globe,
+  Coffee,
+  CalendarClock,
 } from "lucide-react"
 
 interface JurisdictionPolicy {
@@ -94,25 +97,12 @@ const defaultFormData: JurisdictionFormData = {
   clopeningMinHours: 0,
 }
 
-const pageVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-}
-
-const staggerContainer = {
-  animate: { transition: { staggerChildren: 0.08 } },
-}
-
-const staggerItem = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-}
-
 export default function JurisdictionsPage() {
   const { isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
   const [policies, setPolicies] = useState<JurisdictionPolicy[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -120,7 +110,6 @@ export default function JurisdictionsPage() {
   const [saving, setSaving] = useState(false)
 
   const fetchPolicies = useCallback(async () => {
-    setLoading(true)
     setError(null)
     try {
       const res = await fetch("/api/org/policy/jurisdictions")
@@ -145,6 +134,12 @@ export default function JurisdictionsPage() {
       fetchPolicies()
     }
   }, [authLoading, isAdmin, router, fetchPolicies])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await fetchPolicies()
+    setRefreshing(false)
+  }
 
   const handleJurisdictionSelect = (code: string) => {
     const known = KNOWN_JURISDICTIONS.find((j) => j.code === code)
@@ -230,11 +225,26 @@ export default function JurisdictionsPage() {
   }
 
   const configuredCodes = policies.map((p) => p.jurisdictionCode)
+  const activePolicies = policies.filter((p) => p.active)
+  const policiesWithBreaks = policies.filter((p) => p.mealBreakRequired || p.restBreakRequired)
+  const policiesWithScheduling = policies.filter((p) => p.predictiveScheduling)
 
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-primary/20 animate-ping absolute inset-0" />
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Scale className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <p className="text-muted-foreground font-medium">Loading jurisdictions...</p>
+        </motion.div>
       </div>
     )
   }
@@ -242,59 +252,108 @@ export default function JurisdictionsPage() {
   return (
     <motion.div
       className="flex flex-col min-h-screen bg-background"
-      initial="initial"
-      animate="animate"
-      variants={pageVariants}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
     >
-      <header className="sticky top-0 z-50 glass border-b">
-        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => router.push("/admin")}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <Scale className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold">Jurisdiction Policies</h1>
+      {/* Premium Dark Hero Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-500/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-teal-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+
+        <header className="relative z-10 safe-area-pt">
+          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                <Scale className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-white">Jurisdiction Policies</h1>
+                <p className="text-xs text-white/60">Multi-region labor law compliance</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {!showForm && (
+                <Button
+                  size="sm"
+                  className="rounded-xl gap-2 bg-white/10 hover:bg-white/20 text-white border-white/10"
+                  onClick={() => {
+                    setEditingId(null)
+                    setFormData(defaultFormData)
+                    setShowForm(true)
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Add Jurisdiction</span>
+                </Button>
+              )}
+              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
+              <ThemeToggle />
+              <NotificationCenter />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {!showForm && (
-              <Button
-                className="rounded-xl gap-2"
-                size="sm"
-                onClick={() => {
-                  setEditingId(null)
-                  setFormData(defaultFormData)
-                  setShowForm(true)
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Jurisdiction</span>
-              </Button>
-            )}
-            <ThemeToggle />
+        </header>
+
+        {/* Stats Cards in Hero */}
+        <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mx-auto mb-2">
+                <Globe className="h-5 w-5 text-white" />
+              </div>
+              <p className="text-2xl font-bold text-white">{policies.length}</p>
+              <p className="text-xs text-white/60">Total Policies</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
+                <Shield className="h-5 w-5 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-bold text-emerald-400">{activePolicies.length}</p>
+              <p className="text-xs text-white/60">Active</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center mx-auto mb-2">
+                <Coffee className="h-5 w-5 text-cyan-400" />
+              </div>
+              <p className="text-2xl font-bold text-cyan-400">{policiesWithBreaks.length}</p>
+              <p className="text-xs text-white/60">With Breaks</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center mx-auto mb-2">
+                <CalendarClock className="h-5 w-5 text-teal-400" />
+              </div>
+              <p className="text-2xl font-bold text-teal-400">{policiesWithScheduling.length}</p>
+              <p className="text-xs text-white/60">Predictive</p>
+            </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <motion.main
-        className="flex-1 pb-24 lg:pb-8"
-        variants={staggerContainer}
-        initial="initial"
-        animate="animate"
-      >
-        <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8 space-y-6">
+      {/* Main Content */}
+      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+        <div className="max-w-6xl mx-auto px-4 lg:px-8 space-y-6">
           {error && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
+            >
               <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
               <p className="text-sm text-destructive flex-1">{error}</p>
               <Button variant="ghost" size="sm" onClick={() => setError(null)}>
                 Dismiss
               </Button>
-            </div>
+            </motion.div>
           )}
 
           {/* Add/Edit Form */}
@@ -304,7 +363,7 @@ export default function JurisdictionsPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card className="border-0 shadow-lg">
+              <Card className="border-0 shadow-lg rounded-2xl">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -575,8 +634,12 @@ export default function JurisdictionsPage() {
 
           {/* Known Jurisdictions Overview */}
           {!showForm && (
-            <motion.div variants={staggerItem}>
-              <Card className="border-0 shadow-lg">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Card className="border-0 shadow-lg rounded-2xl">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-medium flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-primary" />
@@ -613,7 +676,11 @@ export default function JurisdictionsPage() {
           )}
 
           {/* Configured Policies */}
-          <motion.div variants={staggerItem}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Configured Policies
@@ -627,7 +694,7 @@ export default function JurisdictionsPage() {
             {loading ? (
               <div className="grid lg:grid-cols-2 gap-4">
                 {[1, 2, 3].map((i) => (
-                  <Card key={i} className="border-0 shadow-lg">
+                  <Card key={i} className="border-0 shadow-lg rounded-2xl">
                     <CardContent className="p-6 animate-pulse space-y-3">
                       <div className="h-5 w-32 bg-muted rounded" />
                       <div className="h-4 w-48 bg-muted rounded" />
@@ -637,7 +704,7 @@ export default function JurisdictionsPage() {
                 ))}
               </div>
             ) : policies.length === 0 ? (
-              <Card className="border-0 shadow-lg">
+              <Card className="border-0 shadow-lg rounded-2xl">
                 <CardContent className="py-12 text-center">
                   <AlertTriangle className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground">
@@ -662,13 +729,14 @@ export default function JurisdictionsPage() {
               </Card>
             ) : (
               <div className="grid lg:grid-cols-2 gap-4">
-                {policies.map((policy) => (
+                {policies.map((policy, index) => (
                   <motion.div
                     key={policy.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 * index }}
                   >
-                    <Card className="border-0 shadow-lg">
+                    <Card className="border-0 shadow-lg rounded-2xl">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -749,7 +817,7 @@ export default function JurisdictionsPage() {
             )}
           </motion.div>
         </div>
-      </motion.main>
+      </main>
     </motion.div>
   )
 }

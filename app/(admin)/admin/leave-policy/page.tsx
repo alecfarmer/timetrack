@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationCenter } from "@/components/notification-center"
+import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import {
@@ -17,9 +19,7 @@ import {
   Plus,
   Trash2,
   Users,
-  ArrowLeft,
 } from "lucide-react"
-import Link from "next/link"
 
 interface Policy {
   annualPtoDays: number
@@ -45,7 +45,7 @@ interface Member {
 }
 
 export default function LeavePolicyPage() {
-  const { isAdmin, loading: authLoading } = useAuth()
+  const { org, isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
 
   const [policy, setPolicy] = useState<Policy>({
@@ -57,6 +57,7 @@ export default function LeavePolicyPage() {
   const [overrides, setOverrides] = useState<Override[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -108,6 +109,12 @@ export default function LeavePolicyPage() {
       fetchData()
     }
   }, [authLoading, isAdmin, router, fetchData])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await fetchData()
+    setRefreshing(false)
+  }
 
   const handleSavePolicy = async () => {
     setSaving(true)
@@ -178,12 +185,19 @@ export default function LeavePolicyPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Palmtree className="h-8 w-8 text-primary animate-pulse" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-primary/20 animate-ping absolute inset-0" />
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Palmtree className="h-8 w-8 text-primary" />
+            </div>
           </div>
-          <p className="text-muted-foreground font-medium">Loading...</p>
-        </div>
+          <p className="text-muted-foreground font-medium">Loading leave policy...</p>
+        </motion.div>
       </div>
     )
   }
@@ -194,39 +208,87 @@ export default function LeavePolicyPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <header className="sticky top-0 z-50 glass border-b">
-        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center gap-3">
-            <Link href="/admin" className="lg:hidden">
-              <Button variant="ghost" size="icon" className="rounded-xl h-9 w-9">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
+      {/* Premium Dark Hero Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-500/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+
+        <header className="relative z-10 safe-area-pt">
+          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center lg:hidden">
-                <Palmtree className="h-5 w-5 text-primary" />
+              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                <Palmtree className="h-5 w-5 text-white" />
               </div>
-              <h1 className="text-lg font-bold lg:text-xl lg:font-semibold">Leave Policy</h1>
+              <div>
+                <h1 className="text-lg font-semibold text-white">Leave Policy</h1>
+                {org && (
+                  <p className="text-xs text-white/60">{org.orgName}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
+              <ThemeToggle />
+              <NotificationCenter />
             </div>
           </div>
-          <ThemeToggle />
-        </div>
-      </header>
+        </header>
 
-      <main className="flex-1 pb-24 lg:pb-8">
-        <div className="max-w-4xl mx-auto px-4 py-6 lg:px-8 space-y-6">
+        {/* Summary Stats in Hero */}
+        <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center mb-2">
+                <Palmtree className="h-5 w-5 text-teal-400" />
+              </div>
+              <p className="text-2xl font-bold text-teal-400">{policy.annualPtoDays}</p>
+              <p className="text-xs text-white/60">Annual PTO Days</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-2">
+                <Users className="h-5 w-5 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-bold text-emerald-400">{overrides.length}</p>
+              <p className="text-xs text-white/60">Employee Overrides</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+        <div className="max-w-4xl mx-auto px-4 lg:px-8 space-y-6">
           {error && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
+            >
               <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
               <p className="text-sm text-destructive flex-1">{error}</p>
               <Button variant="ghost" size="sm" onClick={() => setError(null)}>Dismiss</Button>
-            </div>
+            </motion.div>
           )}
 
           {success && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4"
+            >
               <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p>
-            </div>
+            </motion.div>
           )}
 
           {/* Section A: Org Defaults */}
@@ -313,7 +375,11 @@ export default function LeavePolicyPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {showOverrideForm && (
-                <div className="border rounded-xl p-4 space-y-3 bg-muted/30">
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="border rounded-xl p-4 space-y-3 bg-muted/30"
+                >
                   <div className="space-y-2">
                     <Label className="text-sm">Employee</Label>
                     <select
@@ -374,14 +440,17 @@ export default function LeavePolicyPage() {
                       Cancel
                     </Button>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {overrides.length > 0 ? (
                 <div className="space-y-2">
-                  {overrides.map((override) => (
-                    <div
+                  {overrides.map((override, index) => (
+                    <motion.div
                       key={override.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
                       className="flex items-center justify-between p-3 bg-muted/50 rounded-xl"
                     >
                       <div className="flex-1 min-w-0">
@@ -400,7 +469,7 @@ export default function LeavePolicyPage() {
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               ) : (

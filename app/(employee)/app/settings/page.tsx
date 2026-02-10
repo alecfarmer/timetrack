@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationCenter } from "@/components/notification-center"
+import { TimezoneSelector } from "@/components/timezone-prompt"
 import { useAuth } from "@/contexts/auth-context"
 import { WfhSection } from "@/components/settings/wfh-section"
 import { DangerZone } from "@/components/settings/danger-zone"
+import { getTimezone, detectUserTimezone } from "@/lib/dates"
 import {
   Settings,
   MapPin,
@@ -26,27 +28,24 @@ import {
   User,
   Users,
   Building2,
+  Globe,
 } from "lucide-react"
-
-const pageVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-}
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const staggerContainer = {
-  animate: { transition: { staggerChildren: 0.08 } },
+  animate: { transition: { staggerChildren: 0.05 } },
 }
 
 const staggerItem = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 }
 
 export default function SettingsPage() {
   const router = useRouter()
   const { user, org, isAdmin, signOut } = useAuth()
   const [notifications, setNotifications] = useState(true)
+  const [timezone, setTimezone] = useState(getTimezone())
   const [autoClockOut, setAutoClockOut] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("onsite-auto-clockout") === "true"
@@ -76,50 +75,75 @@ export default function SettingsPage() {
     router.push("/login")
   }
 
+  const handleTimezoneChange = (newTimezone: string) => {
+    setTimezone(newTimezone)
+    localStorage.setItem("timezone_override", newTimezone)
+  }
+
   return (
     <motion.div
       className="flex flex-col min-h-screen bg-background"
-      initial="initial" animate="animate" exit="exit" variants={pageVariants}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
     >
-      <header className="sticky top-0 z-50 glass border-b">
-        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Settings className="h-5 w-5 text-primary" />
+      {/* Premium Dark Hero Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-500/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-zinc-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+
+        <header className="relative z-10 safe-area-pt">
+          <div className="flex items-center justify-between px-4 h-14 max-w-3xl mx-auto lg:px-8">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                <Settings className="h-5 w-5 text-white" />
+              </div>
+              <h1 className="text-lg font-semibold text-white">Settings</h1>
             </div>
-            <h1 className="text-lg font-bold">Settings</h1>
+            <div className="flex items-center gap-2">
+              <NotificationCenter />
+            </div>
           </div>
-          <h1 className="hidden lg:block text-xl font-semibold">Settings</h1>
-          <ThemeToggle />
+        </header>
+
+        {/* User Info Card */}
+        <div className="relative z-10 px-4 pt-4 pb-6 max-w-3xl mx-auto lg:px-8">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                <User className="h-7 w-7 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-white">{user?.email}</p>
+                <p className="text-sm text-white/60">Personal Account</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </header>
+      </div>
 
+      {/* Main Content */}
       <motion.main
-        className="flex-1 pb-24 lg:pb-8"
-        variants={staggerContainer} initial="initial" animate="animate"
+        className="flex-1 pb-24 lg:pb-8 -mt-4"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
       >
-        <div className="max-w-3xl mx-auto px-4 py-6 lg:px-8 space-y-6">
-          {/* User Card */}
-          <motion.div variants={staggerItem}>
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-primary flex items-center justify-center">
-                    <User className="h-7 w-7 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold">{user?.email}</p>
-                    <p className="text-sm text-muted-foreground">Personal Account</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
+        <div className="max-w-3xl mx-auto px-4 lg:px-8 space-y-4">
           {/* Organization */}
           {org && (
             <motion.div variants={staggerItem}>
-              <Card className="border-0 shadow-lg">
+              <Card className="border-0 shadow-lg rounded-2xl">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-medium flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-primary" />
@@ -152,9 +176,39 @@ export default function SettingsPage() {
             <WfhSection />
           </motion.div>
 
+          {/* Timezone */}
+          <motion.div variants={staggerItem}>
+            <Card className="border-0 shadow-lg rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-primary" />
+                  Timezone
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5 flex-1 mr-4">
+                    <Label>Your Timezone</Label>
+                    <p className="text-sm text-muted-foreground">
+                      All times displayed will use this timezone
+                    </p>
+                  </div>
+                  <TimezoneSelector
+                    value={timezone}
+                    onChange={handleTimezoneChange}
+                    className="w-[200px]"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Browser detected: {detectUserTimezone()}
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
           {/* Appearance */}
           <motion.div variants={staggerItem}>
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-lg rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
                   <Palette className="h-5 w-5 text-primary" />
@@ -175,7 +229,7 @@ export default function SettingsPage() {
 
           {/* Locations */}
           <motion.div variants={staggerItem}>
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-lg rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-primary" />
@@ -195,7 +249,7 @@ export default function SettingsPage() {
 
           {/* Policy */}
           <motion.div variants={staggerItem}>
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-lg rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
                   <Clock className="h-5 w-5 text-primary" />
@@ -224,7 +278,7 @@ export default function SettingsPage() {
 
           {/* Preferences */}
           <motion.div variants={staggerItem}>
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-lg rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
                   <Bell className="h-5 w-5 text-primary" />
@@ -280,7 +334,7 @@ export default function SettingsPage() {
 
           {/* Security */}
           <motion.div variants={staggerItem}>
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-lg rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
                   <Shield className="h-5 w-5 text-primary" />
@@ -314,7 +368,6 @@ export default function SettingsPage() {
           </motion.div>
         </div>
       </motion.main>
-
     </motion.div>
   )
 }
