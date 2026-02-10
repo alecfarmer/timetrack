@@ -307,13 +307,12 @@ export default function Dashboard() {
                       </div>
 
                       {/* Clock Button */}
-                      <div className="sm:w-48">
+                      <div className="sm:w-72">
                         <ClockButton
                           isClockedIn={clock.currentStatus?.isClockedIn || false}
                           onClockIn={clock.handleClockIn}
                           onClockOut={clock.handleClockOut}
                           disabled={!clock.selectedLocationId || !position || !clock.isWithinGeofence}
-                          variant="modern"
                         />
                       </div>
                     </div>
