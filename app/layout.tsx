@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next"
 import { AuthProvider } from "@/contexts/auth-context"
+import { RealtimeProvider } from "@/contexts/realtime-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SWRProvider } from "@/components/swr-provider"
+import { ToastContainer } from "@/components/notification-center"
+import { TimezonePrompt } from "@/components/timezone-prompt"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -54,7 +57,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SWRProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <RealtimeProvider>
+                {children}
+                <ToastContainer />
+                <TimezonePrompt />
+              </RealtimeProvider>
+            </AuthProvider>
           </SWRProvider>
         </ThemeProvider>
       </body>

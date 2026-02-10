@@ -15,7 +15,7 @@ function parseAsUTC(date: Date | string): Date {
 }
 
 // Detect user's current timezone from browser
-function detectUserTimezone(): string {
+export function detectUserTimezone(): string {
   if (typeof window !== "undefined") {
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -24,6 +24,14 @@ function detectUserTimezone(): string {
     }
   }
   return FALLBACK_TIMEZONE
+}
+
+// Get the manual timezone override (without fallback)
+export function getTimezoneOverride(): string | null {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("timezone_override")
+  }
+  return null
 }
 
 export function getTimezone(): string {
