@@ -57,13 +57,14 @@ export async function GET(request: NextRequest) {
         .lte("timestampServer", todayEnd.toISOString())
         .order("timestampServer", { ascending: false }),
 
-      // Get this week's workdays
+      // Get this week's workdays (include totalMinutes for hours tracking)
       supabase
         .from("WorkDay")
-        .select("date, totalMinutes, location:Location(category)")
+        .select("date, totalMinutes, meetsPolicy, location:Location(category)")
         .eq("userId", userId)
         .gte("date", format(weekStart, "yyyy-MM-dd"))
-        .lte("date", format(weekEnd, "yyyy-MM-dd")),
+        .lte("date", format(weekEnd, "yyyy-MM-dd"))
+        .order("date", { ascending: true }),
 
       // Get org policy (use maybeSingle to handle missing policy gracefully)
       supabase
@@ -131,15 +132,21 @@ export async function GET(request: NextRequest) {
     const workDays = weekWorkDaysResult.data || []
     const requiredDays = policyResult.data?.requiredOnsiteDays ?? 3
 
-    // Count on-site days (exclude HOME)
+    // Create a map of workdays by date for quick lookup
+    const workDayMap = new Map(workDays.map((wd) => [wd.date, wd]))
+
+    // Count on-site days (exclude HOME, must meet policy)
     const onsiteDays = workDays.filter((wd) => {
       const loc = Array.isArray(wd.location) ? wd.location[0] : wd.location
-      return loc?.category !== "HOME"
+      return wd.meetsPolicy && loc?.category !== "HOME"
     })
     const daysWorked = onsiteDays.length
 
-    // Build week days array
-    const weekDays: { date: string; dayOfWeek: string; worked: boolean }[] = []
+    // Calculate total minutes for the week
+    const totalMinutes = workDays.reduce((sum, wd) => sum + (wd.totalMinutes || 0), 0)
+
+    // Build week days array with minutes
+    const weekDays: { date: string; dayOfWeek: string; worked: boolean; minutes: number }[] = []
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     const workedDates = new Set(onsiteDays.map((wd) => wd.date))
 
@@ -147,10 +154,12 @@ export async function GET(request: NextRequest) {
       const date = new Date(weekStart)
       date.setDate(date.getDate() + i)
       const dateStr = format(date, "yyyy-MM-dd")
+      const dayWorkDay = workDayMap.get(dateStr)
       weekDays.push({
         date: dateStr,
         dayOfWeek: dayNames[date.getDay()],
         worked: workedDates.has(dateStr),
+        minutes: dayWorkDay?.totalMinutes || 0,
       })
     }
 
@@ -168,6 +177,7 @@ export async function GET(request: NextRequest) {
         daysWorked,
         requiredDays,
         isCompliant: daysWorked >= requiredDays,
+        totalMinutes,
         weekDays,
       },
     })

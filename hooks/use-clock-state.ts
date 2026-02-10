@@ -56,6 +56,7 @@ interface WeekSummary {
   daysWorked: number
   requiredDays: number
   isCompliant: boolean
+  totalMinutes?: number
   weekDays: WeekDay[]
 }
 
