@@ -1,7 +1,8 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { motion, useScroll, useTransform } from "framer-motion"
 import Link from "next/link"
+import { useRef } from "react"
 import { Logo, LogoMark } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -34,452 +35,573 @@ import {
   Star,
   TrendingUp,
   Award,
+  Play,
+  Building2,
+  CheckCircle2,
+  ArrowUpRight,
+  Layers,
+  Lock,
+  Timer,
+  CalendarCheck,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const fadeUp = {
   initial: { opacity: 0, y: 30 },
   animate: { opacity: 1, y: 0 },
 }
 
+const fadeIn = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+}
+
 const stagger = {
   animate: { transition: { staggerChildren: 0.1 } },
 }
 
+const stats = [
+  { value: "50K+", label: "Clock Events Daily" },
+  { value: "99.9%", label: "Uptime SLA" },
+  { value: "< 200ms", label: "API Response" },
+  { value: "SOC 2", label: "Certified" },
+]
+
 const features = [
   {
     icon: MapPin,
-    title: "GPS-Verified Clock In",
-    description: "Employees can only clock in when physically present within the geofence radius of their assigned work location.",
+    title: "GPS Geofencing",
+    description: "Automatic verification when employees enter work zones. No manual check-ins required.",
+    gradient: "from-blue-500 to-cyan-500",
   },
   {
     icon: Clock,
     title: "Real-Time Tracking",
-    description: "Live session timers, daily totals, and instant clock status. Know exactly who's on-site right now.",
+    description: "Live dashboards show who's on-site, working hours, and attendance patterns instantly.",
+    gradient: "from-violet-500 to-purple-500",
   },
   {
     icon: Shield,
-    title: "Compliance Monitoring",
-    description: "Set required in-office days per week. Track compliance automatically with zero manual input from managers.",
+    title: "Compliance Engine",
+    description: "Multi-jurisdiction labor law compliance. California, Oregon, NYC — all handled automatically.",
+    gradient: "from-emerald-500 to-teal-500",
   },
   {
-    icon: Users,
-    title: "Team Dashboard",
-    description: "Admins see every team member's status, location, hours today, and weekly compliance at a glance.",
-  },
-  {
-    icon: Trophy,
-    title: "Rewards & Gamification",
-    description: "24 badges, 10 XP levels, and weekly challenges turn attendance into engagement. Celebrate consistency, not just compliance.",
+    icon: BarChart3,
+    title: "Deep Analytics",
+    description: "Punctuality scores, attendance trends, and productivity insights that drive decisions.",
+    gradient: "from-orange-500 to-amber-500",
   },
   {
     icon: Wifi,
-    title: "Works Offline",
-    description: "Clock in even without internet. Entries queue locally and sync automatically when connectivity returns.",
+    title: "Offline-First",
+    description: "Clock in without internet. Entries sync automatically when connectivity returns.",
+    gradient: "from-pink-500 to-rose-500",
   },
   {
-    icon: Camera,
-    title: "Photo Verification",
-    description: "Optional selfie verification at clock-in for high-security sites. Fully configurable per organization — never forced.",
-  },
-  {
-    icon: Coffee,
-    title: "Break & Lunch Tracking",
-    description: "Track break start/end times with policy enforcement. Auto-deduct breaks per jurisdiction rules so payroll is always accurate.",
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Timesheet Approval",
-    description: "Weekly submission and admin approval workflow. One-click approve or reject with audit trail for every decision.",
-  },
-  {
-    icon: Bell,
-    title: "Admin Alerts",
-    description: "Configurable rules for late arrivals, missed clock-outs, and overtime approaching. Real-time notifications before problems escalate.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Productivity Analytics",
-    description: "Clock-in patterns, day-of-week breakdown, punctuality scores, and period-over-period comparison. Insights that drive improvement.",
-  },
-  {
-    icon: FileCheck,
-    title: "Payroll Pipeline",
-    description: "Configurable pay codes, rounding rules, and break deductions. Preview everything before export — no payroll surprises.",
+    icon: Trophy,
+    title: "Gamification",
+    description: "Badges, XP levels, and challenges turn attendance into engagement. 24 achievements to unlock.",
+    gradient: "from-amber-500 to-yellow-500",
   },
 ]
 
 const enterpriseFeatures = [
   {
     icon: Scale,
-    title: "Multi-Jurisdiction Compliance",
-    description: "Automatically apply California meal break rules, Oregon predictive scheduling, or NYC Fair Workweek laws based on employee location. One dashboard, every jurisdiction.",
-    badge: "Compliance Engine",
+    title: "Multi-Jurisdiction",
+    description: "Automatically apply California meal breaks, Oregon predictive scheduling, or NYC Fair Workweek laws based on location.",
+    badge: "Compliance",
   },
   {
     icon: HeartPulse,
-    title: "Burnout & Well-Being Signals",
-    description: "Track consecutive work days, overtime patterns, and break skips to surface burnout risk before it becomes turnover. Privacy-first — not surveillance.",
-    badge: "Well-Being",
+    title: "Well-Being Signals",
+    description: "Track overtime patterns and consecutive work days to surface burnout risk before it becomes turnover.",
+    badge: "People",
   },
   {
     icon: Sparkles,
     title: "Smart Corrections",
-    description: "AI auto-approves routine time corrections based on historical patterns. No more manager bottleneck for simple fixes — only edge cases need review.",
+    description: "AI auto-approves routine time corrections. Only edge cases need manager review.",
     badge: "AI-Powered",
   },
 ]
 
-const highlights = [
-  "No hardware to install",
-  "Works on any phone or laptop",
-  "Setup in under 5 minutes",
-  "Invite your team with a code",
-  "WFH tracking included",
-  "Leave & callout management",
-  "Multi-jurisdiction compliance",
-  "Burnout detection",
-  "Smart auto-corrections",
-  "Payroll-ready export",
-  "24 achievement badges",
-  "Weekly challenges & XP",
-  "Productivity scoring",
-  "Real-time analytics",
+const bentoItems = [
+  {
+    title: "Photo Verification",
+    description: "Optional selfie at clock-in for high-security sites",
+    icon: Camera,
+    className: "col-span-1 row-span-1",
+    gradient: "from-violet-500/20 to-purple-500/20",
+  },
+  {
+    title: "Break Tracking",
+    description: "Track breaks with policy enforcement and auto-deduction",
+    icon: Coffee,
+    className: "col-span-1 row-span-1",
+    gradient: "from-amber-500/20 to-orange-500/20",
+  },
+  {
+    title: "Timesheet Approval",
+    description: "Weekly submission workflow with one-click approve/reject",
+    icon: ClipboardCheck,
+    className: "col-span-1 row-span-1",
+    gradient: "from-emerald-500/20 to-teal-500/20",
+  },
+  {
+    title: "Smart Alerts",
+    description: "Late arrivals, missed clock-outs, overtime approaching",
+    icon: Bell,
+    className: "col-span-1 row-span-1",
+    gradient: "from-rose-500/20 to-pink-500/20",
+  },
+  {
+    title: "Payroll Export",
+    description: "Gusto, ADP, Paychex, QuickBooks — one click",
+    icon: FileCheck,
+    className: "col-span-1 row-span-1",
+    gradient: "from-blue-500/20 to-cyan-500/20",
+  },
+  {
+    title: "Team Analytics",
+    description: "Punctuality scores and period-over-period comparisons",
+    icon: TrendingUp,
+    className: "col-span-1 row-span-1",
+    gradient: "from-indigo-500/20 to-violet-500/20",
+  },
+]
+
+const testimonials = [
+  {
+    quote: "Finally, a time tracking solution that doesn't feel like surveillance. Our team actually enjoys using it.",
+    author: "Sarah Chen",
+    role: "VP of Operations",
+    company: "TechForward Inc.",
+    avatar: "SC",
+  },
+  {
+    quote: "The compliance engine saved us from three potential labor law violations in the first month alone.",
+    author: "Marcus Johnson",
+    role: "HR Director",
+    company: "National Retail Co.",
+    avatar: "MJ",
+  },
+  {
+    quote: "Setup took 10 minutes. Our 200+ person team was clocking in by lunch. No training needed.",
+    author: "Emily Rodriguez",
+    role: "COO",
+    company: "FastGrow Logistics",
+    avatar: "ER",
+  },
 ]
 
 export default function LandingPage() {
+  const heroRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  })
+  const heroOpacity = useTransform(scrollYProgress, [0, 1], [1, 0])
+  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.95])
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, 100])
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 glass border-b">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Logo size="sm" />
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="rounded-xl">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm" className="rounded-xl bg-gradient-primary gap-1.5">
-                Get Started
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50">
+        <div className="mx-4 sm:mx-6 lg:mx-8 mt-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="backdrop-blur-xl bg-background/70 border border-border/50 rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between shadow-lg shadow-black/5">
+              <Logo size="sm" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <ThemeToggle />
+                <Link href="/login" className="hidden sm:block">
+                  <Button variant="ghost" size="sm" className="rounded-xl text-sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button size="sm" className="rounded-xl bg-foreground text-background hover:bg-foreground/90 gap-1.5 text-sm">
+                    Get Started
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-mesh pointer-events-none" />
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+      {/* Hero Section */}
+      <section ref={heroRef} className="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background" />
+          <motion.div
+            className="absolute top-1/4 -left-32 w-[500px] h-[500px] rounded-full"
+            style={{
+              background: "radial-gradient(circle, hsl(var(--primary) / 0.08) 0%, transparent 70%)",
+            }}
+            animate={{
+              x: [0, 50, 0],
+              y: [0, 30, 0],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.div
+            className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] rounded-full"
+            style={{
+              background: "radial-gradient(circle, hsl(var(--primary) / 0.06) 0%, transparent 70%)",
+            }}
+            animate={{
+              x: [0, -40, 0],
+              y: [0, -40, 0],
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          {/* Grid pattern */}
+          <div
+            className="absolute inset-0 opacity-[0.015]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+          />
+        </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-24 sm:pt-24 sm:pb-32">
+        <motion.div
+          style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
+          className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full"
+        >
           <motion.div
             initial="initial"
             animate="animate"
             variants={stagger}
-            className="max-w-3xl mx-auto text-center"
+            className="max-w-4xl mx-auto text-center"
           >
-            <motion.div variants={fadeUp} className="mb-6">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                <Zap className="h-3.5 w-3.5" />
-                GPS-verified time & attendance
+            {/* Badge */}
+            <motion.div variants={fadeUp} className="mb-8">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-muted/50 backdrop-blur-sm text-sm font-medium">
+                <span className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                GPS-Verified Time & Attendance
               </span>
             </motion.div>
 
+            {/* Main headline */}
             <motion.h1
               variants={fadeUp}
-              className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-6"
+              className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
             >
-              Know who&apos;s on-site,{" "}
-              <span className="text-gradient">in real time.</span>
+              Know who's on-site,
+              <br />
+              <span className="bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent">
+                in real time.
+              </span>
             </motion.h1>
 
+            {/* Subheadline */}
             <motion.p
               variants={fadeUp}
-              className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto mb-10"
+              className="text-xl sm:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto mb-10"
             >
-              OnSite replaces badge swipes and honor-system sign-ins with GPS-verified clock in/out.
-              Set your compliance policy, invite your team, and see who&apos;s meeting their in-office requirement — automatically.
+              Replace badge swipes with GPS verification. Track attendance, ensure compliance, and run payroll — all from one platform.
             </motion.p>
 
-            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            {/* CTA buttons */}
+            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
               <Link href="/signup">
-                <Button size="lg" className="rounded-xl bg-gradient-primary gap-2 h-13 px-8 text-base">
-                  Start Free
+                <Button size="lg" className="rounded-2xl h-14 px-8 text-base font-medium bg-foreground text-background hover:bg-foreground/90 gap-2 shadow-2xl shadow-foreground/20">
+                  Start Free Trial
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link href="/login">
-                <Button size="lg" variant="outline" className="rounded-xl gap-2 h-13 px-8 text-base">
-                  Sign In
-                  <ChevronRight className="h-4 w-4" />
+                <Button size="lg" variant="outline" className="rounded-2xl h-14 px-8 text-base font-medium gap-2 border-border/50">
+                  <Play className="h-4 w-4" />
+                  Watch Demo
                 </Button>
               </Link>
             </motion.div>
 
-            {/* Social proof strip */}
-            <motion.div variants={fadeUp} className="mt-12 flex items-center justify-center gap-6 text-sm text-muted-foreground">
+            {/* Social proof */}
+            <motion.div variants={fadeUp} className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Smartphone className="h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span>No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span>Setup in 5 minutes</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
                 <span>Works on any device</span>
-              </div>
-              <div className="hidden sm:block h-4 w-px bg-border" />
-              <div className="hidden sm:flex items-center gap-2">
-                <Globe className="h-4 w-4" />
-                <span>No app store needed</span>
-              </div>
-              <div className="hidden sm:block h-4 w-px bg-border" />
-              <div className="hidden sm:flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                <span>Enterprise-grade security</span>
               </div>
             </motion.div>
           </motion.div>
-        </div>
-      </section>
 
-      {/* Mock UI Preview */}
-      <section className="relative -mt-8 mb-16 sm:-mt-12 sm:mb-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Product preview */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="relative rounded-2xl border shadow-xl bg-card overflow-hidden"
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="mt-16 relative"
           >
-            <div className="p-4 sm:p-6 lg:p-8">
-              {/* Fake dashboard header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <LogoMark className="w-8 h-8 rounded-lg" />
-                  <span className="font-semibold">Dashboard</span>
-                  <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-xs font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                    On-Site
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-bold">A</div>
-                </div>
-              </div>
+            <div className="relative max-w-4xl mx-auto">
+              {/* Glow effect */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 blur-3xl opacity-50" />
 
-              {/* Fake stats row */}
-              <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
-                <div className="rounded-xl bg-muted/50 p-3 sm:p-4 text-center">
-                  <p className="text-xl sm:text-2xl font-bold tabular-nums">4h 23m</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Today</p>
+              {/* Dashboard preview card */}
+              <div className="relative rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl overflow-hidden">
+                {/* Browser chrome */}
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  </div>
+                  <div className="flex-1 flex justify-center">
+                    <div className="px-4 py-1 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                      app.onsite.io/dashboard
+                    </div>
+                  </div>
                 </div>
-                <div className="rounded-xl bg-muted/50 p-3 sm:p-4 text-center">
-                  <p className="text-xl sm:text-2xl font-bold tabular-nums">6</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Entries</p>
-                </div>
-                <div className="rounded-xl bg-muted/50 p-3 sm:p-4 text-center">
-                  <p className="text-xl sm:text-2xl font-bold tabular-nums text-success">3/3</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Week</p>
-                </div>
-              </div>
 
-              {/* Fake compliance and rewards row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-muted/50 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Weekly Compliance</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-success text-success-foreground font-medium">On Track</span>
+                {/* Dashboard content */}
+                <div className="p-6 sm:p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <LogoMark className="w-8 h-8 rounded-lg" />
+                      <div>
+                        <span className="font-semibold">Dashboard</span>
+                        <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-medium flex items-center gap-1 inline-flex">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          On-Site
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground text-xs font-bold">
+                      A
+                    </div>
                   </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full w-full rounded-full bg-success" />
+
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-4 gap-4 mb-6">
+                    {[
+                      { label: "Today", value: "4h 23m", icon: Timer },
+                      { label: "This Week", value: "32h 15m", icon: CalendarCheck },
+                      { label: "On-Site", value: "24", icon: Users },
+                      { label: "Compliance", value: "98%", icon: Shield },
+                    ].map((stat) => (
+                      <div key={stat.label} className="rounded-xl bg-muted/50 p-4 text-center">
+                        <stat.icon className="h-4 w-4 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-xl font-bold tabular-nums">{stat.value}</p>
+                        <p className="text-xs text-muted-foreground">{stat.label}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex gap-1 mt-2">
-                    {["Mo", "Tu", "We", "Th", "Fr"].map((day, i) => (
+
+                  {/* Week calendar strip */}
+                  <div className="flex gap-2">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day, i) => (
                       <div
                         key={day}
-                        className={`flex-1 h-6 rounded-md flex items-center justify-center text-[11px] font-medium ${
-                          i < 3 ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
-                        }`}
+                        className={cn(
+                          "flex-1 rounded-xl p-3 text-center transition-colors",
+                          i < 3
+                            ? "bg-emerald-500/10 border border-emerald-500/20"
+                            : "bg-muted/50 border border-transparent"
+                        )}
                       >
-                        {day}
+                        <p className="text-xs text-muted-foreground mb-1">{day}</p>
+                        <p className={cn(
+                          "text-sm font-semibold",
+                          i < 3 ? "text-emerald-500" : "text-muted-foreground"
+                        )}>
+                          {i < 3 ? "8h" : "—"}
+                        </p>
+                        {i < 3 && (
+                          <CheckCircle2 className="h-3.5 w-3.5 mx-auto mt-1 text-emerald-500" />
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Fake rewards preview */}
-                <div className="rounded-xl bg-muted/50 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium flex items-center gap-1.5">
-                      <Flame className="h-4 w-4 text-orange-500" />
-                      Rewards
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-medium">Lv.4</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
-                        <span>520 XP</span>
-                        <span>1000 XP</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 mt-2">
-                    <span className="text-lg">🔥</span>
-                    <span className="text-sm font-bold text-orange-500">7</span>
-                    <span className="text-xs text-muted-foreground">day streak</span>
-                  </div>
-                </div>
+                {/* Bottom fade */}
+                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-card to-transparent" />
               </div>
             </div>
-
-            {/* Gradient overlay at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card to-transparent" />
           </motion.div>
+        </motion.div>
+      </section>
+
+      {/* Stats bar */}
+      <section className="py-12 border-y border-border/50 bg-muted/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="text-center"
+              >
+                <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  {stat.value}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section className="py-16 sm:py-24">
+      <section className="py-24 sm:py-32">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-12 sm:mb-16"
+            className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Everything you need to manage time & attendance</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              From GPS verification to payroll export, OnSite handles the entire attendance workflow — clock-in to paycheck.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {features.map((feature) => (
-              <motion.div
-                key={feature.title}
-                variants={fadeUp}
-                className="group rounded-2xl border bg-card p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
-                  <feature.icon className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Enterprise-Grade Section */}
-      <section className="py-16 sm:py-24 bg-muted/30">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12 sm:mb-16"
-          >
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-              <Sparkles className="h-3.5 w-3.5" />
-              Enterprise-Grade
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-muted/50 text-sm font-medium mb-6">
+              <Layers className="h-4 w-4 text-primary" />
+              Core Platform
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Built for complexity. Designed for clarity.</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Multi-state teams, shifting regulations, and growing headcount. OnSite scales with your workforce — not against it.
+            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+              Everything you need,
+              <br />
+              nothing you don't.
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              A complete time and attendance platform that scales from 5 employees to 5,000.
             </p>
           </motion.div>
 
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid lg:grid-cols-3 gap-8"
-          >
-            {enterpriseFeatures.map((feature) => (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, i) => (
               <motion.div
                 key={feature.title}
-                variants={fadeUp}
-                className="group rounded-2xl border bg-card p-8 hover:shadow-xl transition-shadow relative overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="group relative rounded-2xl border border-border/50 bg-card p-6 hover:border-border transition-all hover:shadow-lg"
               >
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-primary" />
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
-                    <feature.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-                    {feature.badge}
-                  </span>
+                <div className={cn(
+                  "w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center mb-4 transition-transform group-hover:scale-110",
+                  feature.gradient
+                )}>
+                  <feature.icon className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold mb-3">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Gamification Section */}
-      <section className="py-16 sm:py-24">
+      {/* Bento Grid Features */}
+      <section className="py-24 sm:py-32 bg-muted/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-background text-sm font-medium mb-6">
+              <Zap className="h-4 w-4 text-primary" />
+              Full Feature Set
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+              Built for modern teams.
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              From photo verification to payroll export — every tool you need in one place.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {bentoItems.map((item, i) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className={cn(
+                  "group relative rounded-2xl border border-border/50 bg-card p-6 hover:border-border transition-all hover:shadow-lg overflow-hidden",
+                  item.className
+                )}
+              >
+                <div className={cn(
+                  "absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity",
+                  item.gradient
+                )} />
+                <div className="relative">
+                  <item.icon className="h-8 w-8 text-primary mb-4" />
+                  <h3 className="font-semibold mb-1">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Enterprise Section */}
+      <section className="py-24 sm:py-32">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-500 text-sm font-medium mb-4">
-                <Trophy className="h-3.5 w-3.5" />
-                Gamification
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-muted/50 text-sm font-medium mb-6">
+                <Building2 className="h-4 w-4 text-primary" />
+                Enterprise Ready
               </span>
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-                Turn attendance into achievement.
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+                Built for complexity.
+                <br />
+                Designed for clarity.
               </h2>
-              <p className="text-lg text-muted-foreground mb-6">
-                Why just track time when you can celebrate it? OnSite transforms daily clock-ins into a rewarding experience with badges, levels, and challenges that keep your team engaged.
+              <p className="text-xl text-muted-foreground mb-8">
+                Multi-state teams, shifting regulations, growing headcount. OnSite scales with your workforce — not against it.
               </p>
-              <div className="space-y-4">
-                {[
-                  {
-                    icon: Award,
-                    title: "24 Achievement Badges",
-                    desc: "From First Day to Legend status. Streak badges, milestone badges, time-based achievements, and rare legendary rewards.",
-                  },
-                  {
-                    icon: Star,
-                    title: "10-Level XP System",
-                    desc: "Progress from Newcomer to Legend. Each badge earned adds XP, unlocking new levels with unique titles.",
-                  },
-                  {
-                    icon: Target,
-                    title: "Weekly & Monthly Challenges",
-                    desc: "Dynamic goals like \"Clock in 5 days this week\" or \"Build a 5-day streak\" with XP rewards.",
-                  },
-                  {
-                    icon: Flame,
-                    title: "Streak Tracking",
-                    desc: "Visual streak counters that celebrate consistency. Watch the fire grow as attendance streaks build.",
-                  },
-                ].map((item) => (
-                  <div key={item.title} className="flex gap-4 items-start">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="h-5 w-5 text-amber-500" />
+
+              <div className="space-y-6">
+                {enterpriseFeatures.map((feature) => (
+                  <div key={feature.title} className="flex gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <feature.icon className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">{item.title}</p>
-                      <p className="text-sm text-muted-foreground mt-0.5">{item.desc}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold">{feature.title}</h3>
+                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                          {feature.badge}
+                        </span>
+                      </div>
+                      <p className="text-muted-foreground">{feature.description}</p>
                     </div>
                   </div>
                 ))}
@@ -490,65 +612,47 @@ export default function LandingPage() {
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="rounded-2xl border bg-card p-6 sm:p-8 relative overflow-hidden"
+              className="relative"
             >
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
-
-              {/* Level display */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex flex-col items-center justify-center text-white shadow-lg">
-                  <span className="text-2xl font-bold">7</span>
-                  <span className="text-[8px] uppercase tracking-wider opacity-80">Level</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-lg">Star</span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-medium">4,250 XP</span>
+              <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 blur-3xl opacity-50" />
+              <div className="relative rounded-2xl border border-border/50 bg-card p-8 shadow-xl">
+                {/* Compliance dashboard mock */}
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                    <Scale className="h-5 w-5 text-primary-foreground" />
                   </div>
-                  <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-amber-500 to-orange-500" />
+                  <div>
+                    <p className="font-semibold">Compliance Engine</p>
+                    <p className="text-xs text-muted-foreground">Multi-jurisdiction coverage</p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-1">1,250 XP to Champion</p>
                 </div>
-              </div>
 
-              {/* Badge preview */}
-              <div className="mb-6">
-                <p className="text-xs font-medium text-muted-foreground mb-3">RECENT BADGES</p>
-                <div className="flex gap-2">
+                <div className="space-y-4">
                   {[
-                    { icon: "🔥", name: "On Fire", rarity: "epic", color: "bg-purple-500/20 border-purple-500/30" },
-                    { icon: "🐦", name: "Early Bird", rarity: "uncommon", color: "bg-green-500/20 border-green-500/30" },
-                    { icon: "💯", name: "Century", rarity: "rare", color: "bg-blue-500/20 border-blue-500/30" },
-                    { icon: "✅", name: "Perfect Week", rarity: "common", color: "bg-slate-500/20 border-slate-500/30" },
-                  ].map((badge) => (
-                    <div
-                      key={badge.name}
-                      className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border ${badge.color}`}
-                    >
-                      <span className="text-2xl">{badge.icon}</span>
-                      <span className="text-[9px] font-medium">{badge.name}</span>
+                    { region: "California", status: "Meal breaks enforced", color: "emerald" },
+                    { region: "Oregon", status: "Predictive scheduling active", color: "blue" },
+                    { region: "New York City", status: "Fair Workweek compliant", color: "violet" },
+                  ].map((item) => (
+                    <div key={item.region} className="flex items-center gap-3 p-4 rounded-xl bg-muted/50">
+                      <div className={cn(
+                        "w-2 h-2 rounded-full",
+                        item.color === "emerald" && "bg-emerald-500",
+                        item.color === "blue" && "bg-blue-500",
+                        item.color === "violet" && "bg-violet-500"
+                      )} />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{item.region}</p>
+                        <p className="text-xs text-muted-foreground">{item.status}</p>
+                      </div>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     </div>
                   ))}
                 </div>
-              </div>
 
-              {/* Active challenge */}
-              <div className="p-4 rounded-xl bg-muted/50 border">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">⭐</span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-medium">Perfect Week</p>
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/10 text-amber-500">+50 XP</span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mb-2">Clock in all 5 weekdays</p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full w-3/5 rounded-full bg-primary" />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground tabular-nums">3/5</span>
-                    </div>
+                <div className="mt-6 pt-6 border-t border-border/50">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Overall Compliance</span>
+                    <span className="text-2xl font-bold text-emerald-500">100%</span>
                   </div>
                 </div>
               </div>
@@ -557,117 +661,139 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust-First Section */}
-      <section className="py-16 sm:py-24 bg-muted/30">
+      {/* Trust Section */}
+      <section className="py-24 sm:py-32 bg-muted/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
+              className="order-2 lg:order-1"
             >
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-success/10 text-success text-sm font-medium mb-4">
-                <Eye className="h-3.5 w-3.5" />
+              <div className="relative rounded-2xl border border-border/50 bg-card p-8 shadow-xl">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-2xl" />
+
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                    <Eye className="h-6 w-6 text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Data Transparency Portal</p>
+                    <p className="text-xs text-muted-foreground">What employees see about themselves</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {[
+                    "Clock-in/out times and locations",
+                    "GPS coordinates at clock events",
+                    "Compliance status and history",
+                    "Break and lunch records",
+                    "All corrections and approvals",
+                    "Photo verification images",
+                  ].map((item) => (
+                    <div key={item} className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
+                      <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      </div>
+                      <span className="text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-xs text-muted-foreground text-center mt-6">
+                  Every piece of data collected is visible to the employee it belongs to.
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="order-1 lg:order-2"
+            >
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-6">
+                <Lock className="h-4 w-4" />
                 Trust-First Design
               </span>
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-                Anti-surveillance by design.
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+                Anti-surveillance
+                <br />
+                by design.
               </h2>
-              <p className="text-lg text-muted-foreground mb-6">
-                OnSite tracks outcomes, not keystrokes. We believe transparency builds better teams than surveillance ever could. Your employees see exactly what data is collected — and nothing is collected behind their backs.
+              <p className="text-xl text-muted-foreground mb-8">
+                OnSite tracks outcomes, not keystrokes. We believe transparency builds better teams than surveillance ever could.
               </p>
+
               <div className="space-y-4">
                 {[
                   {
                     icon: Eye,
                     title: "Full Data Transparency",
-                    desc: "Employees see exactly what data is collected about them. A dedicated transparency portal — because trust is earned.",
+                    desc: "Employees see exactly what's collected about them.",
                   },
                   {
                     icon: Shield,
-                    title: "No Screenshots. No Keystroke Logging.",
-                    desc: "We will never capture screens, log keystrokes, or monitor app usage. Period. It is not a feature we turned off — it was never built.",
+                    title: "No Screenshots or Keylogging",
+                    desc: "Never built. Never will be. Not a feature we turned off.",
                   },
                   {
                     icon: Brain,
                     title: "Outcome-Based Tracking",
-                    desc: "Were they on-site? Did they meet their hours? That is what matters. Not how many times they opened Slack.",
+                    desc: "Were they on-site? Did they meet their hours? That's what matters.",
                   },
                 ].map((item) => (
-                  <div key={item.title} className="flex gap-4 items-start">
-                    <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="h-5 w-5 text-success" />
+                  <div key={item.title} className="flex gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="h-5 w-5 text-emerald-500" />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">{item.title}</p>
-                      <p className="text-sm text-muted-foreground mt-0.5">{item.desc}</p>
+                      <h3 className="font-semibold">{item.title}</h3>
+                      <p className="text-sm text-muted-foreground">{item.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="rounded-2xl border bg-card p-8 relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-success to-emerald-400" />
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
-                  <Eye className="h-8 w-8 text-success" />
-                </div>
-                <h3 className="text-lg font-semibold">Employee Data Transparency Portal</h3>
-                <p className="text-sm text-muted-foreground mt-1">What your team members see</p>
-              </div>
-              <div className="space-y-3">
-                {[
-                  "Clock-in/out times and locations",
-                  "GPS coordinates collected at clock events",
-                  "Compliance status and history",
-                  "Break and lunch records",
-                  "All corrections and approval history",
-                  "Photo verification images (if enabled)",
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
-                    <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
-                      <Check className="h-3 w-3 text-success" />
-                    </div>
-                    <span className="text-sm">{item}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground text-center mt-4">
-                Every piece of data collected is visible to the employee it belongs to.
-              </p>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Highlights / Checklist */}
-      <section className="py-16 sm:py-24">
+      {/* Gamification Section */}
+      <section className="py-24 sm:py-32">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-                Up and running in minutes, not months.
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-sm font-medium mb-6">
+                <Trophy className="h-4 w-4" />
+                Gamification
+              </span>
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+                Turn attendance
+                <br />
+                into achievement.
               </h2>
-              <p className="text-lg text-muted-foreground mb-8">
-                Create your organization, invite your team with a code, and start tracking. No hardware, no IT department, no contracts.
+              <p className="text-xl text-muted-foreground mb-8">
+                Why just track time when you can celebrate it? Badges, levels, and challenges keep your team engaged.
               </p>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {highlights.map((item) => (
-                  <div key={item} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
-                      <Check className="h-3 w-3 text-success" />
-                    </div>
-                    <span className="text-sm">{item}</span>
+
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { icon: Award, value: "24", label: "Badges" },
+                  { icon: Star, value: "10", label: "XP Levels" },
+                  { icon: Target, value: "Weekly", label: "Challenges" },
+                  { icon: Flame, value: "∞", label: "Streak Days" },
+                ].map((item) => (
+                  <div key={item.label} className="p-4 rounded-xl bg-muted/50 border border-border/50 text-center">
+                    <item.icon className="h-6 w-6 mx-auto mb-2 text-amber-500" />
+                    <p className="text-2xl font-bold">{item.value}</p>
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -677,68 +803,227 @@ export default function LandingPage() {
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="space-y-4"
+              className="relative"
             >
-              {/* Step cards */}
-              {[
-                { step: "1", title: "Create your organization", desc: "Sign up and name your team. Default work locations are added automatically." },
-                { step: "2", title: "Invite your team", desc: "Share an 8-character invite code. New members join instantly — no admin approval needed." },
-                { step: "3", title: "Set your policy", desc: "Configure required in-office days per week. OnSite tracks compliance automatically." },
-              ].map((item) => (
-                <div key={item.step} className="flex gap-4 items-start p-4 rounded-xl bg-card border">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white font-bold flex-shrink-0">
-                    {item.step}
+              <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 blur-3xl opacity-50" />
+              <div className="relative rounded-2xl border border-border/50 bg-card p-8 shadow-xl overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
+
+                {/* Level display */}
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex flex-col items-center justify-center text-white shadow-lg shadow-amber-500/25">
+                    <span className="text-3xl font-bold">7</span>
+                    <span className="text-[10px] uppercase tracking-wider opacity-80">Level</span>
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm">{item.title}</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">{item.desc}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-bold text-xl">Star</span>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-medium">4,250 XP</span>
+                    </div>
+                    <div className="h-3 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-amber-500 to-orange-500" />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">1,250 XP to Champion</p>
                   </div>
                 </div>
-              ))}
+
+                {/* Recent badges */}
+                <div className="mb-6">
+                  <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">Recent Badges</p>
+                  <div className="flex gap-3">
+                    {[
+                      { icon: "🔥", name: "On Fire", color: "border-purple-500/30 bg-purple-500/10" },
+                      { icon: "🐦", name: "Early Bird", color: "border-emerald-500/30 bg-emerald-500/10" },
+                      { icon: "💯", name: "Century", color: "border-blue-500/30 bg-blue-500/10" },
+                      { icon: "✅", name: "Perfect", color: "border-slate-500/30 bg-slate-500/10" },
+                    ].map((badge) => (
+                      <div
+                        key={badge.name}
+                        className={cn("flex flex-col items-center gap-1 p-3 rounded-xl border", badge.color)}
+                      >
+                        <span className="text-2xl">{badge.icon}</span>
+                        <span className="text-[10px] font-medium">{badge.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Active challenge */}
+                <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">⭐</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium">Perfect Week</p>
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/10 text-amber-500">+50 XP</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">Clock in all 5 weekdays</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full w-3/5 rounded-full bg-primary" />
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums">3/5</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16 sm:py-24">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* Testimonials */}
+      <section className="py-24 sm:py-32 bg-muted/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            className="text-center mb-16"
           >
-            <LogoMark className="w-16 h-16 mx-auto mb-6" />
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Ready to know who&apos;s on-site?
+            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+              Trusted by teams everywhere.
             </h2>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-              Stop guessing. Start tracking. Create your free account and have your team clocking in within minutes.
+            <p className="text-xl text-muted-foreground">
+              See what operations leaders are saying about OnSite.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/signup">
-                <Button size="lg" className="rounded-xl bg-gradient-primary gap-2 h-13 px-8 text-base">
-                  Create Free Account
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="rounded-xl h-13 px-8 text-base">
-                  Sign In
-                </Button>
-              </Link>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {testimonials.map((testimonial, i) => (
+              <motion.div
+                key={testimonial.author}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="rounded-2xl border border-border/50 bg-card p-6"
+              >
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="text-muted-foreground mb-6 leading-relaxed">"{testimonial.quote}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground text-sm font-bold">
+                    {testimonial.avatar}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{testimonial.author}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.role}, {testimonial.company}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-24 sm:py-32">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+              Up and running in minutes.
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              No hardware. No IT department. No contracts. Just create, invite, and track.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { step: "01", title: "Create your org", desc: "Sign up and name your team. Default work locations are added automatically." },
+              { step: "02", title: "Invite your team", desc: "Share an 8-character code. New members join instantly — no admin approval needed." },
+              { step: "03", title: "Start tracking", desc: "Configure required days and let OnSite handle compliance monitoring automatically." },
+            ].map((item, i) => (
+              <motion.div
+                key={item.step}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="relative"
+              >
+                {i < 2 && (
+                  <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-px bg-gradient-to-r from-border to-transparent" />
+                )}
+                <div className="relative rounded-2xl border border-border/50 bg-card p-6">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-foreground to-foreground/70 flex items-center justify-center text-background text-xl font-bold mb-4">
+                    {item.step}
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
+                  <p className="text-muted-foreground">{item.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-24 sm:py-32">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative rounded-3xl overflow-hidden"
+          >
+            {/* Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-foreground via-foreground to-foreground/90" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
+
+            {/* Content */}
+            <div className="relative px-8 py-16 sm:px-16 sm:py-20 text-center">
+              <LogoMark className="w-16 h-16 mx-auto mb-8 rounded-2xl bg-background/10 p-3" />
+              <h2 className="text-4xl sm:text-5xl font-bold text-background tracking-tight mb-4">
+                Ready to know who's on-site?
+              </h2>
+              <p className="text-xl text-background/70 max-w-xl mx-auto mb-10">
+                Stop guessing. Start tracking. Your team could be clocking in within minutes.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link href="/signup">
+                  <Button size="lg" className="rounded-2xl h-14 px-8 text-base font-medium bg-background text-foreground hover:bg-background/90 gap-2 shadow-2xl">
+                    Start Free Trial
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button size="lg" variant="ghost" className="rounded-2xl h-14 px-8 text-base font-medium text-background/90 hover:text-background hover:bg-background/10">
+                    Sign In
+                    <ArrowUpRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <Logo size="sm" />
-          <p className="text-sm text-muted-foreground">
-            GPS-verified time & attendance tracking.
-          </p>
+      <footer className="border-t border-border/50 py-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <Logo size="sm" />
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
+              <a href="#" className="hover:text-foreground transition-colors">Terms</a>
+              <a href="#" className="hover:text-foreground transition-colors">Security</a>
+              <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} OnSite. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
