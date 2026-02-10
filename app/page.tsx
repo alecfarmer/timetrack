@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ClockButton } from "@/components/clock-button"
 import { TimerDisplay } from "@/components/timer-display"
@@ -40,11 +41,12 @@ import { BottomNav } from "@/components/bottom-nav"
 
 export default function Dashboard() {
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, loading: authLoading, signOut } = useAuth()
   const { position, loading: gpsLoading, refresh: refreshGps } = useGeolocation(true)
   const desktopMonitor = useDesktopMonitor()
 
-  const clock = useClockState(position)
+  // Only fetch dashboard data after auth is ready
+  const clock = useClockState(position, !authLoading && !!user)
 
   useNotifications(
     clock.currentStatus
@@ -64,12 +66,20 @@ export default function Dashboard() {
     router.push("/login")
   }
 
+  // Redirect to login if not authenticated (after auth check completes)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login")
+    }
+  }, [authLoading, user, router])
+
   // Show onboarding for new users
   if (clock.needsOnboarding) {
     return <Onboarding onComplete={clock.handleOnboardingComplete} />
   }
 
-  if (clock.loading) {
+  // Show loading while auth is checking or dashboard data is loading
+  if (authLoading || clock.loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-mesh">
         <motion.div
