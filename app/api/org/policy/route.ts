@@ -7,6 +7,10 @@ import { z } from "zod"
 const updatePolicySchema = z.object({
   requiredDaysPerWeek: z.number().min(0).max(7).optional(),
   minimumMinutesPerDay: z.number().min(0).max(1440).optional(),
+  annualPtoDays: z.number().int().min(0).max(365).optional(),
+  maxCarryoverDays: z.number().int().min(0).max(365).optional(),
+  leaveYearStartMonth: z.number().int().min(1).max(12).optional(),
+  leaveYearStartDay: z.number().int().min(1).max(31).optional(),
 })
 
 // GET /api/org/policy - Get the active policy for the user's org
@@ -69,11 +73,18 @@ export async function PATCH(request: NextRequest) {
 
     if (existing) {
       const updateData: Record<string, unknown> = {}
-      if (validation.data.requiredDaysPerWeek !== undefined) {
-        updateData.requiredDaysPerWeek = validation.data.requiredDaysPerWeek
-      }
-      if (validation.data.minimumMinutesPerDay !== undefined) {
-        updateData.minimumMinutesPerDay = validation.data.minimumMinutesPerDay
+      const fields = [
+        "requiredDaysPerWeek",
+        "minimumMinutesPerDay",
+        "annualPtoDays",
+        "maxCarryoverDays",
+        "leaveYearStartMonth",
+        "leaveYearStartDay",
+      ] as const
+      for (const field of fields) {
+        if (validation.data[field] !== undefined) {
+          updateData[field] = validation.data[field]
+        }
       }
 
       const { data: updated, error } = await supabase
@@ -98,6 +109,10 @@ export async function PATCH(request: NextRequest) {
           isActive: true,
           requiredDaysPerWeek: validation.data.requiredDaysPerWeek ?? 3,
           minimumMinutesPerDay: validation.data.minimumMinutesPerDay ?? 0,
+          annualPtoDays: validation.data.annualPtoDays ?? 0,
+          maxCarryoverDays: validation.data.maxCarryoverDays ?? 0,
+          leaveYearStartMonth: validation.data.leaveYearStartMonth ?? 1,
+          leaveYearStartDay: validation.data.leaveYearStartDay ?? 1,
         })
         .select()
         .single()

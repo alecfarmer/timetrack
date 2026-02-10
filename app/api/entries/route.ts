@@ -1,9 +1,128 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin as supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
-import { startOfDay, endOfDay } from "date-fns"
+import { startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 import { createEntrySchema, validateBody, getRequestTimezone } from "@/lib/validations"
+
+// Evaluate alert rules and fire notifications on clock events
+async function evaluateAlertRules(
+  userId: string,
+  orgId: string,
+  entryType: string,
+  timezone: string
+) {
+  try {
+    // Fetch active alert rules for the org
+    const { data: rules } = await supabase
+      .from("AlertRule")
+      .select("*")
+      .eq("orgId", orgId)
+      .eq("isActive", true)
+
+    if (!rules || rules.length === 0) return
+
+    const now = new Date()
+    const zonedNow = toZonedTime(now, timezone)
+    const notifications: Array<{
+      orgId: string
+      ruleId: string
+      targetUserId: string
+      type: string
+      title: string
+      message: string
+    }> = []
+
+    for (const rule of rules) {
+      const config = rule.config as Record<string, unknown>
+
+      if (rule.type === "OVERTIME_APPROACHING" && entryType === "CLOCK_IN") {
+        // Check weekly minutes approaching threshold
+        const weekStart = startOfWeek(zonedNow, { weekStartsOn: 1 })
+        const weekEnd = endOfWeek(zonedNow, { weekStartsOn: 1 })
+        const { data: workDays } = await supabase
+          .from("WorkDay")
+          .select("totalMinutes")
+          .eq("userId", userId)
+          .gte("date", weekStart.toISOString().split("T")[0])
+          .lte("date", weekEnd.toISOString().split("T")[0])
+
+        const weeklyMinutes = (workDays || []).reduce(
+          (sum: number, d: { totalMinutes?: number }) => sum + (d.totalMinutes || 0),
+          0
+        )
+        const threshold = (config.thresholdMinutes as number) || 2280
+        if (weeklyMinutes >= threshold) {
+          // Check if we already notified this week
+          const { count } = await supabase
+            .from("AlertNotification")
+            .select("*", { count: "exact", head: true })
+            .eq("targetUserId", userId)
+            .eq("type", "OVERTIME_APPROACHING")
+            .gte("createdAt", weekStart.toISOString())
+
+          if (!count || count === 0) {
+            const hours = Math.floor(weeklyMinutes / 60)
+            notifications.push({
+              orgId,
+              ruleId: rule.id,
+              targetUserId: userId,
+              type: "OVERTIME_APPROACHING",
+              title: "Overtime Approaching",
+              message: `You've worked ${hours}h this week. ${config.description || ""}`,
+            })
+          }
+        }
+      }
+
+      if (rule.type === "MISSED_CLOCK_OUT" && entryType === "CLOCK_IN") {
+        // Check if there's a previous clock-in without clock-out exceeding threshold
+        const thresholdHours = (config.thresholdHours as number) || 12
+        const { data: lastClockIn } = await supabase
+          .from("Entry")
+          .select("timestampServer")
+          .eq("userId", userId)
+          .eq("type", "CLOCK_IN")
+          .order("timestampServer", { ascending: false })
+          .limit(2)
+
+        if (lastClockIn && lastClockIn.length > 1) {
+          const prevClockIn = new Date(lastClockIn[1].timestampServer)
+          const hoursSince = (now.getTime() - prevClockIn.getTime()) / (1000 * 60 * 60)
+          if (hoursSince >= thresholdHours) {
+            // Check for a clock-out between prev clock-in and now
+            const { count: clockOutCount } = await supabase
+              .from("Entry")
+              .select("*", { count: "exact", head: true })
+              .eq("userId", userId)
+              .eq("type", "CLOCK_OUT")
+              .gte("timestampServer", prevClockIn.toISOString())
+              .lt("timestampServer", lastClockIn[0].timestampServer)
+
+            if (!clockOutCount || clockOutCount === 0) {
+              notifications.push({
+                orgId,
+                ruleId: rule.id,
+                targetUserId: userId,
+                type: "MISSED_CLOCK_OUT",
+                title: "Possible Missed Clock-Out",
+                message: `Previous session may be missing a clock-out (${Math.round(hoursSince)}h ago). ${config.description || ""}`,
+              })
+            }
+          }
+        }
+      }
+    }
+
+    // Insert all notifications
+    if (notifications.length > 0) {
+      await supabase.from("AlertNotification").insert(notifications)
+    }
+  } catch (err) {
+    // Alert evaluation is non-critical - log and continue
+    console.error("Alert evaluation error:", err)
+  }
+}
 
 // GET /api/entries - List entries with optional filters
 export async function GET(request: NextRequest) {
@@ -144,6 +263,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Evaluate alert rules (non-blocking)
+    if (org) {
+      evaluateAlertRules(user!.id, org.orgId, type, getRequestTimezone(request))
+    }
+
     // Update or create WorkDay
     const serverDate = new Date(entry.timestampServer)
     const zonedDate = toZonedTime(serverDate, getRequestTimezone(request))
@@ -164,9 +288,27 @@ export async function POST(request: NextRequest) {
         if (!existingWorkDay.firstClockIn || serverDate < new Date(existingWorkDay.firstClockIn)) {
           updateData.firstClockIn = serverDate.toISOString()
         }
-      } else {
+      } else if (type === "CLOCK_OUT") {
         if (!existingWorkDay.lastClockOut || serverDate > new Date(existingWorkDay.lastClockOut)) {
           updateData.lastClockOut = serverDate.toISOString()
+        }
+      } else if (type === "BREAK_END") {
+        // Calculate break duration from the most recent BREAK_START
+        const { data: breakStartEntry } = await supabase
+          .from("Entry")
+          .select("timestampServer")
+          .eq("userId", user!.id)
+          .eq("type", "BREAK_START")
+          .gte("timestampServer", workDayDate.toISOString())
+          .order("timestampServer", { ascending: false })
+          .limit(1)
+          .single()
+
+        if (breakStartEntry) {
+          const breakDuration = Math.floor(
+            (serverDate.getTime() - new Date(breakStartEntry.timestampServer).getTime()) / 60000
+          )
+          updateData.breakMinutes = (existingWorkDay.breakMinutes || 0) + breakDuration
         }
       }
 
@@ -179,10 +321,12 @@ export async function POST(request: NextRequest) {
         updateData.meetsPolicy = totalMinutes > 0
       }
 
-      await supabase
-        .from("WorkDay")
-        .update(updateData)
-        .eq("id", existingWorkDay.id)
+      if (Object.keys(updateData).length > 0) {
+        await supabase
+          .from("WorkDay")
+          .update(updateData)
+          .eq("id", existingWorkDay.id)
+      }
 
       await supabase
         .from("Entry")

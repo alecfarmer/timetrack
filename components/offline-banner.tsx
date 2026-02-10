@@ -4,9 +4,18 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { WifiOff, RefreshCw, Check, AlertCircle } from "lucide-react"
-import { getPendingCount, syncPendingEntries } from "@/lib/offline"
+import { WifiOff, RefreshCw, Check, AlertCircle, ChevronDown, ChevronUp, Trash2, Clock } from "lucide-react"
+import { getPendingCount, getPendingEntries, syncPendingEntries, removePendingEntry } from "@/lib/offline"
 import { cn } from "@/lib/utils"
+import { formatDateTime } from "@/lib/dates"
+
+interface PendingEntry {
+  id: string
+  type: string
+  locationId: string
+  timestampClient: string
+  retries: number
+}
 
 interface OfflineBannerProps {
   onSyncComplete?: () => void
@@ -14,9 +23,11 @@ interface OfflineBannerProps {
 
 export function OfflineBanner({ onSyncComplete }: OfflineBannerProps) {
   const [pendingCount, setPendingCount] = useState(0)
+  const [pendingEntries, setPendingEntries] = useState<PendingEntry[]>([])
   const [isOnline, setIsOnline] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<{ synced: number; failed: number } | null>(null)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     const updateOnline = () => setIsOnline(navigator.onLine)
@@ -29,6 +40,10 @@ export function OfflineBanner({ onSyncComplete }: OfflineBannerProps) {
       try {
         const count = await getPendingCount()
         setPendingCount(count)
+        if (count > 0 && expanded) {
+          const entries = await getPendingEntries()
+          setPendingEntries(entries)
+        }
       } catch {}
     }
     checkPending()
@@ -39,7 +54,7 @@ export function OfflineBanner({ onSyncComplete }: OfflineBannerProps) {
       window.removeEventListener("offline", updateOnline)
       clearInterval(interval)
     }
-  }, [])
+  }, [expanded])
 
   // Auto-sync when coming back online
   useEffect(() => {
@@ -56,6 +71,10 @@ export function OfflineBanner({ onSyncComplete }: OfflineBannerProps) {
       setSyncResult(result)
       const count = await getPendingCount()
       setPendingCount(count)
+      if (expanded) {
+        const entries = await getPendingEntries()
+        setPendingEntries(entries)
+      }
       if (result.synced > 0) {
         onSyncComplete?.()
       }
@@ -65,6 +84,29 @@ export function OfflineBanner({ onSyncComplete }: OfflineBannerProps) {
       setSyncResult({ synced: 0, failed: pendingCount })
     }
     setSyncing(false)
+  }
+
+  const handleDiscard = async (id: string) => {
+    await removePendingEntry(id)
+    const count = await getPendingCount()
+    setPendingCount(count)
+    setPendingEntries((prev) => prev.filter((e) => e.id !== id))
+  }
+
+  const handleDiscardAll = async () => {
+    for (const entry of pendingEntries) {
+      await removePendingEntry(entry.id)
+    }
+    setPendingCount(0)
+    setPendingEntries([])
+  }
+
+  const toggleExpanded = async () => {
+    if (!expanded && pendingCount > 0) {
+      const entries = await getPendingEntries()
+      setPendingEntries(entries)
+    }
+    setExpanded(!expanded)
   }
 
   if (pendingCount === 0 && isOnline && !syncResult) return null
@@ -125,19 +167,78 @@ export function OfflineBanner({ onSyncComplete }: OfflineBannerProps) {
               )}
             </div>
 
-            {isOnline && pendingCount > 0 && !syncResult && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleSync}
-                disabled={syncing}
-                className="flex-shrink-0 gap-1"
-              >
-                <RefreshCw className={cn("h-3 w-3", syncing && "animate-spin")} />
-                Sync
-              </Button>
-            )}
+            <div className="flex items-center gap-1">
+              {pendingCount > 0 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={toggleExpanded}
+                  className="h-8 w-8 p-0"
+                >
+                  {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              )}
+              {isOnline && pendingCount > 0 && !syncResult && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSync}
+                  disabled={syncing}
+                  className="flex-shrink-0 gap-1"
+                >
+                  <RefreshCw className={cn("h-3 w-3", syncing && "animate-spin")} />
+                  Sync
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* Expanded entry list */}
+          <AnimatePresence>
+            {expanded && pendingEntries.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-3 pt-3 border-t border-current/10 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">Queued Entries</p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                    onClick={handleDiscardAll}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Discard All
+                  </Button>
+                </div>
+                {pendingEntries.map((entry) => (
+                  <div key={entry.id} className="flex items-center justify-between gap-2 text-xs p-2 rounded-lg bg-background/50">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <Badge variant="secondary" className="text-[10px] mr-1">{entry.type.replace("_", " ")}</Badge>
+                        <span className="text-muted-foreground">{formatDateTime(entry.timestampClient)}</span>
+                        {entry.retries > 0 && (
+                          <span className="text-muted-foreground/60 ml-1">({entry.retries} retries)</span>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive flex-shrink-0"
+                      onClick={() => handleDiscard(entry.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>

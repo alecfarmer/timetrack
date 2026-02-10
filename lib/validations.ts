@@ -56,6 +56,21 @@ export const createLeaveSchema = z.object({
   notes: z.string().max(500).nullable().optional(),
 })
 
+// ─── Leave Policy Schemas ────────────────────────────────────────
+export const leavePolicySchema = z.object({
+  annualPtoDays: z.number().int().min(0).max(365).optional(),
+  maxCarryoverDays: z.number().int().min(0).max(365).optional(),
+  leaveYearStartMonth: z.number().int().min(1).max(12).optional(),
+  leaveYearStartDay: z.number().int().min(1).max(31).optional(),
+})
+
+export const leaveAllowanceOverrideSchema = z.object({
+  userId: z.string().min(1),
+  annualPtoDays: z.number().int().min(0).max(365),
+  effectiveYear: z.number().int().min(2000).max(2100).nullable().optional(),
+  notes: z.string().max(500).nullable().optional(),
+})
+
 // ─── Helper: extract timezone from request ──────────────────────
 const FALLBACK_TIMEZONE = process.env.DEFAULT_TIMEZONE || "America/New_York"
 

@@ -9,6 +9,9 @@ interface EntryWithLocation {
   id: string
   type: string
   timestampServer: string
+  gpsAccuracy: number | null
+  notes: string | null
+  photoUrl: string | null
   location: { id: string; name: string; code: string | null }
 }
 
@@ -26,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { data: dbEntries, error } = await supabase
       .from("Entry")
       .select(`
-        id, type, timestampServer,
+        id, type, timestampServer, gpsAccuracy, notes, photoUrl,
         location:Location (id, name, code)
       `)
       .eq("userId", user!.id)
@@ -52,6 +55,9 @@ export async function GET(request: NextRequest) {
         id: e.id,
         type: e.type,
         timestampServer: e.timestampServer,
+        gpsAccuracy: (e as Record<string, unknown>).gpsAccuracy as number | null,
+        notes: (e as Record<string, unknown>).notes as string | null,
+        photoUrl: (e as Record<string, unknown>).photoUrl as string | null,
         location: {
           id: loc?.id || "",
           name: loc?.name || "Unknown",

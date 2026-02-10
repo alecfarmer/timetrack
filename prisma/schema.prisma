@@ -28,6 +28,8 @@ model Organization {
   timesheets   TimesheetSubmission[]
   wellBeingSnapshots WellBeingSnapshot[]
   payrollMapping PayrollMapping?
+  leaveRequests  LeaveRequest[]
+  leaveAllowanceOverrides LeaveAllowanceOverride[]
 
   @@index([slug])
 }
@@ -167,6 +169,10 @@ model PolicyConfig {
   predictiveScheduling Boolean  @default(false)
   advanceNoticeHours   Int      @default(0)
   clopeningMinHours    Int      @default(0)
+  annualPtoDays        Int      @default(0)
+  maxCarryoverDays     Int      @default(0)
+  leaveYearStartMonth  Int      @default(1)
+  leaveYearStartDay    Int      @default(1)
   effectiveDate        DateTime @default(now())
   isActive             Boolean  @default(true)
 
@@ -217,6 +223,8 @@ model Callout {
 model LeaveRequest {
   id       String    @id @default(cuid())
   userId   String
+  orgId    String?
+  org      Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   type     LeaveType
   date     DateTime  @db.Date
   endDate  DateTime? @db.Date
@@ -229,6 +237,24 @@ model LeaveRequest {
   @@unique([userId, date])
   @@index([userId])
   @@index([date])
+  @@index([orgId])
+}
+
+model LeaveAllowanceOverride {
+  id             String   @id @default(cuid())
+  userId         String
+  orgId          String
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  annualPtoDays  Int
+  effectiveYear  Int?
+  notes          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, orgId, effectiveYear])
+  @@index([orgId])
+  @@index([userId])
 }
 
 enum MembershipRole {

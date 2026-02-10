@@ -91,8 +91,9 @@ export async function GET(request: NextRequest) {
       .eq("orgId", org.orgId);
 
     if (membersError) {
+      console.error("Analytics: members query failed:", membersError.message);
       return NextResponse.json(
-        { error: "Failed to fetch members" },
+        { error: `Failed to fetch members: ${membersError.message}` },
         { status: 500 }
       );
     }
@@ -126,14 +127,15 @@ export async function GET(request: NextRequest) {
     // Fetch work days within the date range for org members
     const { data: workDays, error: workDaysError } = await supabase
       .from("WorkDay")
-      .select("id, userId, date, hoursWorked, arrivalTime, locationId")
+      .select("id, userId, date, totalMinutes, firstClockIn, locationId")
       .in("userId", memberIds)
       .gte("date", startStr)
       .lte("date", endStr);
 
     if (workDaysError) {
+      console.error("Analytics: workdays query failed:", workDaysError.message);
       return NextResponse.json(
-        { error: "Failed to fetch work days" },
+        { error: `Failed to fetch work days: ${workDaysError.message}` },
         { status: 500 }
       );
     }
@@ -177,8 +179,8 @@ export async function GET(request: NextRequest) {
       });
 
       const totalHours = weekRecords.reduce(
-        (sum: number, wd: { hoursWorked: number | null }) =>
-          sum + (wd.hoursWorked || 0),
+        (sum: number, wd: { totalMinutes: number | null }) =>
+          sum + ((wd.totalMinutes || 0) / 60),
         0
       );
 
@@ -228,7 +230,7 @@ export async function GET(request: NextRequest) {
         totalHours: 0,
         visitCount: 0,
       };
-      existing.totalHours += wd.hoursWorked || 0;
+      existing.totalHours += (wd.totalMinutes || 0) / 60;
       existing.visitCount += 1;
       locationStats.set(wd.locationId, existing);
     }
@@ -269,7 +271,7 @@ export async function GET(request: NextRequest) {
       const stats = memberStatsMap.get(wd.userId);
       if (!stats) continue;
 
-      stats.totalHours += wd.hoursWorked || 0;
+      stats.totalHours += (wd.totalMinutes || 0) / 60;
       stats.days.add(wd.date);
 
       const ws = getWeekStart(new Date(wd.date));
@@ -278,8 +280,8 @@ export async function GET(request: NextRequest) {
       }
       stats.weekDays.get(ws)!.add(wd.date);
 
-      if (wd.arrivalTime) {
-        stats.arrivalTimes.push(wd.arrivalTime);
+      if (wd.firstClockIn) {
+        stats.arrivalTimes.push(wd.firstClockIn);
       }
     }
 
@@ -303,8 +305,8 @@ export async function GET(request: NextRequest) {
       let avgArrivalTime: string | null = null;
       if (stats.arrivalTimes.length > 0) {
         const totalMinutes = stats.arrivalTimes.reduce((sum, time) => {
-          const [hours, minutes] = time.split(":").map(Number);
-          return sum + hours * 60 + (minutes || 0);
+          const d = new Date(time);
+          return sum + d.getUTCHours() * 60 + d.getUTCMinutes();
         }, 0);
         const avgMinutes = Math.round(totalMinutes / stats.arrivalTimes.length);
         const h = Math.floor(avgMinutes / 60);
@@ -324,8 +326,8 @@ export async function GET(request: NextRequest) {
 
     // --- Overview ---
     const totalHoursTracked = workDayRecords.reduce(
-      (sum: number, wd: { hoursWorked: number | null }) =>
-        sum + (wd.hoursWorked || 0),
+      (sum: number, wd: { totalMinutes: number | null }) =>
+        sum + ((wd.totalMinutes || 0) / 60),
       0
     );
 
@@ -362,9 +364,10 @@ export async function GET(request: NextRequest) {
       overview,
     });
   } catch (error) {
-    console.error("Analytics error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Analytics error:", message);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Internal server error: ${message}` },
       { status: 500 }
     );
   }

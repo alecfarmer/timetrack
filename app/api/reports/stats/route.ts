@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin as supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getHours, getDay, differenceInMinutes, parseISO, subWeeks, subMonths } from "date-fns"
+import { toZonedTime } from "date-fns-tz"
+import { getRequestTimezone } from "@/lib/validations"
 
 // GET /api/reports/stats - Get detailed productivity and time stats
 export async function GET(request: NextRequest) {
@@ -11,8 +13,10 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const period = searchParams.get("period") || "week" // week, month, quarter
+    const timezone = getRequestTimezone(request)
 
-    const now = new Date()
+    // Use user's timezone for date boundaries
+    const now = toZonedTime(new Date(), timezone)
     let startDate: Date
     let prevStartDate: Date
     let prevEndDate: Date
@@ -72,16 +76,18 @@ export async function GET(request: NextRequest) {
         : null,
     }
 
-    // Clock-in time distribution (histogram)
+    // Clock-in time distribution (histogram) - convert to user's timezone
     const clockInDistribution = new Array(24).fill(0)
     const clockOutDistribution = new Array(24).fill(0)
     for (const wd of currentWorkDays || []) {
       if (wd.firstClockIn) {
-        const hour = getHours(new Date(wd.firstClockIn))
+        const zonedClockIn = toZonedTime(new Date(wd.firstClockIn), timezone)
+        const hour = getHours(zonedClockIn)
         clockInDistribution[hour]++
       }
       if (wd.lastClockOut) {
-        const hour = getHours(new Date(wd.lastClockOut))
+        const zonedClockOut = toZonedTime(new Date(wd.lastClockOut), timezone)
+        const hour = getHours(zonedClockOut)
         clockOutDistribution[hour]++
       }
     }
@@ -130,7 +136,7 @@ export async function GET(request: NextRequest) {
       maxDayMinutes: Math.max(...(currentWorkDays || []).map((wd) => wd.totalMinutes || 0), 0),
     }
 
-    // Punctuality (assuming 9am target)
+    // Punctuality (assuming 9am target) - convert to user's timezone
     const punctualityStats = {
       onTime: 0, // before 9:15
       late: 0, // 9:15 - 10:00
@@ -138,8 +144,9 @@ export async function GET(request: NextRequest) {
     }
     for (const wd of currentWorkDays || []) {
       if (wd.firstClockIn) {
-        const hour = getHours(new Date(wd.firstClockIn))
-        const minutes = new Date(wd.firstClockIn).getMinutes()
+        const zonedClockIn = toZonedTime(new Date(wd.firstClockIn), timezone)
+        const hour = getHours(zonedClockIn)
+        const minutes = zonedClockIn.getMinutes()
         const totalMinuteOfDay = hour * 60 + minutes
         if (totalMinuteOfDay <= 9 * 60 + 15) {
           punctualityStats.onTime++
