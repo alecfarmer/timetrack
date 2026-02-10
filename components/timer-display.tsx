@@ -10,17 +10,36 @@ interface TimerDisplayProps {
   label?: string
   isOnBreak?: boolean
   breakStartTime?: Date | null
+  size?: "default" | "large"
 }
 
-export function TimerDisplay({ startTime, label, isOnBreak, breakStartTime }: TimerDisplayProps) {
+export function TimerDisplay({ startTime, label, isOnBreak, breakStartTime, size = "default" }: TimerDisplayProps) {
   const { seconds, isRunning } = useTimer(startTime || undefined)
   const { seconds: breakSeconds } = useTimer(isOnBreak && breakStartTime ? breakStartTime : undefined)
 
+  const isLarge = size === "large"
+
   if (!startTime) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Clock className="h-4 w-4" />
-        <span className="font-mono text-lg">--:--:--</span>
+      <div className={cn(
+        "flex flex-col",
+        isLarge ? "items-start" : "items-center gap-2 flex-row"
+      )}>
+        {!isLarge && <Clock className="h-4 w-4 text-muted-foreground" />}
+        <span className={cn(
+          "font-mono tabular-nums text-muted-foreground",
+          isLarge ? "text-5xl sm:text-6xl font-light tracking-tight" : "text-lg"
+        )}>
+          00:00:00
+        </span>
+        {label && (
+          <p className={cn(
+            "text-muted-foreground",
+            isLarge ? "text-sm mt-2" : "text-sm"
+          )}>
+            {label}
+          </p>
+        )}
       </div>
     )
   }
@@ -38,6 +57,19 @@ export function TimerDisplay({ startTime, label, isOnBreak, breakStartTime }: Ti
           <span className="font-mono text-sm text-muted-foreground">{formatTimer(seconds)}</span>
           {label && <span className="text-xs text-muted-foreground">{label}</span>}
         </div>
+      </div>
+    )
+  }
+
+  if (isLarge) {
+    return (
+      <div>
+        <span className="font-mono text-5xl sm:text-6xl font-light tracking-tight tabular-nums">
+          {formatTimer(seconds)}
+        </span>
+        {label && (
+          <p className="text-sm text-muted-foreground mt-2">{label}</p>
+        )}
       </div>
     )
   }
