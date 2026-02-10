@@ -90,7 +90,7 @@ interface UseClockStateReturn {
   fetchWeekSummary: () => Promise<void>
 }
 
-export function useClockState(position: GeoPosition | null): UseClockStateReturn {
+export function useClockState(position: GeoPosition | null, enabled: boolean = true): UseClockStateReturn {
   const [locations, setLocations] = useState<Location[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string>("")
   const [currentStatus, setCurrentStatus] = useState<CurrentStatus | null>(null)
@@ -159,6 +159,11 @@ export function useClockState(position: GeoPosition | null): UseClockStateReturn
 
   // Initial data fetch — use unified dashboard endpoint
   useEffect(() => {
+    // Don't fetch until enabled (auth ready)
+    if (!enabled) {
+      return
+    }
+
     const fetchDashboard = async () => {
       setLoading(true)
       try {
@@ -194,7 +199,7 @@ export function useClockState(position: GeoPosition | null): UseClockStateReturn
       }
     }
     fetchDashboard()
-  }, [fetchLocations, fetchCurrentStatus, fetchWeekSummary])
+  }, [enabled, fetchLocations, fetchCurrentStatus, fetchWeekSummary])
 
   // Auto-select nearest location when GPS updates
   useEffect(() => {
