@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion"
-import { Loader2, ArrowRight, Check } from "lucide-react"
+import { Loader2, ArrowRight, Check, Play, Square } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ClockButtonProps {
@@ -10,9 +10,10 @@ interface ClockButtonProps {
   onClockIn: () => Promise<void>
   onClockOut: () => Promise<void>
   disabled?: boolean
+  variant?: "default" | "modern"
 }
 
-export function ClockButton({ isClockedIn, onClockIn, onClockOut, disabled }: ClockButtonProps) {
+export function ClockButton({ isClockedIn, onClockIn, onClockOut, disabled, variant = "default" }: ClockButtonProps) {
   const [loading, setLoading] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const constraintsRef = useRef<HTMLDivElement>(null)
@@ -32,7 +33,19 @@ export function ClockButton({ isClockedIn, onClockIn, onClockOut, disabled }: Cl
     setLoading(true)
     try {
       await onClockIn()
-      // Success animation
+      setIsComplete(true)
+      setTimeout(() => setIsComplete(false), 1000)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClockOut = async () => {
+    if (loading || disabled) return
+
+    setLoading(true)
+    try {
+      await onClockOut()
       setIsComplete(true)
       setTimeout(() => setIsComplete(false), 1000)
     } finally {
@@ -53,6 +66,114 @@ export function ClockButton({ isClockedIn, onClockIn, onClockOut, disabled }: Cl
     }
   }
 
+  // Modern variant - simpler, cleaner design
+  if (variant === "modern") {
+    if (!isClockedIn) {
+      return (
+        <motion.button
+          className={cn(
+            "relative w-full h-12 rounded-xl font-medium text-sm",
+            "bg-emerald-500 text-white",
+            "hover:bg-emerald-600 active:bg-emerald-700",
+            "transition-colors",
+            disabled && "opacity-50 cursor-not-allowed pointer-events-none"
+          )}
+          onClick={handleClockIn}
+          disabled={disabled || loading}
+          whileTap={{ scale: 0.98 }}
+        >
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center justify-center gap-2"
+              >
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </motion.div>
+            ) : isComplete ? (
+              <motion.div
+                key="complete"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="flex items-center justify-center gap-2"
+              >
+                <Check className="h-4 w-4" />
+                <span>Clocked In</span>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center justify-center gap-2"
+              >
+                <Play className="h-4 w-4" />
+                <span>Clock In</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      )
+    }
+
+    return (
+      <motion.button
+        className={cn(
+          "relative w-full h-12 rounded-xl font-medium text-sm",
+          "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20",
+          "hover:bg-rose-500/20 active:bg-rose-500/30",
+          "transition-colors",
+          disabled && "opacity-50 cursor-not-allowed pointer-events-none"
+        )}
+        onClick={handleClockOut}
+        disabled={disabled || loading}
+        whileTap={{ scale: 0.98 }}
+      >
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-center gap-2"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </motion.div>
+          ) : isComplete ? (
+            <motion.div
+              key="complete"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="flex items-center justify-center gap-2"
+            >
+              <Check className="h-4 w-4" />
+              <span>Clocked Out</span>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="idle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-center gap-2"
+            >
+              <Square className="h-3.5 w-3.5" />
+              <span>Clock Out</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
+    )
+  }
+
+  // Default variant - original design with swipe to clock out
   // Clock In Button (simple tap)
   if (!isClockedIn) {
     return (

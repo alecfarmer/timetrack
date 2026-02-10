@@ -22,6 +22,7 @@ interface LocationPickerProps {
   userPosition?: { latitude: number; longitude: number } | null
   onSelect: (locationId: string) => void
   className?: string
+  variant?: "default" | "compact"
 }
 
 function getCategoryIcon(category?: string) {
@@ -52,7 +53,9 @@ export function LocationPicker({
   userPosition,
   onSelect,
   className,
+  variant = "default",
 }: LocationPickerProps) {
+  const isCompact = variant === "compact"
   const [isOpen, setIsOpen] = useState(false)
   const [locationsWithDistance, setLocationsWithDistance] = useState<
     (Location & { distance?: number; isWithinGeofence?: boolean })[]
@@ -107,45 +110,52 @@ export function LocationPicker({
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "w-full flex items-center gap-3 p-3 rounded-xl border transition-all",
+          "w-full flex items-center gap-3 rounded-xl border transition-all",
           "hover:border-primary/50",
+          isCompact ? "px-4 py-3" : "p-3",
           isOpen
             ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+            : isCompact
+            ? "border-border/50 bg-muted/30"
             : "border-border bg-background"
         )}
         whileTap={{ scale: 0.99 }}
       >
         {/* Selected location icon */}
-        <div
-          className={cn(
-            "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-            selected?.isWithinGeofence
-              ? "bg-success/15 text-success"
-              : "bg-muted text-muted-foreground"
-          )}
-        >
-          <SelectedIcon className="h-4.5 w-4.5" />
-        </div>
+        {!isCompact && (
+          <div
+            className={cn(
+              "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+              selected?.isWithinGeofence
+                ? "bg-success/15 text-success"
+                : "bg-muted text-muted-foreground"
+            )}
+          >
+            <SelectedIcon className="h-4.5 w-4.5" />
+          </div>
+        )}
 
         {/* Selected info */}
         <div className="flex-1 min-w-0 text-left">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm truncate">
+            <span className={cn("font-medium truncate", isCompact ? "text-sm" : "font-semibold text-sm")}>
               {selected?.code || selected?.name || "Select location"}
             </span>
-            {selected?.isWithinGeofence && (
+            {selected?.isWithinGeofence && !isCompact && (
               <span className="flex items-center gap-1 text-[10px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded-full">
                 <Signal className="h-2.5 w-2.5" />
                 In range
               </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground truncate">
-            {selected?.name}
-            {selected?.distance !== undefined && (
-              <> &middot; {formatDistance(selected.distance)}</>
-            )}
-          </p>
+          {!isCompact && (
+            <p className="text-xs text-muted-foreground truncate">
+              {selected?.name}
+              {selected?.distance !== undefined && (
+                <> &middot; {formatDistance(selected.distance)}</>
+              )}
+            </p>
+          )}
         </div>
 
         {/* Chevron */}
