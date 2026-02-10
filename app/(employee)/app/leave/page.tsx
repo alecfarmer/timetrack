@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationCenter } from "@/components/notification-center"
+import { RefreshButton } from "@/components/pull-to-refresh"
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,6 +22,7 @@ import {
   UserX,
   Loader2,
   X,
+  Umbrella,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -63,6 +65,7 @@ export default function LeavePage() {
   const [yearlySummary, setYearlySummary] = useState<LeaveSummary>({ totalDays: 0, byType: {} })
   const [ptoBalance, setPtoBalance] = useState<PtoBalance | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [formType, setFormType] = useState("PTO")
   const [formDate, setFormDate] = useState("")
@@ -109,6 +112,12 @@ export default function LeavePage() {
     } catch (error) {
       console.error("Failed to fetch yearly summary:", error)
     }
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await Promise.all([fetchLeaves(), fetchYearlySummary()])
+    setRefreshing(false)
   }
 
   const handleSubmit = async () => {
@@ -158,101 +167,145 @@ export default function LeavePage() {
   const monthEnd = endOfMonth(currentMonth)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-primary/20 animate-ping absolute inset-0" />
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Palmtree className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <p className="text-muted-foreground font-medium">Loading leave data...</p>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <motion.div
       className="flex flex-col min-h-screen bg-background"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b">
-        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Palmtree className="h-5 w-5 text-primary" />
+      {/* Premium Dark Hero Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-green-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+
+        <header className="relative z-10 safe-area-pt">
+          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                <Umbrella className="h-5 w-5 text-white" />
+              </div>
+              <h1 className="text-lg font-semibold text-white">Leave / PTO</h1>
             </div>
-            <h1 className="text-lg font-bold">Leave / PTO</h1>
+            <div className="flex items-center gap-2">
+              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
+              <NotificationCenter />
+              <Button
+                size="sm"
+                onClick={() => setShowForm(true)}
+                className="gap-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border-white/10"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Leave</span>
+              </Button>
+            </div>
           </div>
-          <h1 className="hidden lg:block text-xl font-semibold">Leave / PTO</h1>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button size="sm" onClick={() => setShowForm(true)} className="gap-2 rounded-xl">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Leave</span>
+        </header>
+
+        {/* Month Navigation */}
+        <div className="relative z-10 px-4 pt-2 pb-6 max-w-6xl mx-auto lg:px-8">
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentMonth((p) => subMonths(p, 1))}
+              className="rounded-xl h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <h2 className="text-xl font-semibold text-white min-w-[180px] text-center">
+              {format(currentMonth, "MMMM yyyy")}
+            </h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentMonth((p) => addMonths(p, 1))}
+              className="rounded-xl h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+            >
+              <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
-        </div>
-      </header>
 
-      <main className="flex-1 pb-24 lg:pb-8">
-        <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8">
-          {/* Summary Cards — Full Year */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {ptoBalance && ptoBalance.annualAllowance > 0 ? (
               <>
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold">{ptoBalance.remaining}</p>
-                    <p className="text-xs text-muted-foreground">PTO Remaining</p>
-                    <p className="text-[10px] text-muted-foreground">of {ptoBalance.annualAllowance + ptoBalance.carryover}</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold">{ptoBalance.taken}</p>
-                    <p className="text-xs text-muted-foreground">PTO Used</p>
-                  </CardContent>
-                </Card>
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+                  <p className="text-2xl font-bold text-white">{ptoBalance.remaining}</p>
+                  <p className="text-xs text-white/60">PTO Remaining</p>
+                  <p className="text-[10px] text-white/40">of {ptoBalance.annualAllowance + ptoBalance.carryover}</p>
+                </div>
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+                  <p className="text-2xl font-bold text-white">{ptoBalance.taken}</p>
+                  <p className="text-xs text-white/60">PTO Used</p>
+                </div>
                 {ptoBalance.carryover > 0 && (
-                  <Card className="border-0 shadow-lg">
-                    <CardContent className="p-4 text-center">
-                      <p className="text-2xl font-bold">{ptoBalance.carryover}</p>
-                      <p className="text-xs text-muted-foreground">Carryover</p>
-                    </CardContent>
-                  </Card>
+                  <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+                    <p className="text-2xl font-bold text-white">{ptoBalance.carryover}</p>
+                    <p className="text-xs text-white/60">Carryover</p>
+                  </div>
                 )}
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold">{yearlySummary.byType["SICK"] || 0}</p>
-                    <p className="text-xs text-muted-foreground">Sick Used</p>
-                  </CardContent>
-                </Card>
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+                  <p className="text-2xl font-bold text-rose-400">{yearlySummary.byType["SICK"] || 0}</p>
+                  <p className="text-xs text-white/60">Sick Used</p>
+                </div>
               </>
             ) : (
               <>
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold">{yearlySummary.totalDays}</p>
-                    <p className="text-xs text-muted-foreground">Total Days ({format(currentMonth, "yyyy")})</p>
-                  </CardContent>
-                </Card>
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+                  <p className="text-2xl font-bold text-white">{yearlySummary.totalDays}</p>
+                  <p className="text-xs text-white/60">Total Days ({format(currentMonth, "yyyy")})</p>
+                </div>
                 {LEAVE_TYPES.slice(0, 3).map((type) => (
-                  <Card key={type.value} className="border-0 shadow-lg">
-                    <CardContent className="p-4 text-center">
-                      <p className="text-2xl font-bold">{yearlySummary.byType[type.value] || 0}</p>
-                      <p className="text-xs text-muted-foreground">{type.label}</p>
-                    </CardContent>
-                  </Card>
+                  <div key={type.value} className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+                    <p className="text-2xl font-bold text-white">{yearlySummary.byType[type.value] || 0}</p>
+                    <p className="text-xs text-white/60">{type.label}</p>
+                  </div>
                 ))}
               </>
             )}
           </div>
+        </div>
+      </div>
 
+      {/* Main Content */}
+      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+        <div className="max-w-6xl mx-auto px-4 lg:px-8">
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Calendar */}
             <div className="lg:col-span-2">
-              <Card className="border-0 shadow-xl">
+              <Card className="border-0 shadow-xl rounded-2xl">
                 <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-5">
-                    <Button variant="ghost" size="icon" onClick={() => setCurrentMonth((p) => subMonths(p, 1))} className="rounded-xl h-9 w-9">
-                      <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    <h2 className="text-lg font-semibold">{format(currentMonth, "MMMM yyyy")}</h2>
-                    <Button variant="ghost" size="icon" onClick={() => setCurrentMonth((p) => addMonths(p, 1))} className="rounded-xl h-9 w-9">
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
-                  </div>
-
                   <div className="grid grid-cols-7 gap-1 mb-1">
                     {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
                       <div key={i} className="text-center text-xs font-medium text-muted-foreground py-2">
@@ -314,7 +367,7 @@ export default function LeavePage() {
               {/* Selected date leave */}
               {selectedDate && leaveByDate.has(selectedDate) && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                  <Card className="border-0 shadow-xl">
+                  <Card className="border-0 shadow-xl rounded-2xl">
                     <CardContent className="p-5">
                       {(() => {
                         const leave = leaveByDate.get(selectedDate)!
@@ -353,7 +406,7 @@ export default function LeavePage() {
               )}
 
               {/* Leave list for month */}
-              <Card className="border-0 shadow-lg">
+              <Card className="border-0 shadow-lg rounded-2xl">
                 <CardContent className="p-5">
                   <h3 className="text-sm font-semibold mb-3">This Month</h3>
                   {leaves.length > 0 ? (
@@ -364,12 +417,10 @@ export default function LeavePage() {
                         for (const leave of leaves) {
                           const prev = groups[groups.length - 1]
                           if (prev && prev.type === leave.type && leave.endDate && prev.endDate === leave.endDate) {
-                            // Same range group — skip duplicate
                             prev.ids.push(leave.id)
                             continue
                           }
                           if (prev && prev.type === leave.type) {
-                            // Check if consecutive day
                             const prevEnd = new Date(prev.endDate)
                             const curStart = new Date(leave.date)
                             const diffMs = curStart.getTime() - prevEnd.getTime()
@@ -485,7 +536,7 @@ export default function LeavePage() {
                       type="date"
                       value={formDate}
                       onChange={(e) => setFormDate(e.target.value)}
-                      className="mt-1.5"
+                      className="mt-1.5 rounded-xl"
                     />
                   </div>
                   <div>
@@ -495,7 +546,7 @@ export default function LeavePage() {
                       type="date"
                       value={formEndDate}
                       onChange={(e) => setFormEndDate(e.target.value)}
-                      className="mt-1.5"
+                      className="mt-1.5 rounded-xl"
                     />
                   </div>
                 </div>
@@ -508,7 +559,7 @@ export default function LeavePage() {
                     placeholder="Doctor appointment, vacation, etc."
                     value={formNotes}
                     onChange={(e) => setFormNotes(e.target.value)}
-                    className="mt-1.5"
+                    className="mt-1.5 rounded-xl"
                   />
                 </div>
 
@@ -535,7 +586,6 @@ export default function LeavePage() {
           </motion.div>
         )}
       </AnimatePresence>
-
     </motion.div>
   )
 }

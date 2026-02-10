@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationCenter } from "@/components/notification-center"
+import { RefreshButton } from "@/components/pull-to-refresh"
 import { CalloutCard, Callout } from "@/components/callout-card"
 import { useGeolocation } from "@/hooks/use-geolocation"
 import {
@@ -25,6 +26,7 @@ import {
   PhoneIncoming,
   PhoneOutgoing,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface Location {
   id: string
@@ -34,26 +36,12 @@ interface Location {
 
 const PAGE_SIZE = 20
 
-const pageVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-}
-
-const staggerContainer = {
-  animate: { transition: { staggerChildren: 0.08 } },
-}
-
-const staggerItem = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-}
-
 export default function CalloutsPage() {
   const [locations, setLocations] = useState<Location[]>([])
   const [callouts, setCallouts] = useState<Callout[]>([])
   const [totalCallouts, setTotalCallouts] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showNewCallout, setShowNewCallout] = useState(false)
@@ -106,6 +94,12 @@ export default function CalloutsPage() {
     }
     fetchAll()
   }, [fetchLocations, fetchCallouts])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await Promise.all([fetchLocations(), fetchCallouts()])
+    setRefreshing(false)
+  }
 
   const handleLoadMore = async () => {
     setLoadingMore(true)
@@ -194,7 +188,11 @@ export default function CalloutsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
           <div className="relative">
             <div className="w-16 h-16 rounded-full bg-primary/20 animate-ping absolute inset-0" />
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -208,30 +206,83 @@ export default function CalloutsPage() {
   }
 
   return (
-    <motion.div className="flex flex-col min-h-screen bg-background" initial="initial" animate="animate" exit="exit" variants={pageVariants}>
-      <header className="sticky top-0 z-50 glass border-b">
-        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Phone className="h-5 w-5 text-primary" />
+    <motion.div
+      className="flex flex-col min-h-screen bg-background"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      {/* Premium Dark Hero Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-500/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-red-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+
+        <header className="relative z-10 safe-area-pt">
+          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                <Phone className="h-5 w-5 text-white" />
+              </div>
+              <h1 className="text-lg font-semibold text-white">Callouts</h1>
             </div>
-            <h1 className="text-lg font-bold">Callouts</h1>
+            <div className="flex items-center gap-2">
+              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
+              <NotificationCenter />
+              <Button
+                variant={showNewCallout ? "outline" : "default"}
+                size="sm"
+                onClick={() => setShowNewCallout(!showNewCallout)}
+                className={cn(
+                  "gap-2 rounded-xl",
+                  !showNewCallout && "bg-white/10 hover:bg-white/20 text-white border-white/10"
+                )}
+              >
+                {showNewCallout ? "Cancel" : <><Plus className="h-4 w-4" /><span className="hidden sm:inline">New Callout</span></>}
+              </Button>
+            </div>
           </div>
-          <h1 className="hidden lg:block text-xl font-semibold">Callouts</h1>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant={showNewCallout ? "outline" : "default"} size="sm" onClick={() => setShowNewCallout(!showNewCallout)} className="gap-2 rounded-xl">
-              {showNewCallout ? "Cancel" : <><Plus className="h-4 w-4" /><span className="hidden sm:inline">New Callout</span></>}
-            </Button>
+        </header>
+
+        {/* Stats */}
+        <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <p className="text-2xl font-bold text-amber-400">{activeCallouts.length}</p>
+              <p className="text-xs text-white/60">Active</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <p className="text-2xl font-bold text-white">{completedCallouts.length}</p>
+              <p className="text-xs text-white/60">Completed</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <p className="text-2xl font-bold text-white">{totalCallouts}</p>
+              <p className="text-xs text-white/60">Total</p>
+            </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <motion.main className="flex-1 pb-24 lg:pb-8" variants={staggerContainer} initial="initial" animate="animate">
-        <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8">
+      {/* Main Content */}
+      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+        <div className="max-w-6xl mx-auto px-4 lg:px-8">
           <AnimatePresence>
             {error && (
-              <motion.div initial={{ opacity: 0, y: -20, height: 0 }} animate={{ opacity: 1, y: 0, height: "auto" }} exit={{ opacity: 0, y: -20, height: 0 }} className="mb-6 bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3">
+              <motion.div
+                initial={{ opacity: 0, y: -20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
+                className="mb-6 bg-destructive/10 border border-destructive/20 rounded-2xl p-4 flex items-center gap-3"
+              >
                 <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
                 <p className="text-sm text-destructive flex-1">{error}</p>
                 <Button variant="ghost" size="sm" onClick={() => setError(null)} className="rounded-lg">Dismiss</Button>
@@ -241,11 +292,16 @@ export default function CalloutsPage() {
 
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Left: Form / Stats */}
-            <motion.div variants={staggerItem} className="lg:col-span-1">
+            <div className="lg:col-span-1">
               <AnimatePresence mode="wait">
                 {showNewCallout ? (
-                  <motion.div key="form" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
-                    <Card className="border-0 shadow-xl">
+                  <motion.div
+                    key="form"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                  >
+                    <Card className="border-0 shadow-xl rounded-2xl">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <PhoneIncoming className="h-5 w-5 text-primary" />
@@ -255,32 +311,58 @@ export default function CalloutsPage() {
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="incident">Incident Number *</Label>
-                          <Input id="incident" placeholder="e.g., INC0012345" value={incidentNumber} onChange={(e) => setIncidentNumber(e.target.value)} className="rounded-xl" />
+                          <Input
+                            id="incident"
+                            placeholder="e.g., INC0012345"
+                            value={incidentNumber}
+                            onChange={(e) => setIncidentNumber(e.target.value)}
+                            className="rounded-xl"
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="location">Location *</Label>
                           <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
-                            <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select location" /></SelectTrigger>
+                            <SelectTrigger className="rounded-xl">
+                              <SelectValue placeholder="Select location" />
+                            </SelectTrigger>
                             <SelectContent>
                               {locations.map((loc) => (
-                                <SelectItem key={loc.id} value={loc.id}>{loc.code ? `${loc.code} - ${loc.name}` : loc.name}</SelectItem>
+                                <SelectItem key={loc.id} value={loc.id}>
+                                  {loc.code ? `${loc.code} - ${loc.name}` : loc.name}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="description">Description (optional)</Label>
-                          <Textarea id="description" placeholder="Brief description of the issue..." value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="rounded-xl" />
+                          <Textarea
+                            id="description"
+                            placeholder="Brief description of the issue..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            rows={3}
+                            className="rounded-xl"
+                          />
                         </div>
-                        <Button className="w-full gap-2 rounded-xl" onClick={handleStartCallout} disabled={submitting}>
+                        <Button
+                          className="w-full gap-2 rounded-xl"
+                          onClick={handleStartCallout}
+                          disabled={submitting}
+                        >
                           {submitting ? "Logging..." : <><Phone className="h-4 w-4" />Log Callout</>}
                         </Button>
                       </CardContent>
                     </Card>
                   </motion.div>
                 ) : (
-                  <motion.div key="stats" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
-                    <Card className="border-0 shadow-lg">
+                  <motion.div
+                    key="stats"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                  >
+                    <Card className="border-0 shadow-lg rounded-2xl">
                       <CardContent className="p-6">
                         <div className="text-center space-y-4">
                           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
@@ -290,32 +372,29 @@ export default function CalloutsPage() {
                             <p className="text-4xl font-bold">{activeCallouts.length}</p>
                             <p className="text-sm text-muted-foreground">Active Callouts</p>
                           </div>
-                          <div className="pt-4 border-t grid grid-cols-2 gap-4 text-center">
-                            <div>
-                              <p className="text-2xl font-semibold">{completedCallouts.length}</p>
-                              <p className="text-xs text-muted-foreground">Completed</p>
-                            </div>
-                            <div>
-                              <p className="text-2xl font-semibold">{totalCallouts}</p>
-                              <p className="text-xs text-muted-foreground">Total</p>
-                            </div>
-                          </div>
+                          <Button
+                            className="w-full rounded-xl"
+                            onClick={() => setShowNewCallout(true)}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Log New Callout
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </div>
 
             {/* Right: Callout list */}
-            <motion.div variants={staggerItem} className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-6">
               {activeCallouts.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="status-dot status-dot-warning" />
+                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                     <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Active Callouts</h2>
-                    <Badge variant="warning">{activeCallouts.length}</Badge>
+                    <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-0">{activeCallouts.length}</Badge>
                   </div>
                   <div className="space-y-3">
                     {activeCallouts.map((callout) => (
@@ -346,7 +425,7 @@ export default function CalloutsPage() {
                     ))}
                   </div>
                 ) : (
-                  <Card className="border-dashed">
+                  <Card className="border-dashed rounded-2xl">
                     <CardContent className="py-12 text-center">
                       <PhoneOutgoing className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                       <p className="text-muted-foreground">No completed callouts yet</p>
@@ -356,16 +435,20 @@ export default function CalloutsPage() {
                 )}
 
                 {hasMore && (
-                  <Button variant="outline" className="w-full rounded-xl" onClick={handleLoadMore} disabled={loadingMore}>
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                  >
                     {loadingMore ? "Loading..." : `Load More (${callouts.length} of ${totalCallouts})`}
                   </Button>
                 )}
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
-      </motion.main>
-
+      </main>
     </motion.div>
   )
 }
