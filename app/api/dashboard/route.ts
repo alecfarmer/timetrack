@@ -9,10 +9,21 @@ import { getRequestTimezone } from "@/lib/validations"
 // Combines: onboarding, locations, current status, week summary
 export async function GET(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthUser()
+    const { user, org, error: authError } = await getAuthUser()
     if (authError) return authError
 
     const userId = user!.id
+
+    // Check if needs onboarding (no org membership)
+    if (!org) {
+      return NextResponse.json({
+        needsOnboarding: true,
+        locations: [],
+        currentStatus: null,
+        weekSummary: null,
+      })
+    }
+
     const tz = getRequestTimezone(request)
     const now = new Date()
     const zonedNow = toZonedTime(now, tz)
@@ -23,24 +34,17 @@ export async function GET(request: NextRequest) {
 
     // Run all queries in parallel
     const [
-      membershipResult,
       locationsResult,
       todayEntriesResult,
       weekWorkDaysResult,
       policyResult,
     ] = await Promise.all([
-      // Check membership (for onboarding)
-      supabase
-        .from("Membership")
-        .select("orgId, role")
-        .eq("userId", userId)
-        .limit(1)
-        .single(),
-
-      // Get locations
+      // Get locations for user's org (shared + personal)
       supabase
         .from("Location")
         .select("id, name, code, category, latitude, longitude, geofenceRadius, isDefault")
+        .eq("orgId", org.orgId)
+        .or(`userId.is.null,userId.eq.${userId}`)
         .order("isDefault", { ascending: false })
         .order("name"),
 
@@ -61,25 +65,13 @@ export async function GET(request: NextRequest) {
         .gte("date", format(weekStart, "yyyy-MM-dd"))
         .lte("date", format(weekEnd, "yyyy-MM-dd")),
 
-      // Get org policy
+      // Get org policy (use maybeSingle to handle missing policy gracefully)
       supabase
         .from("PolicyConfig")
         .select("requiredOnsiteDays")
-        .limit(1)
-        .single(),
+        .eq("orgId", org.orgId)
+        .maybeSingle(),
     ])
-
-    // Check if needs onboarding
-    const needsOnboarding = !membershipResult.data
-
-    if (needsOnboarding) {
-      return NextResponse.json({
-        needsOnboarding: true,
-        locations: [],
-        currentStatus: null,
-        weekSummary: null,
-      })
-    }
 
     // Process locations
     const locations = locationsResult.data || []

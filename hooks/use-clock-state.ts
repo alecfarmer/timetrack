@@ -183,9 +183,14 @@ export function useClockState(position: GeoPosition | null): UseClockStateReturn
       } catch (err) {
         console.error("Error fetching dashboard:", err)
         // Fallback to individual fetches if dashboard fails
-        await Promise.all([fetchLocations(), fetchCurrentStatus(), fetchWeekSummary()])
+        try {
+          await Promise.all([fetchLocations(), fetchCurrentStatus(), fetchWeekSummary()])
+        } catch (fallbackErr) {
+          console.error("Fallback fetch also failed:", fallbackErr)
+        }
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     fetchDashboard()
   }, [fetchLocations, fetchCurrentStatus, fetchWeekSummary])
