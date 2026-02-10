@@ -4,13 +4,15 @@ import { useState, useEffect, useCallback, useRef } from "react"
 
 interface UseTimerReturn {
   seconds: number
+  elapsed: number
+  formatted: string
   isRunning: boolean
   start: (startTime?: Date) => void
   stop: () => void
   reset: () => void
 }
 
-export function useTimer(initialStartTime?: Date): UseTimerReturn {
+export function useTimer(initialStartTime?: Date | null): UseTimerReturn {
   const [seconds, setSeconds] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
   const startTimeRef = useRef<Date | null>(null)
@@ -65,8 +67,19 @@ export function useTimer(initialStartTime?: Date): UseTimerReturn {
     }
   }, [isRunning, calculateSeconds])
 
+  // Format seconds as HH:MM:SS
+  const formatTimer = (secs: number): string => {
+    const hours = Math.floor(secs / 3600)
+    const minutes = Math.floor((secs % 3600) / 60)
+    const remainingSecs = secs % 60
+    const pad = (n: number) => n.toString().padStart(2, "0")
+    return `${pad(hours)}:${pad(minutes)}:${pad(remainingSecs)}`
+  }
+
   return {
     seconds,
+    elapsed: seconds,
+    formatted: formatTimer(seconds),
     isRunning,
     start,
     stop,

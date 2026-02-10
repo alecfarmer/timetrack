@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationCenter } from "@/components/notification-center"
+import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import {
@@ -15,9 +17,8 @@ import {
   Coffee,
   Clock,
   TrendingUp,
-  ArrowLeft,
-  Loader2,
   AlertCircle,
+  Users,
 } from "lucide-react"
 
 interface MemberWellbeing {
@@ -37,20 +38,6 @@ interface WellbeingData {
   members: MemberWellbeing[]
 }
 
-const pageVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-}
-
-const staggerContainer = {
-  animate: { transition: { staggerChildren: 0.08 } },
-}
-
-const staggerItem = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-}
-
 function getBurnoutColor(score: number): string {
   if (score >= 75) return "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30"
   if (score >= 50) return "text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30"
@@ -63,19 +50,6 @@ function getBurnoutLabel(score: number): string {
   if (score >= 50) return "High"
   if (score >= 25) return "Moderate"
   return "Low"
-}
-
-function SkeletonCard() {
-  return (
-    <Card className="border-0 shadow-lg">
-      <CardContent className="p-4">
-        <div className="animate-pulse space-y-2">
-          <div className="h-3 w-20 bg-muted rounded" />
-          <div className="h-8 w-16 bg-muted rounded" />
-        </div>
-      </CardContent>
-    </Card>
-  )
 }
 
 function SkeletonRow() {
@@ -91,15 +65,15 @@ function SkeletonRow() {
 }
 
 export default function WellbeingPage() {
-  const { isAdmin, loading: authLoading } = useAuth()
+  const { org, isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
   const [data, setData] = useState<WellbeingData | null>(null)
   const [period, setPeriod] = useState("2weeks")
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const fetchWellbeing = useCallback(async () => {
-    setLoading(true)
     setError(null)
     try {
       const res = await fetch(`/api/wellbeing?period=${period}`)
@@ -121,9 +95,16 @@ export default function WellbeingPage() {
       return
     }
     if (!authLoading && isAdmin) {
+      setLoading(true)
       fetchWellbeing()
     }
   }, [authLoading, isAdmin, router, fetchWellbeing])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await fetchWellbeing()
+    setRefreshing(false)
+  }
 
   const sortedMembers = data?.members
     ? [...data.members].sort((a, b) => b.burnoutScore - a.burnoutScore)
@@ -132,7 +113,19 @@ export default function WellbeingPage() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-rose-500/20 animate-ping absolute inset-0" />
+            <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center">
+              <HeartPulse className="h-8 w-8 text-rose-500" />
+            </div>
+          </div>
+          <p className="text-muted-foreground font-medium">Loading well-being data...</p>
+        </motion.div>
       </div>
     )
   }
@@ -140,121 +133,168 @@ export default function WellbeingPage() {
   return (
     <motion.div
       className="flex flex-col min-h-screen bg-background"
-      initial="initial"
-      animate="animate"
-      variants={pageVariants}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
     >
-      <header className="sticky top-0 z-50 glass border-b">
-        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => router.push("/admin")}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <HeartPulse className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold">Burnout &amp; Well-Being</h1>
+      {/* Premium Dark Hero Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-rose-500/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-pink-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+
+        <header className="relative z-10 safe-area-pt">
+          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                <HeartPulse className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-white">Burnout & Well-Being</h1>
+                {org && (
+                  <p className="text-xs text-white/60">{org.orgName}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={period} onValueChange={setPeriod}>
+                <SelectTrigger className="w-[110px] rounded-xl text-xs bg-white/10 border-white/10 text-white hover:bg-white/20">
+                  <SelectValue placeholder="Period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1week">1 Week</SelectItem>
+                  <SelectItem value="2weeks">2 Weeks</SelectItem>
+                  <SelectItem value="4weeks">4 Weeks</SelectItem>
+                </SelectContent>
+              </Select>
+              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
+              <ThemeToggle />
+              <NotificationCenter />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-[130px] rounded-xl text-xs">
-                <SelectValue placeholder="Period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1week">1 Week</SelectItem>
-                <SelectItem value="2weeks">2 Weeks</SelectItem>
-                <SelectItem value="4weeks">4 Weeks</SelectItem>
-              </SelectContent>
-            </Select>
-            <ThemeToggle />
+        </header>
+
+        {/* Stats Cards in Hero */}
+        <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mx-auto mb-2">
+                <HeartPulse className="h-5 w-5 text-white" />
+              </div>
+              {loading ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-7 w-12 bg-white/10 rounded mx-auto" />
+                  <div className="h-3 w-16 bg-white/10 rounded mx-auto" />
+                </div>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold text-white">{Math.round(data?.teamHealthScore || 0)}</p>
+                  <p className="text-xs text-white/60">Team Health</p>
+                </>
+              )}
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center relative">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center mx-auto mb-2">
+                <AlertTriangle className="h-5 w-5 text-rose-400" />
+              </div>
+              {loading ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-7 w-8 bg-white/10 rounded mx-auto" />
+                  <div className="h-3 w-14 bg-white/10 rounded mx-auto" />
+                </div>
+              ) : (
+                <>
+                  <p className={`text-2xl font-bold ${(data?.membersAtRisk || 0) > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                    {data?.membersAtRisk || 0}
+                  </p>
+                  <p className="text-xs text-white/60">At Risk</p>
+                  {(data?.membersAtRisk || 0) > 0 && (
+                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                  )}
+                </>
+              )}
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
+                <Clock className="h-5 w-5 text-blue-400" />
+              </div>
+              {loading ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-7 w-10 bg-white/10 rounded mx-auto" />
+                  <div className="h-3 w-16 bg-white/10 rounded mx-auto" />
+                </div>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold text-blue-400">{(data?.avgDailyHours || 0).toFixed(1)}h</p>
+                  <p className="text-xs text-white/60">Avg Daily</p>
+                </>
+              )}
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
+                <Coffee className="h-5 w-5 text-amber-400" />
+              </div>
+              {loading ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-7 w-12 bg-white/10 rounded mx-auto" />
+                  <div className="h-3 w-16 bg-white/10 rounded mx-auto" />
+                </div>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold text-amber-400">{Math.round(data?.breakSkipRate || 0)}%</p>
+                  <p className="text-xs text-white/60">Break Skips</p>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <motion.main
-        className="flex-1 pb-24 lg:pb-8"
-        variants={staggerContainer}
-        initial="initial"
-        animate="animate"
-      >
-        <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8 space-y-6">
+      {/* Main Content */}
+      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+        <div className="max-w-6xl mx-auto px-4 lg:px-8 space-y-6">
           {error && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
+            >
               <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
               <p className="text-sm text-destructive flex-1">{error}</p>
               <Button variant="ghost" size="sm" onClick={() => setError(null)}>
                 Dismiss
               </Button>
-            </div>
+            </motion.div>
           )}
 
-          {/* Overview Cards */}
-          <motion.div variants={staggerItem} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {loading ? (
-              <>
-                <SkeletonCard />
-                <SkeletonCard />
-                <SkeletonCard />
-                <SkeletonCard />
-              </>
-            ) : data ? (
-              <>
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <HeartPulse className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Team Health Score</p>
-                    </div>
-                    <p className="text-2xl font-bold">{Math.round(data.teamHealthScore)}</p>
-                    <p className="text-[10px] text-muted-foreground">out of 100</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Members At Risk</p>
-                    </div>
-                    <p className={`text-2xl font-bold ${data.membersAtRisk > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
-                      {data.membersAtRisk}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">burnout score &ge; 50</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Avg Daily Hours</p>
-                    </div>
-                    <p className="text-2xl font-bold">{data.avgDailyHours.toFixed(1)}</p>
-                    <p className="text-[10px] text-muted-foreground">hours per day</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Coffee className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Break Skip Rate</p>
-                    </div>
-                    <p className="text-2xl font-bold">{Math.round(data.breakSkipRate)}%</p>
-                    <p className="text-[10px] text-muted-foreground">missed breaks</p>
-                  </CardContent>
-                </Card>
-              </>
-            ) : null}
-          </motion.div>
-
           {/* Member Risk Table */}
-          <motion.div variants={staggerItem}>
-            <Card className="border-0 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="border-0 shadow-lg rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
+                  <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-rose-500" />
+                  </div>
                   Member Risk Assessment
+                  {!loading && sortedMembers.length > 0 && (
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      <Users className="h-3 w-3 mr-1" />
+                      {sortedMembers.length} members
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -266,9 +306,17 @@ export default function WellbeingPage() {
                     <SkeletonRow />
                   </div>
                 ) : sortedMembers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No well-being data available for this period.
-                  </p>
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                      <HeartPulse className="h-8 w-8 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      No well-being data available for this period.
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                      Try selecting a different time range.
+                    </p>
+                  </div>
                 ) : (
                   <>
                     {/* Desktop Table Header */}
@@ -282,12 +330,13 @@ export default function WellbeingPage() {
                     </div>
 
                     <div className="space-y-2">
-                      {sortedMembers.map((member) => (
+                      {sortedMembers.map((member, index) => (
                         <motion.div
                           key={member.email}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          className="p-4 bg-muted/50 rounded-xl"
+                          transition={{ delay: index * 0.05 }}
+                          className="p-4 bg-muted/50 rounded-xl hover:bg-muted/70 transition-colors"
                         >
                           {/* Desktop Layout */}
                           <div className="hidden lg:grid lg:grid-cols-6 gap-4 items-center">
@@ -347,7 +396,7 @@ export default function WellbeingPage() {
             </Card>
           </motion.div>
         </div>
-      </motion.main>
+      </main>
     </motion.div>
   )
 }

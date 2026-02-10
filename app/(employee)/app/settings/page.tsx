@@ -15,7 +15,7 @@ import { TimezoneSelector } from "@/components/timezone-prompt"
 import { useAuth } from "@/contexts/auth-context"
 import { WfhSection } from "@/components/settings/wfh-section"
 import { DangerZone } from "@/components/settings/danger-zone"
-import { getUserTimezone, detectUserTimezone } from "@/lib/dates"
+import { getTimezone, detectUserTimezone } from "@/lib/dates"
 import {
   Settings,
   MapPin,
@@ -45,7 +45,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const { user, org, isAdmin, signOut } = useAuth()
   const [notifications, setNotifications] = useState(true)
-  const [timezone, setTimezone] = useState(getUserTimezone())
+  const [timezone, setTimezone] = useState(getTimezone())
   const [autoClockOut, setAutoClockOut] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("onsite-auto-clockout") === "true"
