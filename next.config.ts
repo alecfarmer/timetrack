@@ -44,6 +44,27 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Use webpack for build (required for next-pwa)
   turbopack: {},
+  async redirects() {
+    return [
+      // Old /app routes → new routes (no /app prefix)
+      {
+        source: "/app",
+        destination: "/dashboard",
+        permanent: true,
+      },
+      {
+        source: "/app/:path*",
+        destination: "/:path*",
+        permanent: true,
+      },
+      // Old /landing route → root
+      {
+        source: "/landing",
+        destination: "/",
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default withPWA(nextConfig)

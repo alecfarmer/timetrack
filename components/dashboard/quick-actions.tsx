@@ -212,7 +212,7 @@ export function getDefaultQuickActions(options?: {
     id: "request-time-off",
     label: "Time Off",
     icon: <Palmtree className="h-4 w-4" />,
-    href: "/app/leave",
+    href: "/leave",
     badge: pendingRequests > 0 ? pendingRequests : undefined,
   })
 
@@ -221,7 +221,7 @@ export function getDefaultQuickActions(options?: {
     id: "view-schedule",
     label: "Schedule",
     icon: <Calendar className="h-4 w-4" />,
-    href: "/app/schedule",
+    href: "/schedule",
   })
 
   // View history
@@ -229,7 +229,7 @@ export function getDefaultQuickActions(options?: {
     id: "view-history",
     label: "History",
     icon: <Clock className="h-4 w-4" />,
-    href: "/app/history",
+    href: "/history",
   })
 
   return actions

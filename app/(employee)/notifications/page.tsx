@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { NotificationCenter } from "@/components/notification-center"
+import { PageHeader } from "@/components/page-header"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { formatRelative } from "@/lib/dates"
 import {
@@ -17,7 +17,6 @@ import {
   Clock,
   TrendingUp,
   AlertCircle,
-  BellRing,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -137,68 +136,44 @@ export default function NotificationsPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      {/* Premium Dark Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-rose-500/20 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-orange-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
-
-        {/* Grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
-
-        <header className="relative z-10 safe-area-pt">
-          <div className="flex items-center justify-between px-4 h-14 max-w-2xl mx-auto lg:px-8">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                <BellRing className="h-5 w-5 text-white" />
-              </div>
-              <h1 className="text-lg font-semibold text-white">Notifications</h1>
-              {unreadCount > 0 && (
-                <Badge className="bg-rose-500 text-white border-0 text-xs">{unreadCount} new</Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1 text-xs text-white/70 hover:text-white hover:bg-white/10"
-                  onClick={markAllRead}
-                  disabled={markingAll}
-                >
-                  {markingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5" />}
-                  Mark all read
-                </Button>
-              )}
-              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
-            </div>
+      <PageHeader
+        title="Notifications"
+        subtitle={unreadCount > 0 ? `${unreadCount} unread` : "You're all caught up"}
+        actions={
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 text-xs"
+                onClick={markAllRead}
+                disabled={markingAll}
+              >
+                {markingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5" />}
+                Mark all read
+              </Button>
+            )}
+            <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} />
           </div>
-        </header>
+        }
+      />
 
-        {/* Stats */}
-        <div className="relative z-10 px-4 pt-4 pb-6 max-w-2xl mx-auto lg:px-8">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <p className="text-2xl font-bold text-white">{unreadCount}</p>
-              <p className="text-xs text-white/60">Unread</p>
-            </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <p className="text-2xl font-bold text-white">{notifications.length}</p>
-              <p className="text-xs text-white/60">Total</p>
-            </div>
-          </div>
+      {/* Stats */}
+      <div className="px-4 pt-4 pb-2 max-w-2xl mx-auto lg:px-8">
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <p className="text-2xl font-bold">{unreadCount}</p>
+            <p className="text-xs text-muted-foreground">Unread</p>
+          </Card>
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <p className="text-2xl font-bold">{notifications.length}</p>
+            <p className="text-xs text-muted-foreground">Total</p>
+          </Card>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+      <main className="flex-1 pb-24 lg:pb-8">
         <div className="max-w-2xl mx-auto px-4 lg:px-8">
           {notifications.length === 0 ? (
             <div className="text-center py-16">

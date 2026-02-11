@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { NotificationCenter } from "@/components/notification-center"
+import { PageHeader } from "@/components/page-header"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { BarChart3, Download, FileText, Clock, TrendingUp } from "lucide-react"
 import { WeeklyReport } from "@/components/reports/weekly-report"
@@ -128,100 +128,78 @@ export default function ReportsPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      {/* Premium Dark Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-violet-500/20 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-cyan-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
-
-        {/* Grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
-
-        <header className="relative z-10 safe-area-pt">
-          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                <TrendingUp className="h-5 w-5 text-white" />
-              </div>
-              <h1 className="text-lg font-semibold text-white">Reports</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
-              <NotificationCenter />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleExportCSV}
-                className="gap-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10"
-              >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">CSV</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleExportPDF}
-                className="gap-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10"
-              >
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">PDF</span>
-              </Button>
-            </div>
+      <PageHeader
+        title="Reports"
+        subtitle="Your time & compliance stats"
+        actions={
+          <div className="flex items-center gap-2">
+            <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExportCSV}
+              className="gap-2 rounded-2xl"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">CSV</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExportPDF}
+              className="gap-2 rounded-2xl"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </Button>
           </div>
-        </header>
+        }
+      />
 
-        {/* Summary Stats */}
-        <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center mx-auto mb-2">
-                <Clock className="h-5 w-5 text-violet-400" />
-              </div>
-              <p className="text-2xl font-bold text-white">
-                {weekSummary ? Math.floor(weekSummary.totalMinutes / 60) : 0}h
-              </p>
-              <p className="text-xs text-white/60">This Week</p>
+      {/* Summary Stats */}
+      <div className="px-4 pt-4 pb-2 max-w-6xl mx-auto lg:px-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
+              <Clock className="h-5 w-5 text-primary" />
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center mx-auto mb-2">
-                <BarChart3 className="h-5 w-5 text-cyan-400" />
-              </div>
-              <p className="text-2xl font-bold text-white">
-                {weekSummary?.daysWorked || 0}/{weekSummary?.requiredDays || 0}
-              </p>
-              <p className="text-xs text-white/60">Days Worked</p>
+            <p className="text-2xl font-bold">
+              {weekSummary ? Math.floor(weekSummary.totalMinutes / 60) : 0}h
+            </p>
+            <p className="text-xs text-muted-foreground">This Week</p>
+          </Card>
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
-                <TrendingUp className="h-5 w-5 text-emerald-400" />
-              </div>
-              <p className="text-2xl font-bold text-white">
-                {monthSummary ? Math.floor(monthSummary.totalMinutes / 60) : 0}h
-              </p>
-              <p className="text-xs text-white/60">This Month</p>
+            <p className="text-2xl font-bold">
+              {weekSummary?.daysWorked || 0}/{weekSummary?.requiredDays || 0}
+            </p>
+            <p className="text-xs text-muted-foreground">Days Worked</p>
+          </Card>
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <div className="w-10 h-10 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-2">
+              <TrendingUp className="h-5 w-5 text-success" />
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
-                <FileText className="h-5 w-5 text-amber-400" />
-              </div>
-              <p className="text-2xl font-bold text-white">
-                {monthSummary?.weeksCompliant || 0}/{monthSummary?.totalWeeks || 0}
-              </p>
-              <p className="text-xs text-white/60">Compliant Weeks</p>
+            <p className="text-2xl font-bold">
+              {monthSummary ? Math.floor(monthSummary.totalMinutes / 60) : 0}h
+            </p>
+            <p className="text-xs text-muted-foreground">This Month</p>
+          </Card>
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <div className="w-10 h-10 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-2">
+              <FileText className="h-5 w-5 text-warning" />
             </div>
-          </div>
+            <p className="text-2xl font-bold">
+              {monthSummary?.weeksCompliant || 0}/{monthSummary?.totalWeeks || 0}
+            </p>
+            <p className="text-xs text-muted-foreground">Compliant Weeks</p>
+          </Card>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+      <main className="flex-1 pb-24 lg:pb-8">
         <div className="max-w-6xl mx-auto px-4 lg:px-8">
           <Tabs defaultValue="weekly" className="w-full" onValueChange={(v) => setActiveTab(v)}>
             <TabsList className="grid w-full grid-cols-2 max-w-md rounded-xl bg-muted/50">

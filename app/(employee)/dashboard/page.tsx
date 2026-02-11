@@ -176,7 +176,7 @@ function WeeklyOverviewWidget({ weekSummary }: { weekSummary: any }) {
     <Widget
       title="Weekly Overview"
       icon={<Calendar className="h-4 w-4 text-violet-500" />}
-      action={{ label: "View History", href: "/app/history" }}
+      action={{ label: "View History", href: "/history" }}
     >
       <div className="grid grid-cols-7 gap-2">
         {weekSummary?.weekDays?.map((day: any, i: number) => {
@@ -705,10 +705,10 @@ export default function Dashboard() {
                   <Widget title="Quick Links">
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { href: "/app/history", icon: Calendar, label: "History", color: "text-violet-500" },
-                        { href: "/app/reports", icon: TrendingUp, label: "Reports", color: "text-blue-500" },
-                        { href: "/app/leave", icon: Coffee, label: "Leave", color: "text-emerald-500" },
-                        { href: "/app/settings", icon: Target, label: "Settings", color: "text-amber-500" },
+                        { href: "/history", icon: Calendar, label: "History", color: "text-violet-500" },
+                        { href: "/reports", icon: TrendingUp, label: "Reports", color: "text-blue-500" },
+                        { href: "/leave", icon: Coffee, label: "Leave", color: "text-emerald-500" },
+                        { href: "/settings", icon: Target, label: "Settings", color: "text-amber-500" },
                       ].map((link) => (
                         <Link
                           key={link.href}

@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { BottomNav } from "@/components/bottom-nav"
 import {
   Trophy,
   Flame,
@@ -782,7 +781,6 @@ export default function RewardsPage() {
         </div>
       </main>
 
-      <BottomNav currentPath="/rewards" />
     </motion.div>
   )
 }

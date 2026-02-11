@@ -1,30 +1,35 @@
 @import "tailwindcss";
 
 /* ============================================
-   ONSITE DESIGN SYSTEM v2.1
-   Michelin Brand Colors — Blues, Whites, Darks
+   ONSITE DESIGN SYSTEM v3.0
+   Connecteam-Inspired — Bold, Energetic, Modern
    ============================================ */
 
 :root {
   /* Core palette - Light mode */
   --background: 210 20% 98%;
-  --foreground: 216 28% 12%;
+  --foreground: 220 25% 10%;
   --card: 0 0% 100%;
-  --card-foreground: 216 28% 12%;
+  --card-foreground: 220 25% 10%;
   --popover: 0 0% 100%;
-  --popover-foreground: 216 28% 12%;
+  --popover-foreground: 220 25% 10%;
 
-  /* Brand colors — Michelin Blue #27509B → hsl(218, 60%, 38%) */
-  --primary: 218 60% 38%;
+  /* Brand colors — Vivid Purple-Blue */
+  --primary: 250 84% 54%;
   --primary-foreground: 0 0% 100%;
+
+  /* Accent colors */
+  --accent-orange: 26 100% 57%;
+  --accent-pink: 340 82% 52%;
+  --accent-cyan: 188 78% 47%;
 
   /* Neutrals */
   --secondary: 214 15% 95%;
-  --secondary-foreground: 216 28% 12%;
+  --secondary-foreground: 220 25% 10%;
   --muted: 214 15% 95%;
   --muted-foreground: 215 13% 46%;
   --accent: 214 15% 93%;
-  --accent-foreground: 216 28% 12%;
+  --accent-foreground: 220 25% 10%;
 
   /* Semantic colors */
   --destructive: 0 72% 51%;
@@ -32,14 +37,14 @@
   --success: 152 60% 40%;
   --success-foreground: 0 0% 100%;
   --warning: 45 93% 47%;
-  --warning-foreground: 216 28% 12%;
-  --info: 218 60% 50%;
+  --warning-foreground: 220 25% 10%;
+  --info: 188 78% 47%;
   --info-foreground: 0 0% 100%;
 
   /* UI elements */
   --border: 214 18% 88%;
   --input: 214 18% 88%;
-  --ring: 218 60% 38%;
+  --ring: 250 84% 54%;
 
   /* Radius scale */
   --radius: 0.75rem;
@@ -57,12 +62,12 @@
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.06);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.06);
-  --shadow-glow: 0 0 40px -10px hsl(218 60% 38% / 0.25);
+  --shadow-glow: 0 0 40px -10px hsl(250 84% 54% / 0.25);
 
-  /* Gradient colors — Michelin Blue range */
-  --gradient-start: 218 60% 38%;
-  --gradient-mid: 210 55% 48%;
-  --gradient-end: 200 50% 55%;
+  /* Gradient colors — Purple to Orange */
+  --gradient-start: 250 84% 54%;
+  --gradient-mid: 280 70% 50%;
+  --gradient-end: 26 100% 57%;
 
   /* Sidebar */
   --sidebar-width: 280px;
@@ -77,7 +82,7 @@
 }
 
 .dark {
-  /* Michelin Dark — Deep navy-blue base */
+  /* Deep dark base */
   --background: 220 25% 7%;
   --foreground: 210 20% 95%;
   --card: 220 22% 10%;
@@ -85,9 +90,14 @@
   --popover: 220 22% 10%;
   --popover-foreground: 210 20% 95%;
 
-  /* Michelin Blue — lighter for dark mode visibility */
-  --primary: 218 65% 55%;
+  /* Vivid Purple-Blue — lighter for dark mode */
+  --primary: 250 84% 65%;
   --primary-foreground: 0 0% 100%;
+
+  /* Accent colors - dark mode */
+  --accent-orange: 26 100% 60%;
+  --accent-pink: 340 82% 58%;
+  --accent-cyan: 188 78% 55%;
 
   --secondary: 220 18% 16%;
   --secondary-foreground: 210 20% 95%;
@@ -102,23 +112,23 @@
   --success-foreground: 0 0% 100%;
   --warning: 45 93% 55%;
   --warning-foreground: 220 25% 7%;
-  --info: 218 65% 60%;
+  --info: 188 78% 55%;
   --info-foreground: 0 0% 100%;
 
   --border: 220 18% 18%;
   --input: 220 18% 18%;
-  --ring: 218 65% 55%;
+  --ring: 250 84% 65%;
 
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
-  --shadow-glow: 0 0 60px -10px hsl(218 65% 55% / 0.35);
+  --shadow-glow: 0 0 60px -10px hsl(250 84% 65% / 0.35);
 
-  --gradient-start: 218 65% 55%;
-  --gradient-mid: 210 60% 58%;
-  --gradient-end: 200 55% 62%;
+  --gradient-start: 250 84% 65%;
+  --gradient-mid: 280 70% 58%;
+  --gradient-end: 26 100% 60%;
 }
 
 /* Tailwind theme integration */
@@ -148,6 +158,9 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-accent-orange: hsl(var(--accent-orange));
+  --color-accent-pink: hsl(var(--accent-pink));
+  --color-accent-cyan: hsl(var(--accent-cyan));
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
@@ -295,7 +308,7 @@ button {
 .card-elevated {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-normal) var(--ease-out);
 }
@@ -308,7 +321,7 @@ button {
 .card-interactive {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-xs);
   transition: all var(--transition-normal) var(--ease-out);
   cursor: pointer;
@@ -324,11 +337,21 @@ button {
   background: linear-gradient(
     135deg,
     hsl(var(--card)) 0%,
-    hsl(var(--primary) / 0.03) 100%
+    hsl(var(--primary) / 0.05) 100%
   );
   border: 1px solid hsl(var(--primary) / 0.2);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-glow);
+}
+
+.card-gradient {
+  background: linear-gradient(135deg,
+    hsl(var(--gradient-start)),
+    hsl(var(--gradient-mid))
+  );
+  color: white;
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg), 0 0 40px -10px hsl(var(--primary) / 0.3);
 }
 
 .surface-inset {
@@ -450,6 +473,11 @@ button {
   50% { box-shadow: 0 0 40px 5px hsl(var(--primary) / 0.5); }
 }
 
+@keyframes fab-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
+  50% { box-shadow: 0 0 0 12px hsl(var(--primary) / 0); }
+}
+
 .animate-fade-in { animation: fade-in var(--transition-normal) var(--ease-out); }
 .animate-fade-up { animation: fade-up var(--transition-slow) var(--ease-out); }
 .animate-fade-down { animation: fade-down var(--transition-slow) var(--ease-out); }
@@ -459,6 +487,7 @@ button {
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-pulse-ring { animation: pulse-ring 2s ease-in-out infinite; }
 .animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
+.animate-fab-pulse { animation: fab-pulse 2s ease-in-out infinite; }
 
 .skeleton {
   background: linear-gradient(
@@ -487,14 +516,14 @@ button {
 
 .heading-1 {
   font-size: 2.25rem;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.025em;
   line-height: 1.2;
 }
 
 .heading-2 {
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.3;
 }
@@ -641,15 +670,45 @@ button {
 .progress-bar-fill.primary { background: hsl(var(--primary)); }
 
 /* ============================================
+   FAB STYLES
+   ============================================ */
+
+.fab {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg), 0 0 20px -5px hsl(var(--primary) / 0.4);
+  transition: all var(--transition-normal) var(--ease-out);
+}
+
+.fab:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-xl), 0 0 30px -5px hsl(var(--primary) / 0.5);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+.fab-clocked-in {
+  background: hsl(var(--success));
+  box-shadow: var(--shadow-lg), 0 0 20px -5px hsl(var(--success) / 0.4);
+}
+
+.fab-clocked-out {
+  background: hsl(var(--primary));
+  animation: fab-pulse 2s ease-in-out infinite;
+}
+
+/* ============================================
    UTILITY CLASSES
    ============================================ */
 
 .border-subtle {
   border-color: hsl(var(--border) / 0.5);
-}
-
-.text-balance {
-  text-wrap: balance;
 }
 
 .transition-default {

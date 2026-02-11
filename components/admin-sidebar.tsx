@@ -199,7 +199,7 @@ export function AdminSidebar() {
       {/* Footer */}
       <div className="p-4 border-t space-y-3">
         <Link
-          href="/app"
+          href="/dashboard"
           className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
         >
           <Clock className="h-4 w-4" />

@@ -1,7 +1,6 @@
 "use client"
 
-import { usePathname, useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { usePathname } from "next/navigation"
 import { EmployeeNav } from "@/components/employee-nav"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -11,14 +10,7 @@ export default function EmployeeLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const router = useRouter()
   const { user, loading } = useAuth()
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login")
-    }
-  }, [user, loading, router])
 
   if (loading) {
     return (

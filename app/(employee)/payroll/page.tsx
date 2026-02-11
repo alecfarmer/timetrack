@@ -6,7 +6,7 @@ import { format, addMonths, subMonths } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { NotificationCenter } from "@/components/notification-center"
+import { PageHeader } from "@/components/page-header"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import {
   ChevronLeft,
@@ -133,103 +133,81 @@ export default function PayrollPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      {/* Premium Dark Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-teal-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
-
-        {/* Grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
-
-        <header className="relative z-10 safe-area-pt">
-          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                <DollarSign className="h-5 w-5 text-white" />
-              </div>
-              <h1 className="text-lg font-semibold text-white">Payroll</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
-              <NotificationCenter />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleExportCSV}
-                className="gap-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10"
-              >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">CSV</span>
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        {/* Month Navigation */}
-        <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center justify-center gap-4 mb-4">
+      <PageHeader
+        title="Payroll"
+        subtitle="Your timesheet & earnings"
+        actions={
+          <div className="flex items-center gap-2">
+            <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} />
             <Button
               variant="ghost"
-              size="icon"
-              onClick={() => setCurrentMonth((p) => subMonths(p, 1))}
-              className="rounded-xl h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+              size="sm"
+              onClick={handleExportCSV}
+              className="gap-2 rounded-2xl"
             >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <h2 className="text-xl font-semibold text-white min-w-[180px] text-center">
-              {data?.period || format(currentMonth, "MMMM yyyy")}
-            </h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentMonth((p) => addMonths(p, 1))}
-              className="rounded-xl h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <ChevronRight className="h-5 w-5" />
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">CSV</span>
             </Button>
           </div>
+        }
+      />
 
-          {/* Summary Cards */}
-          {data && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-                <Clock className="h-5 w-5 text-emerald-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-white tabular-nums">{fmtDecimal(data.totals.regularMinutes)}</p>
-                <p className="text-xs text-white/60">Regular Hours</p>
-              </div>
-              <div className={cn(
-                "bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center",
-                data.totals.overtimeMinutes > 0 && "ring-2 ring-amber-500/30"
-              )}>
-                <AlertTriangle className="h-5 w-5 text-amber-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-amber-400 tabular-nums">{fmtDecimal(data.totals.overtimeMinutes)}</p>
-                <p className="text-xs text-white/60">Overtime Hours</p>
-              </div>
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-                <Phone className="h-5 w-5 text-blue-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-white tabular-nums">{fmtDecimal(data.totals.calloutMinutes)}</p>
-                <p className="text-xs text-white/60">Callout Hours</p>
-              </div>
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-                <Palmtree className="h-5 w-5 text-green-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-white tabular-nums">{data.totals.leaveDays}</p>
-                <p className="text-xs text-white/60">Leave Days</p>
-              </div>
-            </div>
-          )}
+      {/* Month Navigation */}
+      <div className="px-4 pt-4 pb-2 max-w-6xl mx-auto lg:px-8">
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCurrentMonth((p) => subMonths(p, 1))}
+            className="rounded-2xl h-9 w-9"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <h2 className="text-xl font-semibold min-w-[180px] text-center">
+            {data?.period || format(currentMonth, "MMMM yyyy")}
+          </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCurrentMonth((p) => addMonths(p, 1))}
+            className="rounded-2xl h-9 w-9"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
         </div>
+
+        {/* Summary Cards */}
+        {data && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+              <Clock className="h-5 w-5 text-success mx-auto mb-2" />
+              <p className="text-2xl font-bold tabular-nums">{fmtDecimal(data.totals.regularMinutes)}</p>
+              <p className="text-xs text-muted-foreground">Regular Hours</p>
+            </Card>
+            <Card className={cn(
+              "border-0 shadow-lg rounded-2xl text-center p-4",
+              data.totals.overtimeMinutes > 0 && "ring-2 ring-warning/30"
+            )}>
+              <AlertTriangle className="h-5 w-5 text-warning mx-auto mb-2" />
+              <p className="text-2xl font-bold text-warning tabular-nums">{fmtDecimal(data.totals.overtimeMinutes)}</p>
+              <p className="text-xs text-muted-foreground">Overtime Hours</p>
+            </Card>
+            <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+              <Phone className="h-5 w-5 text-primary mx-auto mb-2" />
+              <p className="text-2xl font-bold tabular-nums">{fmtDecimal(data.totals.calloutMinutes)}</p>
+              <p className="text-xs text-muted-foreground">Callout Hours</p>
+            </Card>
+            <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+              <Palmtree className="h-5 w-5 text-success mx-auto mb-2" />
+              <p className="text-2xl font-bold tabular-nums">{data.totals.leaveDays}</p>
+              <p className="text-xs text-muted-foreground">Leave Days</p>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+      <main className="flex-1 pb-24 lg:pb-8">
         <div className="max-w-6xl mx-auto px-4 lg:px-8">
           {data && (
             <>

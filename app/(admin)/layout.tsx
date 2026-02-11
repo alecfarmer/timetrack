@@ -1,8 +1,7 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
 import { AdminSidebar } from "@/components/admin-sidebar"
+import { AdminMobileNav } from "@/components/admin-mobile-nav"
 import { useAuth } from "@/contexts/auth-context"
 
 export default function AdminLayout({
@@ -10,18 +9,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
   const { user, isAdmin, loading } = useAuth()
-
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.push("/login")
-      } else if (!isAdmin) {
-        router.push("/app")
-      }
-    }
-  }, [user, isAdmin, loading, router])
 
   if (loading) {
     return (
@@ -38,7 +26,8 @@ export default function AdminLayout({
   return (
     <>
       <AdminSidebar />
-      <main className="lg:ml-72 min-h-screen bg-muted/30">
+      <AdminMobileNav />
+      <main className="lg:ml-72 min-h-screen bg-muted/30 pb-20 lg:pb-0">
         {children}
       </main>
     </>

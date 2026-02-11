@@ -156,7 +156,7 @@ export default function TimesheetsPage() {
       animate={{ opacity: 1 }}
     >
       {/* Premium Dark Hero Header */}
-      <div className="relative overflow-hidden">
+      <div className="hidden lg:block relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-teal-500/10 via-transparent to-transparent" />

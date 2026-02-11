@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test"
 
 test.describe("Smoke tests", () => {
   test("landing page loads", async ({ page }) => {
-    await page.goto("/landing")
+    await page.goto("/")
     await expect(page).toHaveTitle(/OnSite/)
   })
 
@@ -12,7 +12,7 @@ test.describe("Smoke tests", () => {
   })
 
   test("unauthenticated user is redirected from dashboard", async ({ page }) => {
-    await page.goto("/")
-    await page.waitForURL(/\/(landing|login)/)
+    await page.goto("/dashboard")
+    await page.waitForURL(/\/login/)
   })
 })
