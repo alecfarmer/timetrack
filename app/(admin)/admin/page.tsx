@@ -197,12 +197,14 @@ function MemberRow({
   onToggleRole,
   onRemove,
   formatMinutes,
+  onEditEntries,
 }: {
   member: Member
   policy: Policy
   onToggleRole: () => void
   onRemove: () => void
   formatMinutes: (mins: number) => string
+  onEditEntries: () => void
 }) {
   const [showActions, setShowActions] = useState(false)
 
@@ -295,6 +297,10 @@ function MemberRow({
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onEditEntries}>
+              <Edit3 className="h-4 w-4 mr-2" />
+              Edit Entries
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={onToggleRole}>
               <Shield className="h-4 w-4 mr-2" />
               {member.role === "ADMIN" ? "Demote to Member" : "Promote to Admin"}
@@ -976,6 +982,7 @@ export default function AdminPage() {
                       onToggleRole={() => handleToggleRole(member.id, member.role)}
                       onRemove={() => handleRemoveMember(member.id)}
                       formatMinutes={formatMinutes}
+                      onEditEntries={() => router.push(`/admin/entries/${member.userId}`)}
                     />
                   ))
                 ) : (
