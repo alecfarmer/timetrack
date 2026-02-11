@@ -127,11 +127,10 @@ export function ClockButton({ isClockedIn, onClockIn, onClockOut, disabled, vari
           "relative w-full h-12 rounded-xl font-medium text-sm",
           "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20",
           "hover:bg-rose-500/20 active:bg-rose-500/30",
-          "transition-colors",
-          disabled && "opacity-50 cursor-not-allowed pointer-events-none"
+          "transition-colors"
         )}
         onClick={handleClockOut}
-        disabled={disabled || loading}
+        disabled={loading}
         whileTap={{ scale: 0.98 }}
       >
         <AnimatePresence mode="wait">
