@@ -342,13 +342,21 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
   }, [selectedLocationId, position, isWithinGeofence, distanceToSelected, selectedLocation, fetchCurrentStatus, fetchWeekSummary])
 
   const handleClockOut = useCallback(async () => {
+    // Use the location from when the user clocked in
+    const clockOutLocationId = currentStatus?.activeClockIn?.location?.id || selectedLocationId
+
+    if (!clockOutLocationId) {
+      setError("Unable to determine location for clock out")
+      return
+    }
+
     try {
       const res = await fetch("/api/entries", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...tzHeaders() },
         body: JSON.stringify({
           type: "CLOCK_OUT",
-          locationId: selectedLocationId || undefined,
+          locationId: clockOutLocationId,
           timestampClient: new Date().toISOString(),
           gpsLatitude: position?.latitude,
           gpsLongitude: position?.longitude,
@@ -365,7 +373,7 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
       if (!navigator.onLine) {
         await queueOfflineEntry({
           type: "CLOCK_OUT",
-          locationId: selectedLocationId,
+          locationId: clockOutLocationId,
           timestampClient: new Date().toISOString(),
           gpsLatitude: position?.latitude || null,
           gpsLongitude: position?.longitude || null,
@@ -377,7 +385,7 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
       }
       setError(err instanceof Error ? err.message : "Failed to clock out")
     }
-  }, [selectedLocationId, position, fetchCurrentStatus, fetchWeekSummary])
+  }, [currentStatus, selectedLocationId, position, fetchCurrentStatus, fetchWeekSummary])
 
   const handleBreakStart = useCallback(async () => {
     if (!selectedLocationId || !position) return
