@@ -116,7 +116,7 @@ export default function EmployeeEntriesPage() {
   const [startDate, setStartDate] = useState<string>("")
   const [endDate, setEndDate] = useState<string>("")
   const [typeFilter, setTypeFilter] = useState<string>("ALL")
-  const [locationFilter, setLocationFilter] = useState<string>("")
+  const [locationFilter, setLocationFilter] = useState<string>("ALL")
 
   // Selection for bulk actions
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set())
@@ -166,7 +166,7 @@ export default function EmployeeEntriesPage() {
       if (startDate) params.append("startDate", startDate)
       if (endDate) params.append("endDate", endDate)
       if (typeFilter && typeFilter !== "ALL") params.append("type", typeFilter)
-      if (locationFilter) params.append("locationId", locationFilter)
+      if (locationFilter && locationFilter !== "ALL") params.append("locationId", locationFilter)
 
       const res = await fetch(`/api/admin/entries?${params}`, {
         headers: tzHeaders(),
@@ -502,7 +502,7 @@ export default function EmployeeEntriesPage() {
                   <SelectValue placeholder="All Locations" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Locations</SelectItem>
+                  <SelectItem value="ALL">All Locations</SelectItem>
                   {locations.map((loc) => (
                     <SelectItem key={loc.id} value={loc.id}>
                       {loc.name}
@@ -517,7 +517,7 @@ export default function EmployeeEntriesPage() {
               setStartDate("")
               setEndDate("")
               setTypeFilter("ALL")
-              setLocationFilter("")
+              setLocationFilter("ALL")
             }}>
               Clear Filters
             </Button>

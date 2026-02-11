@@ -156,7 +156,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
       const dashboard = dashboardRes.ok ? await dashboardRes.json() : null
       const streaks = streaksRes.ok ? await streaksRes.json() : null
-      const alerts = alertsRes.ok ? await alertsRes.json() : null
+      const alertsData = alertsRes.ok ? await alertsRes.json() : null
 
       if (!dashboard) return
 
@@ -174,6 +174,9 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       const totalXP = streaks?.xp || 0
       const { level, xpToNext } = calculateLevel(totalXP)
       const sessionXP = calculateSessionXP(currentSessionMinutes)
+
+      // Extract notifications array from alerts response
+      const notifications = alertsData?.notifications || []
 
       const newState: RealtimeState = {
         isClockedIn,
@@ -201,8 +204,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
               description: `${dashboard.currentStatus.todayEntries[0].type === "CLOCK_IN" ? "Clocked in" : "Clocked out"} at ${dashboard.currentStatus.todayEntries[0].location?.name || "Unknown"}`,
             }
           : null,
-        unreadNotifications: alerts?.length || 0,
-        pendingAlerts: (alerts || []).map((a: { id: string; type: string; message: string; createdAt: string }) => ({
+        unreadNotifications: alertsData?.unreadCount || 0,
+        pendingAlerts: notifications.map((a: { id: string; type: string; message: string; createdAt: string }) => ({
           id: a.id,
           type: a.type,
           message: a.message,
