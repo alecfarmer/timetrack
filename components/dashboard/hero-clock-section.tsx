@@ -6,10 +6,9 @@ import { LocationPicker } from "@/components/location-picker"
 import { LiveTimer } from "@/components/dashboard/live-timer"
 import { MobileClockTimer } from "@/components/dashboard/mobile-clock-timer"
 import { BreakActions, QuickActionsBar, getDefaultQuickActions } from "@/components/dashboard/quick-actions"
-import { formatDistance, GeoPosition } from "@/lib/geo"
+import { GeoPosition } from "@/lib/geo"
 import { fadeUp } from "@/lib/animations"
-import { MapPin, CheckCircle2, ChevronRight, PartyPopper, X } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { MapPin, ChevronRight, PartyPopper, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface HeroClockSectionProps {
@@ -122,23 +121,8 @@ export function HeroClockSection({
             selectedId={clock.selectedLocationId}
             userPosition={position}
             onSelect={clock.setSelectedLocationId}
-            variant="compact"
           />
         ) : null}
-
-        {/* Distance indicator */}
-        {position && clock.selectedLocation && clock.distanceToSelected !== null && (
-          <div className={cn(
-            "flex items-center gap-2 px-4 py-3 rounded-xl text-sm",
-            clock.isWithinGeofence
-              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-              : "bg-muted text-muted-foreground"
-          )}>
-            <MapPin className="h-4 w-4" />
-            <span>{formatDistance(clock.distanceToSelected)} from {clock.selectedLocation.name}</span>
-            {clock.isWithinGeofence && <CheckCircle2 className="h-4 w-4 ml-auto" />}
-          </div>
-        )}
 
         {/* Desktop: Giant Clock Button (hidden on mobile since timer is interactive) */}
         <div className="hidden lg:block">
