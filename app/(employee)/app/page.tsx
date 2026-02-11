@@ -497,6 +497,7 @@ export default function Dashboard() {
                       onClockIn={handleClockInWithPhoto}
                       onClockOut={clock.handleClockOut}
                       disabled={!clock.selectedLocationId || !position || !clock.isWithinGeofence}
+                      variant="modern"
                     />
 
                     {/* Break buttons */}
