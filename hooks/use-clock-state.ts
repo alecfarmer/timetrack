@@ -342,22 +342,13 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
   }, [selectedLocationId, position, isWithinGeofence, distanceToSelected, selectedLocation, fetchCurrentStatus, fetchWeekSummary])
 
   const handleClockOut = useCallback(async () => {
-    if (!position) {
-      setError("Unable to get your location. Please enable GPS.")
-      return
-    }
-    if (!isWithinGeofence) {
-      const distance = distanceToSelected ? formatDistance(distanceToSelected) : "unknown"
-      setError(`You must be on-site to clock out. You are ${distance} away from ${selectedLocation?.name || "the location"}.`)
-      return
-    }
     try {
       const res = await fetch("/api/entries", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...tzHeaders() },
         body: JSON.stringify({
           type: "CLOCK_OUT",
-          locationId: selectedLocationId,
+          locationId: selectedLocationId || undefined,
           timestampClient: new Date().toISOString(),
           gpsLatitude: position?.latitude,
           gpsLongitude: position?.longitude,
@@ -386,7 +377,7 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
       }
       setError(err instanceof Error ? err.message : "Failed to clock out")
     }
-  }, [selectedLocationId, position, isWithinGeofence, distanceToSelected, selectedLocation, fetchCurrentStatus, fetchWeekSummary])
+  }, [selectedLocationId, position, fetchCurrentStatus, fetchWeekSummary])
 
   const handleBreakStart = useCallback(async () => {
     if (!selectedLocationId || !position) return
