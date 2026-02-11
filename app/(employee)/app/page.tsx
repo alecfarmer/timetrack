@@ -496,7 +496,7 @@ export default function Dashboard() {
                       isClockedIn={clock.currentStatus?.isClockedIn || false}
                       onClockIn={handleClockInWithPhoto}
                       onClockOut={clock.handleClockOut}
-                      disabled={!clock.selectedLocationId || !position || !clock.isWithinGeofence}
+                      disabled={!clock.currentStatus?.isClockedIn && (!clock.selectedLocationId || !position || !clock.isWithinGeofence)}
                       variant="modern"
                     />
 
