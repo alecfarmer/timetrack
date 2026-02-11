@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ClockButton } from "@/components/clock-button"
 import { LocationPicker } from "@/components/location-picker"
 import { LiveTimer } from "@/components/dashboard/live-timer"
+import { MobileClockTimer } from "@/components/dashboard/mobile-clock-timer"
 import { BreakActions, QuickActionsBar, getDefaultQuickActions } from "@/components/dashboard/quick-actions"
 import { formatDistance, GeoPosition } from "@/lib/geo"
 import { fadeUp } from "@/lib/animations"
@@ -32,6 +33,12 @@ export function HeroClockSection({
   eightHourAlert,
   onDismissAlert,
 }: HeroClockSectionProps) {
+  const sessionStart = clock.currentStatus?.currentSessionStart
+    ? new Date(clock.currentStatus.currentSessionStart)
+    : null
+  const isClockedIn = clock.currentStatus?.isClockedIn || false
+  const clockDisabled = !isClockedIn && (!clock.selectedLocationId || !position || !clock.isWithinGeofence)
+
   return (
     <>
       {/* 8-Hour Achievement */}
@@ -68,10 +75,23 @@ export function HeroClockSection({
         animate="visible"
         className="space-y-6"
       >
-        {/* Live Timer */}
-        <div className="flex justify-center py-4">
+        {/* Mobile: Interactive Timer (tap to clock in, hold to clock out) */}
+        <div className="flex justify-center py-4 lg:hidden">
+          <MobileClockTimer
+            startTime={sessionStart}
+            isOnBreak={clock.isOnBreak}
+            isClockedIn={isClockedIn}
+            targetHours={8}
+            onClockIn={onClockIn}
+            onClockOut={clock.handleClockOut}
+            disabled={clockDisabled}
+          />
+        </div>
+
+        {/* Desktop: Standard Live Timer */}
+        <div className="hidden lg:flex justify-center py-4">
           <LiveTimer
-            startTime={clock.currentStatus?.currentSessionStart ? new Date(clock.currentStatus.currentSessionStart) : null}
+            startTime={sessionStart}
             isOnBreak={clock.isOnBreak}
             targetHours={8}
             showProgress={true}
@@ -120,19 +140,21 @@ export function HeroClockSection({
           </div>
         )}
 
-        {/* Giant Clock Button */}
-        <ClockButton
-          isClockedIn={clock.currentStatus?.isClockedIn || false}
-          onClockIn={onClockIn}
-          onClockOut={clock.handleClockOut}
-          disabled={!clock.currentStatus?.isClockedIn && (!clock.selectedLocationId || !position || !clock.isWithinGeofence)}
-          variant="giant"
-          isOnBreak={clock.isOnBreak}
-          isOvertime={isOvertime}
-        />
+        {/* Desktop: Giant Clock Button (hidden on mobile since timer is interactive) */}
+        <div className="hidden lg:block">
+          <ClockButton
+            isClockedIn={isClockedIn}
+            onClockIn={onClockIn}
+            onClockOut={clock.handleClockOut}
+            disabled={clockDisabled}
+            variant="giant"
+            isOnBreak={clock.isOnBreak}
+            isOvertime={isOvertime}
+          />
+        </div>
 
         {/* Break Actions */}
-        {clock.currentStatus?.isClockedIn && (
+        {isClockedIn && (
           <BreakActions
             isOnBreak={clock.isOnBreak}
             onStartBreak={clock.handleBreakStart}
@@ -143,7 +165,7 @@ export function HeroClockSection({
         {/* Quick Actions */}
         <QuickActionsBar
           actions={getDefaultQuickActions({
-            isClockedIn: clock.currentStatus?.isClockedIn || false,
+            isClockedIn,
             onStartBreak: clock.handleBreakStart,
             onEndBreak: clock.handleBreakEnd,
             isOnBreak: clock.isOnBreak,
