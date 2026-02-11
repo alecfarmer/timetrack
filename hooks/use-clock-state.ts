@@ -166,12 +166,29 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
       return
     }
 
+    let isMounted = true
+    const controller = new AbortController()
+
+    // Safety timeout - force loading to complete after 15 seconds
+    const timeout = setTimeout(() => {
+      if (isMounted) {
+        console.warn("Dashboard fetch timeout - forcing completion")
+        controller.abort()
+        setLoading(false)
+      }
+    }, 15000)
+
     const fetchDashboard = async () => {
       setLoading(true)
       try {
-        const res = await fetch("/api/dashboard", { headers: tzHeaders() })
+        const res = await fetch("/api/dashboard", {
+          headers: tzHeaders(),
+          signal: controller.signal,
+        })
         if (!res.ok) throw new Error("Failed to fetch dashboard")
         const data = await res.json()
+
+        if (!isMounted) return
 
         if (data.needsOnboarding) {
           setNeedsOnboarding(true)
@@ -189,6 +206,9 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
         setWeekSummary(data.weekSummary)
         statusFetchedAt.current = Date.now()
       } catch (err) {
+        if (!isMounted) return
+        // Don't log abort errors
+        if (err instanceof Error && err.name === "AbortError") return
         console.error("Error fetching dashboard:", err)
         // Fallback to individual fetches if dashboard fails
         try {
@@ -197,10 +217,18 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
           console.error("Fallback fetch also failed:", fallbackErr)
         }
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
     fetchDashboard()
+
+    return () => {
+      isMounted = false
+      clearTimeout(timeout)
+      controller.abort()
+    }
   }, [enabled, fetchLocations, fetchCurrentStatus, fetchWeekSummary])
 
   // Auto-select nearest location when GPS updates

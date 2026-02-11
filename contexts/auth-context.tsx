@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react"
 import { User, Session } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 
@@ -39,26 +39,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
 
   const fetchOrg = useCallback(async (userId: string) => {
-    const { data: membership } = await supabase
-      .from("Membership")
-      .select(`
-        orgId,
-        role,
-        org:Organization (id, name, slug)
-      `)
-      .eq("userId", userId)
-      .limit(1)
-      .single()
+    try {
+      const { data: membership, error } = await supabase
+        .from("Membership")
+        .select(`
+          orgId,
+          role,
+          org:Organization (id, name, slug)
+        `)
+        .eq("userId", userId)
+        .limit(1)
+        .single()
 
-    if (membership?.org) {
-      const orgData = Array.isArray(membership.org) ? membership.org[0] : membership.org
-      setOrg({
-        orgId: membership.orgId,
-        orgName: orgData.name,
-        orgSlug: orgData.slug,
-        role: membership.role as "ADMIN" | "MEMBER",
-      })
-    } else {
+      if (error) {
+        console.error("Error fetching org membership:", error)
+        setOrg(null)
+        return
+      }
+
+      if (membership?.org) {
+        const orgData = Array.isArray(membership.org) ? membership.org[0] : membership.org
+        setOrg({
+          orgId: membership.orgId,
+          orgName: orgData.name,
+          orgSlug: orgData.slug,
+          role: membership.role as "ADMIN" | "MEMBER",
+        })
+      } else {
+        setOrg(null)
+      }
+    } catch (error) {
+      console.error("Error in fetchOrg:", error)
       setOrg(null)
     }
   }, [supabase])
@@ -69,17 +80,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, fetchOrg])
 
+  const loadingRef = useRef(true)
+  loadingRef.current = loading
+
   useEffect(() => {
-    const getSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        await fetchOrg(session.user.id)
+    let isMounted = true
+
+    // Safety timeout - if loading takes more than 10 seconds, force it to complete
+    const timeout = setTimeout(() => {
+      if (isMounted && loadingRef.current) {
+        console.warn("Auth loading timeout - forcing completion")
+        setLoading(false)
       }
-      setLoading(false)
+    }, 10000)
+
+    const getSession = async () => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession()
+
+        if (error) {
+          console.error("Error getting session:", error)
+        }
+
+        if (!isMounted) return
+
+        setSession(session)
+        setUser(session?.user ?? null)
+
+        if (session?.user) {
+          await fetchOrg(session.user.id)
+        }
+      } catch (error) {
+        console.error("Error in getSession:", error)
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
     }
 
     getSession()
@@ -87,8 +127,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMounted) return
+
       setSession(session)
       setUser(session?.user ?? null)
+
       if (session?.user) {
         await fetchOrg(session.user.id)
       } else {
@@ -97,7 +140,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [supabase.auth, fetchOrg])
 
   const signOut = async () => {
