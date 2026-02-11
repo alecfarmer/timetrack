@@ -37,19 +37,24 @@ export function PullToRefresh({
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (disabled || refreshing) return
 
-    // Only start pull if at top of scroll
-    const scrollTop = containerRef.current?.scrollTop || 0
-    if (scrollTop > 0) return
-
+    // Record start position — don't activate pulling yet
     startY.current = e.touches[0].clientY
-    setPulling(true)
   }, [disabled, refreshing])
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!pulling || disabled || refreshing) return
+    if (disabled || refreshing) return
 
     const currentY = e.touches[0].clientY
     const diff = currentY - startY.current
+
+    // Only activate pull-to-refresh when page is scrolled to top AND moving down
+    if (!pulling) {
+      const pageScrollTop = window.scrollY || document.documentElement.scrollTop
+      if (pageScrollTop > 0 || diff <= 0) return
+      // Need at least a small threshold before activating to avoid false triggers
+      if (diff < 10) return
+      setPulling(true)
+    }
 
     if (diff > 0) {
       // Prevent default scroll when pulling down

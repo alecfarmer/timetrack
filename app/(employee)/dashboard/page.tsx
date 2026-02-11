@@ -253,7 +253,19 @@ export default function Dashboard() {
               entryCount={entries.length}
             />
 
-            <div className="grid lg:grid-cols-5 gap-6">
+            {/* Mobile: Stacked layout */}
+            <div className="space-y-4 lg:hidden">
+              <XPWidget />
+              <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
+              <TodaysActivityWidget
+                entries={entries}
+                showAll={showAllEntries}
+                setShowAll={setShowAllEntries}
+              />
+            </div>
+
+            {/* Desktop: Grid layout */}
+            <div className="hidden lg:grid lg:grid-cols-5 gap-6">
               <div className="lg:col-span-3 space-y-6">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
