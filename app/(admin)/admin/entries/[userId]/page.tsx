@@ -190,7 +190,7 @@ export default function EmployeeEntriesPage() {
       const res = await fetch("/api/locations")
       if (res.ok) {
         const data = await res.json()
-        setLocations(data.locations || [])
+        setLocations(Array.isArray(data) ? data : data.locations || [])
       }
     } catch {
       // Non-critical, ignore
