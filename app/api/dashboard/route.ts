@@ -102,24 +102,38 @@ export async function GET(request: NextRequest) {
     const isClockedIn = latestEntry?.type === "CLOCK_IN"
     const activeClockIn = isClockedIn ? latestEntry : null
 
-    // Calculate time worked today
+    // Calculate time worked today (sum sessions, subtract breaks)
     let totalMinutesToday = 0
     let currentSessionStart: Date | null = null
     const chronologicalEntries = [...todayEntries].reverse()
     let clockInTime: Date | null = null
+    let breakTotalMs = 0
+    let breakStartTime: Date | null = null
 
     for (const entry of chronologicalEntries) {
-      if (entry.type === "CLOCK_IN") {
-        clockInTime = new Date(entry.timestampServer)
-        if (isClockedIn && entry.id === activeClockIn?.id) {
-          currentSessionStart = clockInTime
-        }
-      } else if (entry.type === "CLOCK_OUT" && clockInTime) {
-        const sessionMinutes = Math.floor(
-          (new Date(entry.timestampServer).getTime() - clockInTime.getTime()) / 60000
-        )
-        totalMinutesToday += sessionMinutes
-        clockInTime = null
+      const ts = new Date(entry.timestampServer)
+      switch (entry.type) {
+        case "CLOCK_IN":
+          clockInTime = ts
+          if (isClockedIn && entry.id === activeClockIn?.id) {
+            currentSessionStart = ts
+          }
+          break
+        case "CLOCK_OUT":
+          if (clockInTime) {
+            totalMinutesToday += Math.floor((ts.getTime() - clockInTime.getTime()) / 60000)
+            clockInTime = null
+          }
+          break
+        case "BREAK_START":
+          breakStartTime = ts
+          break
+        case "BREAK_END":
+          if (breakStartTime) {
+            breakTotalMs += ts.getTime() - breakStartTime.getTime()
+            breakStartTime = null
+          }
+          break
       }
     }
 
@@ -127,6 +141,12 @@ export async function GET(request: NextRequest) {
     if (isClockedIn && currentSessionStart) {
       totalMinutesToday += Math.floor((now.getTime() - currentSessionStart.getTime()) / 60000)
     }
+
+    // Subtract break time (including any ongoing break)
+    if (breakStartTime) {
+      breakTotalMs += now.getTime() - breakStartTime.getTime()
+    }
+    totalMinutesToday = Math.max(0, totalMinutesToday - Math.floor(breakTotalMs / 60000))
 
     // Process week summary
     const workDays = weekWorkDaysResult.data || []
@@ -150,6 +170,7 @@ export async function GET(request: NextRequest) {
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     const workedDates = new Set(onsiteDays.map((wd) => wd.date))
 
+    const todayStr = format(zonedNow, "yyyy-MM-dd")
     for (let i = 0; i < 7; i++) {
       const date = new Date(weekStart)
       date.setDate(date.getDate() + i)
@@ -161,6 +182,14 @@ export async function GET(request: NextRequest) {
         worked: workedDates.has(dateStr),
         minutes: dayWorkDay?.totalMinutes || 0,
       })
+    }
+
+    // For today, use the live-calculated totalMinutesToday which includes
+    // the current session and break deductions (WorkDay only updates on clock-out)
+    const todayIdx = weekDays.findIndex(wd => wd.date === todayStr)
+    if (todayIdx !== -1 && totalMinutesToday > 0) {
+      weekDays[todayIdx].minutes = totalMinutesToday
+      weekDays[todayIdx].worked = true
     }
 
     return NextResponse.json({

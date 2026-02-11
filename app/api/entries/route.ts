@@ -282,6 +282,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingWorkDay) {
+      // Link this entry to the WorkDay first
+      await supabase
+        .from("Entry")
+        .update({ workDayId: existingWorkDay.id })
+        .eq("id", entry.id)
+
       const updateData: Record<string, unknown> = {}
 
       if (type === "CLOCK_IN") {
@@ -292,32 +298,49 @@ export async function POST(request: NextRequest) {
         if (!existingWorkDay.lastClockOut || serverDate > new Date(existingWorkDay.lastClockOut)) {
           updateData.lastClockOut = serverDate.toISOString()
         }
-      } else if (type === "BREAK_END") {
-        // Calculate break duration from the most recent BREAK_START
-        const { data: breakStartEntry } = await supabase
-          .from("Entry")
-          .select("timestampServer")
-          .eq("userId", user!.id)
-          .eq("type", "BREAK_START")
-          .gte("timestampServer", workDayDate.toISOString())
-          .order("timestampServer", { ascending: false })
-          .limit(1)
-          .single()
-
-        if (breakStartEntry) {
-          const breakDuration = Math.floor(
-            (serverDate.getTime() - new Date(breakStartEntry.timestampServer).getTime()) / 60000
-          )
-          updateData.breakMinutes = (existingWorkDay.breakMinutes || 0) + breakDuration
-        }
       }
 
-      if (existingWorkDay.firstClockIn && (updateData.lastClockOut || existingWorkDay.lastClockOut)) {
-        const clockOut = new Date((updateData.lastClockOut as string) || existingWorkDay.lastClockOut)
-        const totalMinutes = Math.floor(
-          (clockOut.getTime() - new Date(existingWorkDay.firstClockIn).getTime()) / 60000
-        )
+      // Recalculate totalMinutes from all entries linked to this WorkDay
+      // This correctly handles multiple sessions and break deductions
+      const { data: dayEntries } = await supabase
+        .from("Entry")
+        .select("type, timestampServer")
+        .eq("workDayId", existingWorkDay.id)
+        .order("timestampServer", { ascending: true })
+
+      if (dayEntries && dayEntries.length > 0) {
+        let workMs = 0
+        let breakMs = 0
+        let lastClockIn: Date | null = null
+        let lastBreakStart: Date | null = null
+
+        for (const e of dayEntries) {
+          const ts = new Date(e.timestampServer)
+          switch (e.type) {
+            case "CLOCK_IN":
+              lastClockIn = ts
+              break
+            case "CLOCK_OUT":
+              if (lastClockIn) {
+                workMs += ts.getTime() - lastClockIn.getTime()
+                lastClockIn = null
+              }
+              break
+            case "BREAK_START":
+              lastBreakStart = ts
+              break
+            case "BREAK_END":
+              if (lastBreakStart) {
+                breakMs += ts.getTime() - lastBreakStart.getTime()
+                lastBreakStart = null
+              }
+              break
+          }
+        }
+
+        const totalMinutes = Math.max(0, Math.floor((workMs - breakMs) / 60000))
         updateData.totalMinutes = totalMinutes
+        updateData.breakMinutes = Math.floor(breakMs / 60000)
         updateData.meetsPolicy = totalMinutes > 0
       }
 
@@ -327,11 +350,6 @@ export async function POST(request: NextRequest) {
           .update(updateData)
           .eq("id", existingWorkDay.id)
       }
-
-      await supabase
-        .from("Entry")
-        .update({ workDayId: existingWorkDay.id })
-        .eq("id", entry.id)
     } else {
       const { data: workDay } = await supabase
         .from("WorkDay")
