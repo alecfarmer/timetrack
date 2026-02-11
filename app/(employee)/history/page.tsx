@@ -7,7 +7,7 @@ import { formatTime, formatDateInZone, formatDuration } from "@/lib/dates"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { NotificationCenter } from "@/components/notification-center"
+import { PageHeader } from "@/components/page-header"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { TimesheetSubmit } from "@/components/timesheet-submit"
 import {
@@ -20,7 +20,6 @@ import {
   Home,
   TrendingUp,
   ArrowRight,
-  CalendarDays,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -174,92 +173,68 @@ export default function HistoryPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      {/* Premium Dark Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
+      <PageHeader
+        title="History"
+        subtitle="Your time entries"
+        actions={
+          <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} />
+        }
+      />
 
-        {/* Grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
+      {/* Month Navigation & Stats */}
+      <div className="px-4 pt-4 pb-2 max-w-6xl mx-auto lg:px-8">
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={previousMonth}
+            className="rounded-2xl h-9 w-9"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <h2 className="text-xl font-semibold min-w-[180px] text-center">
+            {format(currentMonth, "MMMM yyyy")}
+          </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={nextMonth}
+            className="rounded-2xl h-9 w-9"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
 
-        <header className="relative z-10 safe-area-pt">
-          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                <CalendarDays className="h-5 w-5 text-white" />
-              </div>
-              <h1 className="text-lg font-semibold text-white">History</h1>
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <div className="w-10 h-10 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-2">
+              <Building2 className="h-5 w-5 text-success" />
             </div>
-            <div className="flex items-center gap-2">
-              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
-              <NotificationCenter />
+            <p className="text-2xl font-bold">{stats.daysOnsite}</p>
+            <p className="text-xs text-muted-foreground">On-Site Days</p>
+          </Card>
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
+              <Home className="h-5 w-5 text-primary" />
             </div>
-          </div>
-        </header>
-
-        {/* Month Navigation & Stats */}
-        <div className="relative z-10 px-4 pt-2 pb-6 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={previousMonth}
-              className="rounded-xl h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <h2 className="text-xl font-semibold text-white min-w-[180px] text-center">
-              {format(currentMonth, "MMMM yyyy")}
-            </h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={nextMonth}
-              className="rounded-xl h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
-
-          {/* Stats Row */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
-                <Building2 className="h-5 w-5 text-emerald-400" />
-              </div>
-              <p className="text-2xl font-bold text-white">{stats.daysOnsite}</p>
-              <p className="text-xs text-white/60">On-Site Days</p>
+            <p className="text-2xl font-bold">{stats.daysWfh}</p>
+            <p className="text-xs text-muted-foreground">WFH Days</p>
+          </Card>
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <div className="w-10 h-10 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-2">
+              <TrendingUp className="h-5 w-5 text-warning" />
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
-                <Home className="h-5 w-5 text-blue-400" />
-              </div>
-              <p className="text-2xl font-bold text-white">{stats.daysWfh}</p>
-              <p className="text-xs text-white/60">WFH Days</p>
-            </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
-                <TrendingUp className="h-5 w-5 text-amber-400" />
-              </div>
-              <p className="text-2xl font-bold text-white">
-                {stats.totalHours}<span className="text-base font-medium">h</span>
-              </p>
-              <p className="text-xs text-white/60">Total Hours</p>
-            </div>
-          </div>
+            <p className="text-2xl font-bold">
+              {stats.totalHours}<span className="text-base font-medium">h</span>
+            </p>
+            <p className="text-xs text-muted-foreground">Total Hours</p>
+          </Card>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+      <main className="flex-1 pb-24 lg:pb-8">
         <div className="max-w-6xl mx-auto px-4 lg:px-8">
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Calendar */}

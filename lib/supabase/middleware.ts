@@ -37,29 +37,26 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Public routes - accessible without authentication
-  const isPublicRoute = request.nextUrl.pathname.startsWith("/login") ||
-                        request.nextUrl.pathname.startsWith("/signup") ||
-                        request.nextUrl.pathname.startsWith("/auth") ||
-                        request.nextUrl.pathname.startsWith("/landing")
+  const { pathname } = request.nextUrl
 
+  // Public routes - accessible without authentication
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/auth")
+
+  // Redirect unauthenticated users on protected routes to /login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = "/landing"
+    url.pathname = "/login"
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from public pages to employee app
-  if (user && isPublicRoute) {
+  // Redirect authenticated users away from auth pages to /dashboard
+  if (user && (pathname.startsWith("/login") || pathname.startsWith("/signup") || pathname.startsWith("/auth/callback"))) {
     const url = request.nextUrl.clone()
-    url.pathname = "/app"
-    return NextResponse.redirect(url)
-  }
-
-  // Redirect root to /app for authenticated users
-  if (user && request.nextUrl.pathname === "/") {
-    const url = request.nextUrl.clone()
-    url.pathname = "/app"
+    url.pathname = "/dashboard"
     return NextResponse.redirect(url)
   }
 

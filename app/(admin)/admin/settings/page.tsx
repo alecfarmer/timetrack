@@ -129,7 +129,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
-      router.push("/app")
+      router.push("/dashboard")
       return
     }
 
@@ -164,7 +164,7 @@ export default function SettingsPage() {
       animate={{ opacity: 1 }}
     >
       {/* Premium Dark Hero Header */}
-      <div className="relative overflow-hidden">
+      <div className="hidden lg:block relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-500/20 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-gray-500/10 via-transparent to-transparent" />

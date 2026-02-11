@@ -81,7 +81,7 @@ export default function EntriesIndexPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      <div className="hidden lg:block">
         <h1 className="text-2xl font-bold">Edit Entries</h1>
         <p className="text-muted-foreground">
           Select an employee to view and edit their time entries

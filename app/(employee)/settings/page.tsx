@@ -10,14 +10,13 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { NotificationCenter } from "@/components/notification-center"
+import { PageHeader } from "@/components/page-header"
 import { TimezoneSelector } from "@/components/timezone-prompt"
 import { useAuth } from "@/contexts/auth-context"
 import { WfhSection } from "@/components/settings/wfh-section"
 import { DangerZone } from "@/components/settings/danger-zone"
 import { getTimezone, detectUserTimezone } from "@/lib/dates"
 import {
-  Settings,
   MapPin,
   Bell,
   Shield,
@@ -86,55 +85,26 @@ export default function SettingsPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      {/* Premium Dark Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-500/20 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-zinc-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
+      <PageHeader title="Settings" subtitle="Manage your preferences" />
 
-        {/* Grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
-
-        <header className="relative z-10 safe-area-pt">
-          <div className="flex items-center justify-between px-4 h-14 max-w-3xl mx-auto lg:px-8">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                <Settings className="h-5 w-5 text-white" />
-              </div>
-              <h1 className="text-lg font-semibold text-white">Settings</h1>
+      {/* User Info Card */}
+      <div className="px-4 pt-4 pb-2 max-w-3xl mx-auto lg:px-8">
+        <Card className="border-0 shadow-lg rounded-2xl p-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+              <User className="h-7 w-7 text-primary-foreground" />
             </div>
-            <div className="flex items-center gap-2">
-              <NotificationCenter />
+            <div className="flex-1">
+              <p className="font-semibold">{user?.email}</p>
+              <p className="text-sm text-muted-foreground">Personal Account</p>
             </div>
           </div>
-        </header>
-
-        {/* User Info Card */}
-        <div className="relative z-10 px-4 pt-4 pb-6 max-w-3xl mx-auto lg:px-8">
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-white/10">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <User className="h-7 w-7 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-white">{user?.email}</p>
-                <p className="text-sm text-white/60">Personal Account</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        </Card>
       </div>
 
       {/* Main Content */}
       <motion.main
-        className="flex-1 pb-24 lg:pb-8 -mt-4"
+        className="flex-1 pb-24 lg:pb-8"
         variants={staggerContainer}
         initial="initial"
         animate="animate"
@@ -237,7 +207,7 @@ export default function SettingsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Link href="/app/settings/locations">
+                <Link href="/settings/locations">
                   <Button variant="ghost" className="w-full justify-between rounded-xl h-12">
                     <span>Manage Locations</span>
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />

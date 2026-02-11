@@ -25,16 +25,21 @@ npm run typecheck    # TypeScript type checking (tsc --noEmit)
 
 ### Route Structure
 
-The app uses Next.js route groups to separate admin and employee experiences:
+The app uses Next.js route groups to separate admin and employee experiences. The `/app` prefix was removed — employee pages live directly under `(employee)/`.
 
 ```
-/                     -> Landing page (marketing)
-/login, /signup       -> Auth pages
-/app/                 -> Employee app (mobile-first, protected)
-  /app/history        -> Time history calendar
-  /app/leave          -> Leave/PTO requests
-  /app/reports        -> Personal reports & stats
-  /app/settings       -> User settings
+/                     -> Landing page (marketing, redirects to /dashboard if authenticated)
+/login, /signup       -> Auth pages (redirect to /dashboard if authenticated)
+/dashboard            -> Employee dashboard (clock status, stats, activity)
+/history              -> Time history calendar
+/schedule             -> Shift schedule
+/leave                -> Leave/PTO requests
+/reports              -> Personal reports & stats
+/settings             -> User settings
+/rewards              -> Gamification (XP, badges, streaks)
+/notifications        -> Notification center
+/callouts             -> Callout requests
+/payroll              -> Payroll info
 /admin/               -> Admin portal (desktop-first, admin role required)
   /admin/             -> Dashboard with live activity & metrics
   /admin/team         -> Member management
@@ -43,19 +48,28 @@ The app uses Next.js route groups to separate admin and employee experiences:
   /admin/wellbeing    -> Burnout monitoring
   /admin/shifts       -> Shift scheduling
   /admin/bulk-edit    -> Entry corrections
+  /admin/entries      -> Edit entries
   /admin/audit        -> Audit log
-  /admin/settings     -> Settings hub (features, policies, leave, payroll, alerts)
+  /admin/settings     -> Settings hub (general, features, policies, leave, payroll, alerts)
+  /admin/features     -> Feature flags
+  /admin/jurisdictions -> Jurisdiction policies
+  /admin/leave-policy -> Leave & PTO config
+  /admin/payroll-config -> Payroll export config
+  /admin/alerts       -> Alert configuration
 ```
+
+Old `/app/*` URLs are permanently redirected via `next.config.ts`.
 
 ### Layouts & Navigation
 
-- `app/(employee)/layout.tsx` — Employee layout with `EmployeeNav` (bottom nav on mobile, slim sidebar on desktop)
-- `app/(admin)/layout.tsx` — Admin layout with `AdminSidebar` (full sidebar, desktop-only, hidden on mobile)
-- Navigation components: `components/employee-nav.tsx`, `components/admin-sidebar.tsx`
+- `app/(employee)/layout.tsx` — Employee layout with `EmployeeNav` (bottom nav with center clock FAB on mobile, slim sidebar on desktop)
+- `app/(admin)/layout.tsx` — Admin layout with `AdminSidebar` (desktop) + `AdminMobileNav` (bottom nav + slide-up drawer on mobile)
+- Navigation components: `components/employee-nav.tsx`, `components/admin-mobile-nav.tsx`, `components/admin-sidebar.tsx`
+- Shared page header: `components/page-header.tsx` — consistent sticky header for inner pages
 
 ### Auth Flow
 
-Supabase Auth with email/password and OAuth. Middleware (`middleware.ts`) refreshes sessions on every request, redirects unauthenticated users to `/landing`, and protects `/admin/*` routes (requires ADMIN role). Public routes: `/login`, `/signup`, `/auth`, `/landing`.
+Supabase Auth with email/password and OAuth. Middleware (`middleware.ts`) refreshes sessions on every request, redirects unauthenticated users to `/login`, and protects `/admin/*` routes (requires ADMIN role). Public routes: `/`, `/login`, `/signup`, `/auth`.
 
 ### Supabase Client Pattern
 

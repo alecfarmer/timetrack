@@ -5,9 +5,9 @@ import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { NotificationCenter } from "@/components/notification-center"
+import { PageHeader } from "@/components/page-header"
 import { RefreshButton } from "@/components/pull-to-refresh"
-import { Calendar, Clock, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react"
+import { Calendar, Clock, ChevronLeft, ChevronRight } from "lucide-react"
 import { format, startOfWeek, addWeeks, isToday } from "date-fns"
 import { cn } from "@/lib/utils"
 
@@ -109,7 +109,7 @@ export default function SchedulePage() {
           <div className="relative">
             <div className="w-16 h-16 rounded-full bg-primary/20 animate-ping absolute inset-0" />
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <CalendarDays className="h-8 w-8 text-primary" />
+              <Calendar className="h-8 w-8 text-primary" />
             </div>
           </div>
           <p className="text-muted-foreground font-medium">Loading schedule...</p>
@@ -124,84 +124,60 @@ export default function SchedulePage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      {/* Premium Dark Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-500/20 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-pink-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
+      <PageHeader
+        title="My Schedule"
+        subtitle="Your shift assignments"
+        actions={
+          <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} />
+        }
+      />
 
-        {/* Grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
-
-        <header className="relative z-10 safe-area-pt">
-          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                <CalendarDays className="h-5 w-5 text-white" />
-              </div>
-              <h1 className="text-lg font-semibold text-white">My Schedule</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
-              <NotificationCenter />
-            </div>
+      {/* Week Navigation */}
+      <div className="px-4 pt-4 pb-2 max-w-6xl mx-auto lg:px-8">
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setWeekOffset(prev => prev - 1)}
+            className="gap-1 rounded-2xl"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          <div className="text-center">
+            <p className="font-semibold">
+              {format(currentWeekStart, "MMM d")} - {format(weekDays[6], "MMM d, yyyy")}
+            </p>
+            {weekOffset === 0 && (
+              <Badge className="bg-primary/15 text-primary border-0 text-xs mt-1">This Week</Badge>
+            )}
           </div>
-        </header>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setWeekOffset(prev => prev + 1)}
+            className="gap-1 rounded-2xl"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
 
-        {/* Week Navigation */}
-        <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setWeekOffset(prev => prev - 1)}
-              className="gap-1 text-white/70 hover:text-white hover:bg-white/10 rounded-xl"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <div className="text-center">
-              <p className="font-semibold text-white">
-                {format(currentWeekStart, "MMM d")} - {format(weekDays[6], "MMM d, yyyy")}
-              </p>
-              {weekOffset === 0 && (
-                <Badge className="bg-white/20 text-white border-0 text-xs mt-1">This Week</Badge>
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setWeekOffset(prev => prev + 1)}
-              className="gap-1 text-white/70 hover:text-white hover:bg-white/10 rounded-xl"
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Week Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <p className="text-2xl font-bold text-white">{totalShiftsThisWeek}</p>
-              <p className="text-xs text-white/60">Shifts This Week</p>
-            </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
-              <p className="text-2xl font-bold text-white">{schedule.length}</p>
-              <p className="text-xs text-white/60">Total Scheduled</p>
-            </div>
-          </div>
+        {/* Week Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <p className="text-2xl font-bold">{totalShiftsThisWeek}</p>
+            <p className="text-xs text-muted-foreground">Shifts This Week</p>
+          </Card>
+          <Card className="border-0 shadow-lg rounded-2xl text-center p-4">
+            <p className="text-2xl font-bold">{schedule.length}</p>
+            <p className="text-xs text-muted-foreground">Total Scheduled</p>
+          </Card>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+      <main className="flex-1 pb-24 lg:pb-8">
         <div className="max-w-6xl mx-auto px-4 lg:px-8">
           {!hasShifts ? (
             <motion.div
