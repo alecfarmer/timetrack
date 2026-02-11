@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { MapPin, Check, ChevronDown, Building2, Home, Wifi, Signal, Navigation } from "lucide-react"
+import { MapPin, Check, ChevronDown, Building2, Home, Signal, Navigation, CheckCircle2 } from "lucide-react"
 import { calculateDistance, formatDistance } from "@/lib/geo"
 import { cn } from "@/lib/utils"
 
@@ -22,7 +22,6 @@ interface LocationPickerProps {
   userPosition?: { latitude: number; longitude: number } | null
   onSelect: (locationId: string) => void
   className?: string
-  variant?: "default" | "compact"
 }
 
 function getCategoryIcon(category?: string) {
@@ -53,9 +52,7 @@ export function LocationPicker({
   userPosition,
   onSelect,
   className,
-  variant = "default",
 }: LocationPickerProps) {
-  const isCompact = variant === "compact"
   const [isOpen, setIsOpen] = useState(false)
   const [locationsWithDistance, setLocationsWithDistance] = useState<
     (Location & { distance?: number; isWithinGeofence?: boolean })[]
@@ -110,52 +107,54 @@ export function LocationPicker({
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "w-full flex items-center gap-3 rounded-xl border transition-all",
-          "hover:border-primary/50",
-          isCompact ? "px-4 py-3" : "p-3",
+          "w-full flex items-center gap-3 rounded-2xl border transition-all",
+          "hover:border-primary/50 p-3.5",
           isOpen
             ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-            : isCompact
-            ? "border-border/50 bg-muted/30"
-            : "border-border bg-background"
+            : selected?.isWithinGeofence
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : "border-border bg-card"
         )}
         whileTap={{ scale: 0.99 }}
       >
-        {/* Selected location icon */}
-        {!isCompact && (
-          <div
-            className={cn(
-              "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-              selected?.isWithinGeofence
-                ? "bg-success/15 text-success"
-                : "bg-muted text-muted-foreground"
-            )}
-          >
-            <SelectedIcon className="h-4.5 w-4.5" />
-          </div>
-        )}
+        {/* Location icon with status */}
+        <div
+          className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
+            selected?.isWithinGeofence
+              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+              : "bg-muted text-muted-foreground"
+          )}
+        >
+          <SelectedIcon className="h-5 w-5" />
+        </div>
 
         {/* Selected info */}
         <div className="flex-1 min-w-0 text-left">
           <div className="flex items-center gap-2">
-            <span className={cn("font-medium truncate", isCompact ? "text-sm" : "font-semibold text-sm")}>
-              {selected?.code || selected?.name || "Select location"}
+            <span className="font-semibold text-sm truncate">
+              {selected?.name || "Select location"}
             </span>
-            {selected?.isWithinGeofence && !isCompact && (
-              <span className="flex items-center gap-1 text-[10px] font-medium text-success bg-success/10 px-1.5 py-0.5 rounded-full">
-                <Signal className="h-2.5 w-2.5" />
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            {selected?.isWithinGeofence ? (
+              <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="h-3 w-3" />
                 In range
+                {selected.distance !== undefined && (
+                  <span className="text-muted-foreground font-normal ml-1">
+                    {formatDistance(selected.distance)}
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {selected?.distance !== undefined
+                  ? `${formatDistance(selected.distance)} away`
+                  : getCategoryLabel(selected?.category)}
               </span>
             )}
           </div>
-          {!isCompact && (
-            <p className="text-xs text-muted-foreground truncate">
-              {selected?.name}
-              {selected?.distance !== undefined && (
-                <> &middot; {formatDistance(selected.distance)}</>
-              )}
-            </p>
-          )}
         </div>
 
         {/* Chevron */}
@@ -178,15 +177,15 @@ export function LocationPicker({
             transition={{ duration: 0.15, ease: "easeOut" }}
             className={cn(
               "absolute z-50 left-0 right-0 mt-2",
-              "bg-background border border-border rounded-xl shadow-xl",
+              "bg-card border border-border rounded-2xl shadow-xl",
               "overflow-hidden max-h-[320px] overflow-y-auto no-scrollbar"
             )}
           >
             {/* On-site section */}
             {onSite.length > 0 && (
               <div>
-                <div className="px-3 pt-3 pb-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-success flex items-center gap-1.5">
+                <div className="px-4 pt-3 pb-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                     <Navigation className="h-3 w-3" />
                     In Range
                   </p>
@@ -207,13 +206,13 @@ export function LocationPicker({
 
             {/* Divider */}
             {onSite.length > 0 && offSite.length > 0 && (
-              <div className="border-t mx-3 my-1" />
+              <div className="border-t mx-4 my-1" />
             )}
 
             {/* Off-site section */}
             {offSite.length > 0 && (
               <div>
-                <div className="px-3 pt-2 pb-1.5">
+                <div className="px-4 pt-2 pb-1.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                     <MapPin className="h-3 w-3" />
                     Other Locations
@@ -233,8 +232,7 @@ export function LocationPicker({
               </div>
             )}
 
-            {/* Empty padding at bottom */}
-            <div className="h-1.5" />
+            <div className="h-2" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -258,8 +256,8 @@ function LocationOption({
     <motion.button
       onClick={onSelect}
       className={cn(
-        "w-full flex items-center gap-3 px-3 py-2.5 transition-colors",
-        "hover:bg-muted/50",
+        "w-full flex items-center gap-3 px-4 py-3 transition-colors",
+        "hover:bg-muted/50 active:bg-muted",
         isSelected && "bg-primary/5"
       )}
       whileTap={{ scale: 0.98 }}
@@ -267,11 +265,11 @@ function LocationOption({
       {/* Icon */}
       <div
         className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold",
+          "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold",
           isSelected
             ? "bg-primary text-primary-foreground"
             : location.isWithinGeofence
-            ? "bg-success/15 text-success"
+            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
             : "bg-muted text-muted-foreground"
         )}
       >
@@ -294,7 +292,7 @@ function LocationOption({
           {location.distance !== undefined && (
             <>
               <span className="text-muted-foreground/40">&middot;</span>
-              <span className={location.isWithinGeofence ? "text-success font-medium" : ""}>
+              <span className={location.isWithinGeofence ? "text-emerald-600 dark:text-emerald-400 font-medium" : ""}>
                 {formatDistance(location.distance)}
               </span>
             </>
@@ -307,10 +305,15 @@ function LocationOption({
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0"
+          className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0"
         >
-          <Check className="h-3 w-3 text-primary-foreground" />
+          <Check className="h-3.5 w-3.5 text-primary-foreground" />
         </motion.div>
+      )}
+
+      {/* In-range indicator for non-selected items */}
+      {!isSelected && location.isWithinGeofence && (
+        <Signal className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
       )}
     </motion.button>
   )

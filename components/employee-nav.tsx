@@ -1,14 +1,34 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
-import { motion } from "framer-motion"
-import { Home, Clock, CalendarDays, Trophy, Settings, BarChart3, Palmtree, Keyboard, LogIn, LogOut as LogOutIcon, ShieldCheck } from "lucide-react"
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  Home,
+  Clock,
+  CalendarDays,
+  Trophy,
+  Settings,
+  BarChart3,
+  Palmtree,
+  Keyboard,
+  LogIn,
+  LogOut as LogOutIcon,
+  ShieldCheck,
+  Menu,
+  X,
+  Bell,
+  Megaphone,
+  DollarSign,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
+import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/contexts/auth-context"
 import { useRealtime } from "@/contexts/realtime-context"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 interface EmployeeNavProps {
   currentPath: string
@@ -32,6 +52,35 @@ const desktopNavItems = [
   { href: "/settings", icon: Settings, label: "Settings", shortcut: "7" },
 ]
 
+const allMobileMenuItems = [
+  { href: "/dashboard", icon: Home, label: "Home" },
+  { href: "/schedule", icon: CalendarDays, label: "Schedule" },
+  { href: "/history", icon: Clock, label: "History" },
+  { href: "/rewards", icon: Trophy, label: "Rewards" },
+  { href: "/leave", icon: Palmtree, label: "Leave & PTO" },
+  { href: "/reports", icon: BarChart3, label: "Reports" },
+  { href: "/callouts", icon: Megaphone, label: "Callouts" },
+  { href: "/payroll", icon: DollarSign, label: "Payroll" },
+  { href: "/notifications", icon: Bell, label: "Notifications" },
+  { href: "/settings", icon: Settings, label: "Settings" },
+]
+
+function getPageTitle(pathname: string): string {
+  const titleMap: Record<string, string> = {
+    "/dashboard": "Home",
+    "/schedule": "Schedule",
+    "/history": "History",
+    "/rewards": "Rewards",
+    "/leave": "Leave & PTO",
+    "/reports": "Reports",
+    "/callouts": "Callouts",
+    "/payroll": "Payroll",
+    "/notifications": "Notifications",
+    "/settings": "Settings",
+  }
+  return titleMap[pathname] || "OnSite"
+}
+
 function MiniTimer({ sessionStart }: { sessionStart: string }) {
   const [elapsed, setElapsed] = useState("")
 
@@ -43,7 +92,7 @@ function MiniTimer({ sessionStart }: { sessionStart: string }) {
       setElapsed(`${h}:${m.toString().padStart(2, "0")}`)
     }
     update()
-    const interval = setInterval(update, 60000) // Update every minute
+    const interval = setInterval(update, 60000)
     return () => clearInterval(interval)
   }, [sessionStart])
 
@@ -55,8 +104,11 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
   const router = useRouter()
   const { isClockedIn, clockInTime } = useRealtime()
   const sessionStart = clockInTime?.toISOString() ?? null
+  const [menuOpen, setMenuOpen] = useState(false)
+  const pageTitle = getPageTitle(currentPath)
 
   const handleSignOut = async () => {
+    setMenuOpen(false)
     await signOut()
     router.push("/login")
   }
@@ -70,6 +122,95 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
 
   return (
     <>
+      {/* Mobile Top Header */}
+      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b lg:hidden">
+        <div className="flex items-center gap-3 px-4 h-14">
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-bold flex-1">{pageTitle}</h1>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      {/* Mobile Slide-in Menu Drawer */}
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm lg:hidden"
+              onClick={() => setMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed top-0 left-0 bottom-0 w-72 z-[61] bg-card border-r overflow-y-auto lg:hidden"
+            >
+              <div className="flex items-center justify-between p-4 border-b">
+                <Logo size="sm" />
+                <Button variant="ghost" size="icon" onClick={() => setMenuOpen(false)}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <nav className="p-3 space-y-0.5">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2">
+                  Navigation
+                </div>
+                {allMobileMenuItems.map((item) => {
+                  const active = isActive(item.href)
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
+                        active
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="text-sm">{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </nav>
+
+              <div className="p-3 border-t mt-2 space-y-0.5">
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  >
+                    <ShieldCheck className="h-5 w-5" />
+                    <span>Admin Portal</span>
+                  </Link>
+                )}
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-colors w-full"
+                >
+                  <LogOutIcon className="h-5 w-5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Mobile Bottom Nav with Center FAB */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t safe-area-pb lg:hidden">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1 relative">

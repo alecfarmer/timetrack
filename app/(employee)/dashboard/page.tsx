@@ -26,7 +26,6 @@ import { format } from "date-fns"
 import {
   WifiOff,
   AlertCircle,
-  LogOut,
   Calendar,
   Coffee,
   Target,
@@ -52,7 +51,7 @@ function getGreeting() {
 
 export default function Dashboard() {
   const router = useRouter()
-  const { user, signOut, loading: authLoading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { position, loading: gpsLoading, refresh: refreshGps } = useGeolocation(true)
   const [showPhotoCapture, setShowPhotoCapture] = useState(false)
   const [showAllEntries, setShowAllEntries] = useState(false)
@@ -90,11 +89,6 @@ export default function Dashboard() {
     clock.setPendingPhotoUrl(dataUrl)
     setShowPhotoCapture(false)
     await clock.handleClockIn()
-  }
-
-  const handleSignOut = async () => {
-    await signOut()
-    router.push("/login")
   }
 
   const handleRefresh = useCallback(async () => {
@@ -171,7 +165,8 @@ export default function Dashboard() {
 
       <PullToRefresh onRefresh={handleRefresh} className="min-h-screen">
         <div className="min-h-screen bg-background pb-24 lg:pb-8">
-          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          {/* Desktop-only header (mobile uses EmployeeNav hamburger menu) */}
+          <header className="hidden lg:block sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between h-14">
                 <div className="flex items-center gap-3">
@@ -208,14 +203,6 @@ export default function Dashboard() {
                   </Button>
                   <NotificationCenter />
                   <ThemeToggle />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleSignOut}
-                    className="h-8 w-8"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             </div>
