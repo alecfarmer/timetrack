@@ -404,26 +404,6 @@ export function ClockButton({
           )}
         </motion.button>
 
-        {/* Clock Out Button (appears below when clocked in) */}
-        {isClockedIn && state === "idle" && (
-          <motion.button
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className={cn(
-              "w-full mt-3 py-4 rounded-xl",
-              "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-              "border border-rose-500/20",
-              "hover:bg-rose-500/20 active:bg-rose-500/30",
-              "font-medium transition-colors",
-              "flex items-center justify-center gap-2"
-            )}
-            onClick={handleClockOut}
-          >
-            <Square className="h-4 w-4" />
-            Clock Out
-          </motion.button>
-        )}
       </div>
     )
   }
