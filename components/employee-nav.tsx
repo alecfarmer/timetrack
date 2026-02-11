@@ -123,7 +123,7 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
   return (
     <>
       {/* Mobile Top Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b lg:hidden">
+      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b lg:hidden safe-area-pt">
         <div className="flex items-center gap-3 px-4 h-14">
           <button
             onClick={() => setMenuOpen(true)}

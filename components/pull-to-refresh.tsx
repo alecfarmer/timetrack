@@ -47,10 +47,11 @@ export function PullToRefresh({
     const currentY = e.touches[0].clientY
     const diff = currentY - startY.current
 
-    // Only activate pull-to-refresh when page is scrolled to top AND moving down
+    // Only activate pull-to-refresh when page AND container are scrolled to top AND moving down
     if (!pulling) {
-      const pageScrollTop = window.scrollY || document.documentElement.scrollTop
-      if (pageScrollTop > 0 || diff <= 0) return
+      const pageScrollTop = window.scrollY || document.documentElement.scrollTop || 0
+      const containerScrollTop = containerRef.current?.scrollTop || 0
+      if (pageScrollTop > 0 || containerScrollTop > 0 || diff <= 0) return
       // Need at least a small threshold before activating to avoid false triggers
       if (diff < 10) return
       setPulling(true)
@@ -104,7 +105,7 @@ export function PullToRefresh({
   }, [handleTouchStart, handleTouchMove, handleTouchEnd])
 
   return (
-    <div ref={containerRef} className={cn("relative overflow-auto", className)}>
+    <div ref={containerRef} className={cn("relative", className)}>
       {/* Pull indicator */}
       <motion.div
         style={{ y: indicatorY, opacity: indicatorOpacity, scale: indicatorScale }}
