@@ -57,6 +57,7 @@ const navSections: NavSection[] = [
   {
     title: "Time Management",
     items: [
+      { href: "/admin/entries", icon: Clock, label: "Edit Entries" },
       { href: "/admin/timesheets", icon: FileCheck, label: "Timesheets" },
       { href: "/admin/bulk-edit", icon: FileText, label: "Corrections" },
     ],
