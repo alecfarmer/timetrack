@@ -6,6 +6,11 @@ import { z } from "zod"
 
 const updateOrgSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  timezone: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+  contactEmail: z.string().email().max(255).optional(),
+  contactPhone: z.string().max(20).optional(),
+  address: z.string().max(500).optional(),
 })
 
 // GET /api/org - Get current user's org info
@@ -67,7 +72,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updateData: Record<string, unknown> = {}
-    if (validation.data.name) updateData.name = validation.data.name
+    const fields = ["name", "timezone", "description", "contactEmail", "contactPhone", "address"] as const
+    for (const field of fields) {
+      if (validation.data[field] !== undefined) {
+        updateData[field] = validation.data[field]
+      }
+    }
 
     const { data: updated, error } = await supabase
       .from("Organization")

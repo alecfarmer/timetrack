@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { EmployeeNav } from "@/components/employee-nav"
+import { RealtimeProvider } from "@/contexts/realtime-context"
 import { useAuth } from "@/contexts/auth-context"
 
 export default function EmployeeLayout({
@@ -25,11 +26,11 @@ export default function EmployeeLayout({
   }
 
   return (
-    <>
+    <RealtimeProvider>
       <EmployeeNav currentPath={pathname} />
       <main className="pb-20 lg:pb-0 lg:ml-64 min-h-screen">
         {children}
       </main>
-    </>
+    </RealtimeProvider>
   )
 }

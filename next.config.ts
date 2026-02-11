@@ -44,6 +44,16 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Use webpack for build (required for next-pwa)
   turbopack: {},
+  images: {
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/**",
+      },
+    ],
+  },
   async redirects() {
     return [
       // Old /app routes → new routes (no /app prefix)

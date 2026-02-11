@@ -131,7 +131,6 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [state, setState] = useState<RealtimeState>(defaultState)
   const subscribersRef = useRef<Set<(state: RealtimeState) => void>>(new Set())
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
 
   // Notify all subscribers when state changes
@@ -220,44 +219,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     }
   }, [user, notifySubscribers])
 
-  // Update session time every second when clocked in
-  useEffect(() => {
-    if (state.isClockedIn && state.clockInTime) {
-      timerRef.current = setInterval(() => {
-        setState((prev) => {
-          if (!prev.clockInTime) return prev
-
-          const currentSessionMinutes = Math.floor(
-            (Date.now() - prev.clockInTime.getTime()) / 60000
-          )
-          const sessionXP = calculateSessionXP(currentSessionMinutes)
-          const totalXP = prev.totalXP + sessionXP - prev.sessionXP
-          const { level, xpToNext } = calculateLevel(totalXP)
-
-          const newState = {
-            ...prev,
-            currentSessionMinutes,
-            sessionXP,
-            totalXP,
-            currentLevel: level,
-            xpToNextLevel: xpToNext,
-          }
-
-          notifySubscribers(newState)
-          return newState
-        })
-      }, 1000) // Update every second for smooth timer
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
-    }
-  }, [state.isClockedIn, state.clockInTime, notifySubscribers])
-
-  // Poll for updates every 30 seconds
+  // Poll for updates every 60 seconds
   useEffect(() => {
     if (!user) return
 
@@ -265,7 +227,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     fetchRealtimeData()
 
     // Set up polling
-    pollRef.current = setInterval(fetchRealtimeData, 30000)
+    pollRef.current = setInterval(fetchRealtimeData, 60000)
 
     return () => {
       if (pollRef.current) {
@@ -339,12 +301,17 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   )
 }
 
+const noopRealtimeValue: RealtimeContextValue = {
+  ...defaultState,
+  refresh: async () => {},
+  markNotificationRead: async () => {},
+  markAllNotificationsRead: async () => {},
+  subscribeToUpdates: () => () => {},
+}
+
 export function useRealtime() {
   const context = useContext(RealtimeContext)
-  if (!context) {
-    throw new Error("useRealtime must be used within a RealtimeProvider")
-  }
-  return context
+  return context ?? noopRealtimeValue
 }
 
 // Hook for live XP display with animation support
@@ -360,16 +327,15 @@ export function useLiveXP() {
   }
 }
 
-// Hook for live timer display
+// Hook for live timer display — reads session minutes from context state
 export function useLiveTimer() {
   const { isClockedIn, clockInTime, currentSessionMinutes, isOnBreak, breakStartTime } = useRealtime()
 
-  const formatTimer = (minutes: number) => {
+  const formatTimer = useCallback((minutes: number) => {
     const h = Math.floor(minutes / 60)
     const m = minutes % 60
-    const s = Math.floor((Date.now() - (clockInTime?.getTime() || 0)) / 1000) % 60
-    return { hours: h, minutes: m, seconds: s }
-  }
+    return { hours: h, minutes: m, seconds: 0 }
+  }, [])
 
   return {
     isClockedIn,

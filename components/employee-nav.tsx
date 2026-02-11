@@ -7,6 +7,7 @@ import { Home, Clock, CalendarDays, Trophy, Settings, BarChart3, Palmtree, Keybo
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
 import { useAuth } from "@/contexts/auth-context"
+import { useRealtime } from "@/contexts/realtime-context"
 import { useRouter } from "next/navigation"
 
 interface EmployeeNavProps {
@@ -31,32 +32,6 @@ const desktopNavItems = [
   { href: "/settings", icon: Settings, label: "Settings", shortcut: "7" },
 ]
 
-// Mini hook to check clock status from API
-function useQuickClockStatus() {
-  const [isClockedIn, setIsClockedIn] = useState(false)
-  const [sessionStart, setSessionStart] = useState<string | null>(null)
-
-  useEffect(() => {
-    const check = async () => {
-      try {
-        const res = await fetch("/api/status")
-        if (res.ok) {
-          const data = await res.json()
-          setIsClockedIn(data.isClockedIn ?? false)
-          setSessionStart(data.currentSessionStart ?? null)
-        }
-      } catch {
-        // Silent fail
-      }
-    }
-    check()
-    const interval = setInterval(check, 30000) // Poll every 30s
-    return () => clearInterval(interval)
-  }, [])
-
-  return { isClockedIn, sessionStart }
-}
-
 function MiniTimer({ sessionStart }: { sessionStart: string }) {
   const [elapsed, setElapsed] = useState("")
 
@@ -78,7 +53,8 @@ function MiniTimer({ sessionStart }: { sessionStart: string }) {
 export function EmployeeNav({ currentPath }: EmployeeNavProps) {
   const { isAdmin, signOut } = useAuth()
   const router = useRouter()
-  const { isClockedIn, sessionStart } = useQuickClockStatus()
+  const { isClockedIn, clockInTime } = useRealtime()
+  const sessionStart = clockInTime?.toISOString() ?? null
 
   const handleSignOut = async () => {
     await signOut()

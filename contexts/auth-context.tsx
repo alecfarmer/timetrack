@@ -1,7 +1,7 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react"
-import { User, Session } from "@supabase/supabase-js"
+import { createContext, useContext, useEffect, useState, useCallback } from "react"
+import { User, Session, AuthChangeEvent } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 
 interface OrgInfo {
@@ -15,6 +15,7 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
+  orgLoading: boolean
   org: OrgInfo | null
   isAdmin: boolean
   refreshOrg: () => Promise<void>
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  orgLoading: true,
   org: null,
   isAdmin: false,
   refreshOrg: async () => {},
@@ -35,10 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [orgLoading, setOrgLoading] = useState(true)
   const [org, setOrg] = useState<OrgInfo | null>(null)
   const supabase = createClient()
 
   const fetchOrg = useCallback(async (userId: string) => {
+    setOrgLoading(true)
     try {
       const { data: membership, error } = await supabase
         .from("Membership")
@@ -71,6 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Error in fetchOrg:", error)
       setOrg(null)
+    } finally {
+      setOrgLoading(false)
     }
   }, [supabase])
 
@@ -80,19 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, fetchOrg])
 
-  const loadingRef = useRef(true)
-  loadingRef.current = loading
-
   useEffect(() => {
     let isMounted = true
-
-    // Safety timeout - if loading takes more than 10 seconds, force it to complete
-    const timeout = setTimeout(() => {
-      if (isMounted && loadingRef.current) {
-        console.warn("Auth loading timeout - forcing completion")
-        setLoading(false)
-      }
-    }, 10000)
 
     const getSession = async () => {
       try {
@@ -109,15 +104,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setSession(session)
         setUser(session?.user ?? null)
+        setLoading(false)
 
         if (session?.user) {
-          await fetchOrg(session.user.id)
+          fetchOrg(session.user.id)
+        } else {
+          setOrgLoading(false)
         }
       } catch (error) {
         console.error("Error in getSession:", error)
-      } finally {
         if (isMounted) {
           setLoading(false)
+          setOrgLoading(false)
         }
       }
     }
@@ -126,23 +124,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
       if (!isMounted) return
 
       setSession(session)
       setUser(session?.user ?? null)
+      setLoading(false)
 
       if (session?.user) {
-        await fetchOrg(session.user.id)
+        fetchOrg(session.user.id)
       } else {
         setOrg(null)
+        setOrgLoading(false)
       }
-      setLoading(false)
     })
 
     return () => {
       isMounted = false
-      clearTimeout(timeout)
       subscription.unsubscribe()
     }
   }, [supabase.auth, fetchOrg])
@@ -153,7 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, org, isAdmin: org?.role === "ADMIN", refreshOrg, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, orgLoading, org, isAdmin: org?.role === "ADMIN", refreshOrg, signOut }}>
       {children}
     </AuthContext.Provider>
   )

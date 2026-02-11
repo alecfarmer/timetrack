@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next"
 import { AuthProvider } from "@/contexts/auth-context"
-import { RealtimeProvider } from "@/contexts/realtime-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SWRProvider } from "@/components/swr-provider"
 import { ToastContainer } from "@/components/notification-center"
@@ -58,11 +57,9 @@ export default function RootLayout({
         >
           <SWRProvider>
             <AuthProvider>
-              <RealtimeProvider>
-                {children}
-                <ToastContainer />
-                <TimezonePrompt />
-              </RealtimeProvider>
+              {children}
+              <ToastContainer />
+              <TimezonePrompt />
             </AuthProvider>
           </SWRProvider>
         </ThemeProvider>

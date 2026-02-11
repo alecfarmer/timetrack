@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +14,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -24,7 +32,6 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import {
-  Users,
   Clock,
   MapPin,
   Shield,
@@ -39,14 +46,22 @@ import {
   Download,
   RefreshCw,
   AlertCircle,
+  UserPlus,
+  Copy,
+  Check,
+  Link2,
+  Trash2,
+  Loader2,
+  Send,
 } from "lucide-react"
-import { format } from "date-fns"
+import { format, formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
 
 interface Member {
   id: string
   userId: string
   email?: string | null
+  displayName?: string | null
   role: string
   createdAt: string
   isClockedIn?: boolean
@@ -61,6 +76,15 @@ interface Policy {
   minimumMinutesPerDay: number
 }
 
+interface Invite {
+  id: string
+  code: string
+  email: string | null
+  role: string
+  expiresAt: string
+  createdAt: string
+}
+
 export default function TeamPage() {
   const { isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
@@ -71,6 +95,15 @@ export default function TeamPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Invite state
+  const [invites, setInvites] = useState<Invite[]>([])
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState("")
+  const [inviteRole, setInviteRole] = useState<"MEMBER" | "ADMIN">("MEMBER")
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
   // Filters
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "online" | "offline">("all")
@@ -78,9 +111,10 @@ export default function TeamPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [membersRes, policyRes] = await Promise.all([
+      const [membersRes, policyRes, invitesRes] = await Promise.all([
         fetch("/api/org/members"),
         fetch("/api/org/policy"),
+        fetch("/api/org/invite"),
       ])
 
       if (membersRes.ok) setMembers(await membersRes.json())
@@ -88,6 +122,7 @@ export default function TeamPage() {
         const p = await policyRes.json()
         setPolicy(p)
       }
+      if (invitesRes.ok) setInvites(await invitesRes.json())
     } catch (err) {
       console.error("Error fetching team data:", err)
       setError("Failed to load team data")
@@ -160,17 +195,107 @@ export default function TeamPage() {
     }
   }
 
+  const handleCreateInvite = async () => {
+    setInviteLoading(true)
+    setGeneratedLink(null)
+    try {
+      const emails = inviteEmail
+        .split(",")
+        .map((e) => e.trim())
+        .filter((e) => e.length > 0)
+
+      if (emails.length > 1) {
+        // Bulk invite
+        const res = await fetch("/api/org/invite/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emails, role: inviteRole, expiresInDays: 7 }),
+        })
+        if (!res.ok) throw new Error("Failed to create invites")
+        const data = await res.json()
+        if (data.results?.[0]?.invite?.code) {
+          setGeneratedLink(`${window.location.origin}/signup?invite=${data.results[0].invite.code}`)
+        }
+      } else {
+        // Single invite
+        const res = await fetch("/api/org/invite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: emails[0] || undefined,
+            role: inviteRole,
+            expiresInDays: 7,
+          }),
+        })
+        if (!res.ok) throw new Error("Failed to create invite")
+        const invite = await res.json()
+        setGeneratedLink(`${window.location.origin}/signup?invite=${invite.code}`)
+      }
+
+      // Refresh invites list
+      const invitesRes = await fetch("/api/org/invite")
+      if (invitesRes.ok) setInvites(await invitesRes.json())
+      setInviteEmail("")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create invite")
+    } finally {
+      setInviteLoading(false)
+    }
+  }
+
+  const handleGenerateLink = async () => {
+    setInviteLoading(true)
+    try {
+      const res = await fetch("/api/org/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: inviteRole, expiresInDays: 7 }),
+      })
+      if (!res.ok) throw new Error("Failed to generate link")
+      const invite = await res.json()
+      setGeneratedLink(`${window.location.origin}/signup?invite=${invite.code}`)
+      const invitesRes = await fetch("/api/org/invite")
+      if (invitesRes.ok) setInvites(await invitesRes.json())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate invite link")
+    } finally {
+      setInviteLoading(false)
+    }
+  }
+
+  const handleCopyLink = async () => {
+    if (!generatedLink) return
+    await navigator.clipboard.writeText(generatedLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleRevokeInvite = async (id: string) => {
+    try {
+      const res = await fetch(`/api/org/invite?id=${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to revoke invite")
+      setInvites((prev) => prev.filter((i) => i.id !== id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to revoke invite")
+    }
+  }
+
   const formatMinutes = (minutes: number) => {
     const h = Math.floor(minutes / 60)
     const m = minutes % 60
     return h > 0 ? `${h}h ${m}m` : `${m}m`
   }
 
-  // Filtered members
+  const pendingInvites = useMemo(() =>
+    invites.filter((i) => new Date(i.expiresAt) > new Date()),
+    [invites]
+  )
+
   const filteredMembers = useMemo(() => {
     return members.filter(member => {
       const matchesSearch = searchQuery === "" ||
         member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        member.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.userId.toLowerCase().includes(searchQuery.toLowerCase())
 
       const matchesStatus = statusFilter === "all" ||
@@ -209,14 +334,136 @@ export default function TeamPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="hidden lg:flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Team Members</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">Team Members</h1>
+            {pendingInvites.length > 0 && (
+              <Badge variant="secondary" className="gap-1">
+                <Mail className="h-3 w-3" />
+                {pendingInvites.length} pending
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground">
             {members.length} members &middot; {clockedInCount} online &middot; {adminCount} admins
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                Invite Members
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[480px]">
+              <DialogHeader>
+                <DialogTitle>Invite Team Members</DialogTitle>
+                <DialogDescription>
+                  Send email invites or generate a shareable link for new members.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 pt-2">
+                {/* Email input */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Email Addresses</label>
+                  <Input
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="email@example.com (comma-separated for bulk)"
+                  />
+                </div>
+
+                {/* Role selector */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Role</label>
+                  <Select value={inviteRole} onValueChange={(v: "MEMBER" | "ADMIN") => setInviteRole(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MEMBER">Member</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleCreateInvite}
+                    disabled={inviteLoading || !inviteEmail.trim()}
+                    className="flex-1 gap-2"
+                  >
+                    {inviteLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Send Invite
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleGenerateLink}
+                    disabled={inviteLoading}
+                    className="gap-2"
+                  >
+                    <Link2 className="h-4 w-4" />
+                    Generate Link
+                  </Button>
+                </div>
+
+                {/* Generated link */}
+                {generatedLink && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-lg bg-muted p-3 space-y-2"
+                  >
+                    <p className="text-xs font-medium text-muted-foreground">Invite Link</p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={generatedLink}
+                        readOnly
+                        className="text-xs font-mono"
+                      />
+                      <Button size="icon" variant="outline" onClick={handleCopyLink}>
+                        {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Expires in 7 days</p>
+                  </motion.div>
+                )}
+
+                {/* Pending Invites */}
+                {pendingInvites.length > 0 && (
+                  <div className="border-t pt-4 space-y-2">
+                    <h4 className="text-sm font-medium">Pending Invites ({pendingInvites.length})</h4>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {pendingInvites.map((invite) => (
+                        <div key={invite.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">
+                              {invite.email || `Code: ${invite.code}`}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {invite.role} &middot; Expires {formatDistanceToNow(new Date(invite.expiresAt), { addSuffix: true })}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => handleRevokeInvite(invite.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
           <Button
             variant="outline"
             size="sm"
@@ -312,7 +559,7 @@ export default function TeamPage() {
                         ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                         : "bg-muted text-muted-foreground"
                     )}>
-                      {(member.email?.[0] || "U").toUpperCase()}
+                      {(member.displayName?.[0] || member.email?.[0] || "U").toUpperCase()}
                     </div>
                     {member.isClockedIn && (
                       <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-background" />
@@ -323,7 +570,7 @@ export default function TeamPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-medium truncate">
-                        {member.email || `User ${member.userId.slice(0, 8)}`}
+                        {member.displayName || member.email || `User ${member.userId.slice(0, 8)}`}
                       </p>
                       <Badge
                         variant={member.role === "ADMIN" ? "default" : "secondary"}
@@ -336,6 +583,9 @@ export default function TeamPage() {
                         )}
                       </Badge>
                     </div>
+                    {member.displayName && member.email && (
+                      <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                    )}
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       {member.isClockedIn ? (
                         <>
@@ -363,13 +613,13 @@ export default function TeamPage() {
                   </div>
 
                   {/* Compliance indicator */}
-                  <div className="hidden sm:flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                     {member.weekDaysWorked !== undefined && (
                       <div className="text-right">
                         <p className="text-sm font-medium">
                           {member.weekDaysWorked}/{policy.requiredDaysPerWeek}
                         </p>
-                        <p className="text-xs text-muted-foreground">days this week</p>
+                        <p className="text-xs text-muted-foreground hidden sm:block">days this week</p>
                       </div>
                     )}
                   </div>

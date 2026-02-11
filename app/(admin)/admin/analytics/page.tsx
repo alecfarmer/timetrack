@@ -9,10 +9,12 @@ import { NotificationCenter } from "@/components/notification-center"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
-import { WeeklyHoursChart } from "@/components/charts/weekly-hours-chart"
-import { ComplianceTrendChart } from "@/components/charts/compliance-trend-chart"
-import { LocationPieChart } from "@/components/charts/location-pie-chart"
-import { MemberComparisonChart } from "@/components/charts/member-comparison-chart"
+import dynamic from "next/dynamic"
+
+const WeeklyHoursChart = dynamic(() => import("@/components/charts/weekly-hours-chart").then(m => ({ default: m.WeeklyHoursChart })), { ssr: false, loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" /> })
+const ComplianceTrendChart = dynamic(() => import("@/components/charts/compliance-trend-chart").then(m => ({ default: m.ComplianceTrendChart })), { ssr: false, loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" /> })
+const LocationPieChart = dynamic(() => import("@/components/charts/location-pie-chart").then(m => ({ default: m.LocationPieChart })), { ssr: false, loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" /> })
+const MemberComparisonChart = dynamic(() => import("@/components/charts/member-comparison-chart").then(m => ({ default: m.MemberComparisonChart })), { ssr: false, loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" /> })
 import {
   BarChart3,
   TrendingUp,
