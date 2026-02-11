@@ -3,10 +3,11 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { Home, Clock, CalendarDays, Trophy, Settings, BarChart3, Palmtree, Keyboard, LogIn, LogOut as LogOutIcon } from "lucide-react"
+import { Home, Clock, CalendarDays, Trophy, Settings, BarChart3, Palmtree, Keyboard, LogIn, LogOut as LogOutIcon, ShieldCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
 import { useAuth } from "@/contexts/auth-context"
+import { useRouter } from "next/navigation"
 
 interface EmployeeNavProps {
   currentPath: string
@@ -75,8 +76,14 @@ function MiniTimer({ sessionStart }: { sessionStart: string }) {
 }
 
 export function EmployeeNav({ currentPath }: EmployeeNavProps) {
-  const { isAdmin } = useAuth()
+  const { isAdmin, signOut } = useAuth()
+  const router = useRouter()
   const { isClockedIn, sessionStart } = useQuickClockStatus()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/login")
+  }
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -217,18 +224,25 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
           })}
         </div>
 
-        {/* Admin link & footer */}
-        <div className="p-4 border-t space-y-2">
+        {/* Admin link, sign out & footer */}
+        <div className="p-3 border-t space-y-1">
           {isAdmin && (
             <Link
               href="/admin"
-              className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
-              <Settings className="h-4 w-4" />
-              <span>Admin Portal</span>
+              <ShieldCheck className="h-5 w-5" />
+              <span className="font-medium">Admin Portal</span>
             </Link>
           )}
-          <div className="flex items-center justify-between text-xs text-muted-foreground px-3">
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-colors w-full"
+          >
+            <LogOutIcon className="h-5 w-5" />
+            <span className="font-medium">Sign Out</span>
+          </button>
+          <div className="flex items-center justify-between text-xs text-muted-foreground px-3 pt-1">
             <span>v3.0</span>
             <div className="flex items-center gap-1">
               <Keyboard className="h-3 w-3" />
