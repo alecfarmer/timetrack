@@ -231,7 +231,7 @@ export default function SettingsPage() {
 
       {/* Main Content */}
       <motion.main
-        className="flex-1 pb-8 -mt-4"
+        className="flex-1 pb-8 pt-6"
         variants={staggerContainer}
         initial="initial"
         animate="animate"

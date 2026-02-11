@@ -239,7 +239,7 @@ export default function TimesheetsPage() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+      <main className="flex-1 pb-24 lg:pb-8 pt-6">
         <div className="max-w-3xl mx-auto px-4 lg:px-8 space-y-4">
           {error && (
             <motion.div

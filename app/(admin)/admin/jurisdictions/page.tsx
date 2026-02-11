@@ -33,65 +33,65 @@ import {
 
 interface JurisdictionPolicy {
   id: string
-  jurisdictionCode: string
+  jurisdiction: string
   name: string
   requiredDaysPerWeek: number
-  overtimeDailyMinutes: number
-  overtimeWeeklyMinutes: number
+  overtimeThresholdDaily: number
+  overtimeThresholdWeekly: number
   mealBreakRequired: boolean
   mealBreakAfterMinutes: number
-  mealBreakDurationMinutes: number
+  mealBreakDuration: number
   restBreakRequired: boolean
-  restBreakIntervalMinutes: number
-  restBreakDurationMinutes: number
+  restBreakInterval: number
+  restBreakDuration: number
   predictiveScheduling: boolean
   advanceNoticeHours: number
   clopeningMinHours: number
-  active: boolean
+  isActive: boolean
 }
 
 interface JurisdictionFormData {
-  jurisdictionCode: string
+  jurisdiction: string
   name: string
   requiredDaysPerWeek: number
-  overtimeDailyMinutes: number
-  overtimeWeeklyMinutes: number
+  overtimeThresholdDaily: number
+  overtimeThresholdWeekly: number
   mealBreakRequired: boolean
   mealBreakAfterMinutes: number
-  mealBreakDurationMinutes: number
+  mealBreakDuration: number
   restBreakRequired: boolean
-  restBreakIntervalMinutes: number
-  restBreakDurationMinutes: number
+  restBreakInterval: number
+  restBreakDuration: number
   predictiveScheduling: boolean
   advanceNoticeHours: number
   clopeningMinHours: number
 }
 
 const KNOWN_JURISDICTIONS = [
-  { code: "US-CA", label: "California, US", defaults: { overtimeDailyMinutes: 480, overtimeWeeklyMinutes: 2400, mealBreakAfterMinutes: 300, mealBreakDurationMinutes: 30, restBreakIntervalMinutes: 240, restBreakDurationMinutes: 10 } },
-  { code: "US-NY", label: "New York, US", defaults: { overtimeDailyMinutes: 0, overtimeWeeklyMinutes: 2400, mealBreakAfterMinutes: 360, mealBreakDurationMinutes: 30, restBreakIntervalMinutes: 0, restBreakDurationMinutes: 0 } },
-  { code: "US-OR", label: "Oregon, US", defaults: { overtimeDailyMinutes: 0, overtimeWeeklyMinutes: 2400, mealBreakAfterMinutes: 360, mealBreakDurationMinutes: 30, restBreakIntervalMinutes: 240, restBreakDurationMinutes: 10 } },
-  { code: "US-WA", label: "Washington, US", defaults: { overtimeDailyMinutes: 0, overtimeWeeklyMinutes: 2400, mealBreakAfterMinutes: 300, mealBreakDurationMinutes: 30, restBreakIntervalMinutes: 240, restBreakDurationMinutes: 10 } },
-  { code: "US-IL", label: "Illinois, US", defaults: { overtimeDailyMinutes: 0, overtimeWeeklyMinutes: 2400, mealBreakAfterMinutes: 450, mealBreakDurationMinutes: 20, restBreakIntervalMinutes: 0, restBreakDurationMinutes: 0 } },
-  { code: "US-CO", label: "Colorado, US", defaults: { overtimeDailyMinutes: 720, overtimeWeeklyMinutes: 2400, mealBreakAfterMinutes: 300, mealBreakDurationMinutes: 30, restBreakIntervalMinutes: 240, restBreakDurationMinutes: 10 } },
-  { code: "UK", label: "United Kingdom", defaults: { overtimeDailyMinutes: 0, overtimeWeeklyMinutes: 2880, mealBreakAfterMinutes: 360, mealBreakDurationMinutes: 20, restBreakIntervalMinutes: 0, restBreakDurationMinutes: 0 } },
-  { code: "AU", label: "Australia", defaults: { overtimeDailyMinutes: 456, overtimeWeeklyMinutes: 2280, mealBreakAfterMinutes: 300, mealBreakDurationMinutes: 30, restBreakIntervalMinutes: 0, restBreakDurationMinutes: 0 } },
-  { code: "EU-DE", label: "Germany, EU", defaults: { overtimeDailyMinutes: 480, overtimeWeeklyMinutes: 2400, mealBreakAfterMinutes: 360, mealBreakDurationMinutes: 30, restBreakIntervalMinutes: 540, restBreakDurationMinutes: 15 } },
-  { code: "EU-FR", label: "France, EU", defaults: { overtimeDailyMinutes: 600, overtimeWeeklyMinutes: 2100, mealBreakAfterMinutes: 360, mealBreakDurationMinutes: 20, restBreakIntervalMinutes: 0, restBreakDurationMinutes: 0 } },
+  { code: "US-CA", label: "California, US", defaults: { overtimeThresholdDaily: 480, overtimeThresholdWeekly: 2400, mealBreakAfterMinutes: 300, mealBreakDuration: 30, restBreakInterval: 240, restBreakDuration: 10 } },
+  { code: "US-NY", label: "New York, US", defaults: { overtimeThresholdDaily: 0, overtimeThresholdWeekly: 2400, mealBreakAfterMinutes: 360, mealBreakDuration: 30, restBreakInterval: 0, restBreakDuration: 0 } },
+  { code: "US-OR", label: "Oregon, US", defaults: { overtimeThresholdDaily: 0, overtimeThresholdWeekly: 2400, mealBreakAfterMinutes: 360, mealBreakDuration: 30, restBreakInterval: 240, restBreakDuration: 10 } },
+  { code: "US-WA", label: "Washington, US", defaults: { overtimeThresholdDaily: 0, overtimeThresholdWeekly: 2400, mealBreakAfterMinutes: 300, mealBreakDuration: 30, restBreakInterval: 240, restBreakDuration: 10 } },
+  { code: "US-IL", label: "Illinois, US", defaults: { overtimeThresholdDaily: 0, overtimeThresholdWeekly: 2400, mealBreakAfterMinutes: 450, mealBreakDuration: 20, restBreakInterval: 0, restBreakDuration: 0 } },
+  { code: "US-CO", label: "Colorado, US", defaults: { overtimeThresholdDaily: 720, overtimeThresholdWeekly: 2400, mealBreakAfterMinutes: 300, mealBreakDuration: 30, restBreakInterval: 240, restBreakDuration: 10 } },
+  { code: "UK", label: "United Kingdom", defaults: { overtimeThresholdDaily: 0, overtimeThresholdWeekly: 2880, mealBreakAfterMinutes: 360, mealBreakDuration: 20, restBreakInterval: 0, restBreakDuration: 0 } },
+  { code: "AU", label: "Australia", defaults: { overtimeThresholdDaily: 456, overtimeThresholdWeekly: 2280, mealBreakAfterMinutes: 300, mealBreakDuration: 30, restBreakInterval: 0, restBreakDuration: 0 } },
+  { code: "EU-DE", label: "Germany, EU", defaults: { overtimeThresholdDaily: 480, overtimeThresholdWeekly: 2400, mealBreakAfterMinutes: 360, mealBreakDuration: 30, restBreakInterval: 540, restBreakDuration: 15 } },
+  { code: "EU-FR", label: "France, EU", defaults: { overtimeThresholdDaily: 600, overtimeThresholdWeekly: 2100, mealBreakAfterMinutes: 360, mealBreakDuration: 20, restBreakInterval: 0, restBreakDuration: 0 } },
 ]
 
 const defaultFormData: JurisdictionFormData = {
-  jurisdictionCode: "",
+  jurisdiction: "",
   name: "",
   requiredDaysPerWeek: 5,
-  overtimeDailyMinutes: 480,
-  overtimeWeeklyMinutes: 2400,
+  overtimeThresholdDaily: 480,
+  overtimeThresholdWeekly: 2400,
   mealBreakRequired: true,
   mealBreakAfterMinutes: 300,
-  mealBreakDurationMinutes: 30,
+  mealBreakDuration: 30,
   restBreakRequired: false,
-  restBreakIntervalMinutes: 240,
-  restBreakDurationMinutes: 10,
+  restBreakInterval: 240,
+  restBreakDuration: 10,
   predictiveScheduling: false,
   advanceNoticeHours: 0,
   clopeningMinHours: 0,
@@ -114,7 +114,8 @@ export default function JurisdictionsPage() {
     try {
       const res = await fetch("/api/org/policy/jurisdictions")
       if (res.ok) {
-        setPolicies(await res.json())
+        const data = await res.json()
+        setPolicies(data.policies || [])
       } else {
         setError("Failed to load jurisdiction policies")
       }
@@ -146,16 +147,16 @@ export default function JurisdictionsPage() {
     if (known) {
       setFormData((prev) => ({
         ...prev,
-        jurisdictionCode: code,
+        jurisdiction: code,
         name: known.label,
-        overtimeDailyMinutes: known.defaults.overtimeDailyMinutes,
-        overtimeWeeklyMinutes: known.defaults.overtimeWeeklyMinutes,
+        overtimeThresholdDaily: known.defaults.overtimeThresholdDaily,
+        overtimeThresholdWeekly: known.defaults.overtimeThresholdWeekly,
         mealBreakAfterMinutes: known.defaults.mealBreakAfterMinutes,
-        mealBreakDurationMinutes: known.defaults.mealBreakDurationMinutes,
+        mealBreakDuration: known.defaults.mealBreakDuration,
         mealBreakRequired: known.defaults.mealBreakAfterMinutes > 0,
-        restBreakIntervalMinutes: known.defaults.restBreakIntervalMinutes,
-        restBreakDurationMinutes: known.defaults.restBreakDurationMinutes,
-        restBreakRequired: known.defaults.restBreakIntervalMinutes > 0,
+        restBreakInterval: known.defaults.restBreakInterval,
+        restBreakDuration: known.defaults.restBreakDuration,
+        restBreakRequired: known.defaults.restBreakInterval > 0,
       }))
     }
   }
@@ -163,17 +164,17 @@ export default function JurisdictionsPage() {
   const handleEditPolicy = (policy: JurisdictionPolicy) => {
     setEditingId(policy.id)
     setFormData({
-      jurisdictionCode: policy.jurisdictionCode,
+      jurisdiction: policy.jurisdiction,
       name: policy.name,
       requiredDaysPerWeek: policy.requiredDaysPerWeek,
-      overtimeDailyMinutes: policy.overtimeDailyMinutes,
-      overtimeWeeklyMinutes: policy.overtimeWeeklyMinutes,
+      overtimeThresholdDaily: policy.overtimeThresholdDaily,
+      overtimeThresholdWeekly: policy.overtimeThresholdWeekly,
       mealBreakRequired: policy.mealBreakRequired,
       mealBreakAfterMinutes: policy.mealBreakAfterMinutes,
-      mealBreakDurationMinutes: policy.mealBreakDurationMinutes,
+      mealBreakDuration: policy.mealBreakDuration,
       restBreakRequired: policy.restBreakRequired,
-      restBreakIntervalMinutes: policy.restBreakIntervalMinutes,
-      restBreakDurationMinutes: policy.restBreakDurationMinutes,
+      restBreakInterval: policy.restBreakInterval,
+      restBreakDuration: policy.restBreakDuration,
       predictiveScheduling: policy.predictiveScheduling,
       advanceNoticeHours: policy.advanceNoticeHours,
       clopeningMinHours: policy.clopeningMinHours,
@@ -194,7 +195,7 @@ export default function JurisdictionsPage() {
       const url = "/api/org/policy/jurisdictions"
       const method = editingId ? "PATCH" : "POST"
       const body = editingId
-        ? { id: editingId, ...formData }
+        ? { policyId: editingId, ...formData }
         : formData
 
       const res = await fetch(url, {
@@ -224,8 +225,8 @@ export default function JurisdictionsPage() {
     setFormData((prev) => ({ ...prev, [key]: value }))
   }
 
-  const configuredCodes = policies.map((p) => p.jurisdictionCode)
-  const activePolicies = policies.filter((p) => p.active)
+  const configuredCodes = policies.map((p) => p.jurisdiction)
+  const activePolicies = policies.filter((p) => p.isActive)
   const policiesWithBreaks = policies.filter((p) => p.mealBreakRequired || p.restBreakRequired)
   const policiesWithScheduling = policies.filter((p) => p.predictiveScheduling)
 
@@ -340,7 +341,7 @@ export default function JurisdictionsPage() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-8 -mt-4">
+      <main className="flex-1 pb-24 lg:pb-8 pt-6">
         <div className="max-w-6xl mx-auto px-4 lg:px-8 space-y-6">
           {error && (
             <motion.div
@@ -389,7 +390,7 @@ export default function JurisdictionsPage() {
                         <div className="space-y-2">
                           <Label className="text-xs">Jurisdiction</Label>
                           <Select
-                            value={formData.jurisdictionCode}
+                            value={formData.jurisdiction}
                             onValueChange={handleJurisdictionSelect}
                             disabled={!!editingId}
                           >
@@ -448,12 +449,12 @@ export default function JurisdictionsPage() {
                           <Input
                             type="number"
                             min={0}
-                            value={formData.overtimeDailyMinutes}
-                            onChange={(e) => updateField("overtimeDailyMinutes", parseInt(e.target.value) || 0)}
+                            value={formData.overtimeThresholdDaily}
+                            onChange={(e) => updateField("overtimeThresholdDaily", parseInt(e.target.value) || 0)}
                             className="rounded-xl"
                           />
                           <p className="text-[10px] text-muted-foreground">
-                            0 = no daily OT threshold. {formData.overtimeDailyMinutes > 0 && `(${(formData.overtimeDailyMinutes / 60).toFixed(1)}h)`}
+                            0 = no daily OT threshold. {formData.overtimeThresholdDaily > 0 && `(${(formData.overtimeThresholdDaily / 60).toFixed(1)}h)`}
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -464,12 +465,12 @@ export default function JurisdictionsPage() {
                           <Input
                             type="number"
                             min={0}
-                            value={formData.overtimeWeeklyMinutes}
-                            onChange={(e) => updateField("overtimeWeeklyMinutes", parseInt(e.target.value) || 0)}
+                            value={formData.overtimeThresholdWeekly}
+                            onChange={(e) => updateField("overtimeThresholdWeekly", parseInt(e.target.value) || 0)}
                             className="rounded-xl"
                           />
                           <p className="text-[10px] text-muted-foreground">
-                            {formData.overtimeWeeklyMinutes > 0 && `(${(formData.overtimeWeeklyMinutes / 60).toFixed(1)}h)`}
+                            {formData.overtimeThresholdWeekly > 0 && `(${(formData.overtimeThresholdWeekly / 60).toFixed(1)}h)`}
                           </p>
                         </div>
                       </div>
@@ -512,8 +513,8 @@ export default function JurisdictionsPage() {
                               <Input
                                 type="number"
                                 min={0}
-                                value={formData.mealBreakDurationMinutes}
-                                onChange={(e) => updateField("mealBreakDurationMinutes", parseInt(e.target.value) || 0)}
+                                value={formData.mealBreakDuration}
+                                onChange={(e) => updateField("mealBreakDuration", parseInt(e.target.value) || 0)}
                                 className="rounded-xl"
                               />
                             </div>
@@ -544,12 +545,12 @@ export default function JurisdictionsPage() {
                               <Input
                                 type="number"
                                 min={0}
-                                value={formData.restBreakIntervalMinutes}
-                                onChange={(e) => updateField("restBreakIntervalMinutes", parseInt(e.target.value) || 0)}
+                                value={formData.restBreakInterval}
+                                onChange={(e) => updateField("restBreakInterval", parseInt(e.target.value) || 0)}
                                 className="rounded-xl"
                               />
                               <p className="text-[10px] text-muted-foreground">
-                                {formData.restBreakIntervalMinutes > 0 && `(every ${(formData.restBreakIntervalMinutes / 60).toFixed(1)}h)`}
+                                {formData.restBreakInterval > 0 && `(every ${(formData.restBreakInterval / 60).toFixed(1)}h)`}
                               </p>
                             </div>
                             <div className="space-y-2">
@@ -557,8 +558,8 @@ export default function JurisdictionsPage() {
                               <Input
                                 type="number"
                                 min={0}
-                                value={formData.restBreakDurationMinutes}
-                                onChange={(e) => updateField("restBreakDurationMinutes", parseInt(e.target.value) || 0)}
+                                value={formData.restBreakDuration}
+                                onChange={(e) => updateField("restBreakDuration", parseInt(e.target.value) || 0)}
                                 className="rounded-xl"
                               />
                             </div>
@@ -618,7 +619,7 @@ export default function JurisdictionsPage() {
                     <Button
                       className="flex-1 rounded-xl gap-2"
                       onClick={handleSave}
-                      disabled={saving || !formData.jurisdictionCode || !formData.name}
+                      disabled={saving || !formData.jurisdiction || !formData.name}
                     >
                       <Save className="h-4 w-4" />
                       {saving ? "Saving..." : editingId ? "Update Policy" : "Create Policy"}
@@ -745,10 +746,10 @@ export default function JurisdictionsPage() {
                           </CardTitle>
                           <div className="flex items-center gap-2">
                             <Badge
-                              variant={policy.active ? "default" : "secondary"}
+                              variant={policy.isActive ? "default" : "secondary"}
                               className="text-[10px]"
                             >
-                              {policy.active ? "Active" : "Inactive"}
+                              {policy.isActive ? "Active" : "Inactive"}
                             </Badge>
                             <Button
                               variant="ghost"
@@ -764,7 +765,7 @@ export default function JurisdictionsPage() {
                       <CardContent className="space-y-3">
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <MapPin className="h-3 w-3" />
-                          <span>{policy.jurisdictionCode}</span>
+                          <span>{policy.jurisdiction}</span>
                           <span className="mx-1">|</span>
                           <span>{policy.requiredDaysPerWeek} days/week</span>
                         </div>
@@ -773,17 +774,17 @@ export default function JurisdictionsPage() {
                           <div className="p-2.5 bg-muted/50 rounded-lg">
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Overtime</p>
                             <p className="text-xs font-medium mt-0.5">
-                              {policy.overtimeDailyMinutes > 0 ? `${(policy.overtimeDailyMinutes / 60).toFixed(1)}h daily` : "No daily limit"}
+                              {policy.overtimeThresholdDaily > 0 ? `${(policy.overtimeThresholdDaily / 60).toFixed(1)}h daily` : "No daily limit"}
                             </p>
                             <p className="text-xs font-medium">
-                              {(policy.overtimeWeeklyMinutes / 60).toFixed(1)}h weekly
+                              {(policy.overtimeThresholdWeekly / 60).toFixed(1)}h weekly
                             </p>
                           </div>
                           <div className="p-2.5 bg-muted/50 rounded-lg">
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Meal Break</p>
                             <p className="text-xs font-medium mt-0.5">
                               {policy.mealBreakRequired
-                                ? `${policy.mealBreakDurationMinutes}min after ${(policy.mealBreakAfterMinutes / 60).toFixed(1)}h`
+                                ? `${policy.mealBreakDuration}min after ${(policy.mealBreakAfterMinutes / 60).toFixed(1)}h`
                                 : "Not required"}
                             </p>
                           </div>
@@ -791,7 +792,7 @@ export default function JurisdictionsPage() {
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Rest Break</p>
                             <p className="text-xs font-medium mt-0.5">
                               {policy.restBreakRequired
-                                ? `${policy.restBreakDurationMinutes}min every ${(policy.restBreakIntervalMinutes / 60).toFixed(1)}h`
+                                ? `${policy.restBreakDuration}min every ${(policy.restBreakInterval / 60).toFixed(1)}h`
                                 : "Not required"}
                             </p>
                           </div>

@@ -281,7 +281,7 @@ export default function PayrollConfigPage() {
 
       {/* Main Content */}
       <motion.main
-        className="flex-1 pb-24 lg:pb-8 -mt-4"
+        className="flex-1 pb-24 lg:pb-8 pt-6"
         variants={staggerContainer}
         initial="initial"
         animate="animate"

@@ -19,23 +19,23 @@ const createEntrySchema = z.object({
 
 // Schema for updating an entry
 const updateEntrySchema = z.object({
-  entryId: z.string().uuid(),
+  entryId: z.string().min(1),
   timestamp: z.string().datetime().optional(),
   type: z.enum(["CLOCK_IN", "CLOCK_OUT", "BREAK_START", "BREAK_END"]).optional(),
-  locationId: z.string().uuid().optional(),
+  locationId: z.string().min(1).optional(),
   notes: z.string().optional(),
   reason: z.string().min(1, "Reason is required"),
 })
 
 // Schema for deleting entries
 const deleteEntriesSchema = z.object({
-  entryIds: z.array(z.string().uuid()).min(1),
+  entryIds: z.array(z.string().min(1)).min(1),
   reason: z.string().min(1, "Reason is required"),
 })
 
 // Schema for bulk time shift
 const bulkShiftSchema = z.object({
-  entryIds: z.array(z.string().uuid()).min(1),
+  entryIds: z.array(z.string().min(1)).min(1),
   shiftMinutes: z.number().int(),
   reason: z.string().min(1, "Reason is required"),
 })
