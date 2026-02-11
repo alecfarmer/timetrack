@@ -41,7 +41,7 @@ export function ClockButton({ isClockedIn, onClockIn, onClockOut, disabled, vari
   }
 
   const handleClockOut = async () => {
-    if (loading || disabled) return
+    if (loading) return
 
     setLoading(true)
     try {
@@ -244,8 +244,7 @@ export function ClockButton({ isClockedIn, onClockIn, onClockOut, disabled, vari
       ref={constraintsRef}
       className={cn(
         "relative w-full min-h-[72px] rounded-xl overflow-hidden",
-        "bg-destructive/20 border-2 border-destructive/30",
-        disabled && "opacity-50 cursor-not-allowed"
+        "bg-destructive/20 border-2 border-destructive/30"
       )}
     >
       {/* Sliding background */}
@@ -266,7 +265,7 @@ export function ClockButton({ isClockedIn, onClockIn, onClockOut, disabled, vari
 
       {/* Draggable thumb */}
       <motion.div
-        drag={!loading && !disabled ? "x" : false}
+        drag={!loading ? "x" : false}
         dragConstraints={{ left: 0, right: buttonWidth - 64 }}
         dragElastic={0.1}
         onDragEnd={handleDragEnd}
