@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { format } from "date-fns"
-import { toZonedTime } from "date-fns-tz"
+import { formatDateTime, formatDateInZone } from "@/lib/dates"
 import {
   ArrowLeft,
   Calendar,
@@ -156,8 +155,6 @@ export default function EmployeeEntriesPage() {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
   const [historyEntry, setHistoryEntry] = useState<Entry | null>(null)
 
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-
   const fetchEntries = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -206,13 +203,11 @@ export default function EmployeeEntriesPage() {
   }, [fetchEntries, fetchLocations])
 
   const formatTimestamp = (timestamp: string) => {
-    const date = toZonedTime(new Date(timestamp), timezone)
-    return format(date, "MMM d, yyyy h:mm a")
+    return formatDateTime(timestamp)
   }
 
   const formatDateForInput = (timestamp: string) => {
-    const date = toZonedTime(new Date(timestamp), timezone)
-    return format(date, "yyyy-MM-dd'T'HH:mm")
+    return formatDateInZone(timestamp, "yyyy-MM-dd'T'HH:mm")
   }
 
   const getEntryTypeColor = (type: string) => {
