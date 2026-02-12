@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin as supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
-import { validateBody } from "@/lib/validations"
+import { validateBody, getRequestTimezone } from "@/lib/validations"
 import { z } from "zod"
+import { toZonedTime } from "date-fns-tz"
+import { startOfDay, format } from "date-fns"
 
 const updateMemberSchema = z.object({
   memberId: z.string().min(1),
@@ -56,7 +58,9 @@ export async function GET(request: NextRequest) {
 
     // For admin: also fetch today's status for each member
     if (org.role === "ADMIN") {
-      const today = new Date().toISOString().split("T")[0]
+      const tz = getRequestTimezone(request)
+      const zonedNow = toZonedTime(new Date(), tz)
+      const today = format(startOfDay(zonedNow), "yyyy-MM-dd")
       const memberIds = (members || []).map((m) => m.userId)
 
       // Fetch today's workdays for all members
@@ -71,11 +75,10 @@ export async function GET(request: NextRequest) {
         .eq("date", today)
 
       // Fetch this week's workdays for compliance
-      const now = new Date()
-      const dayOfWeek = now.getDay()
-      const monday = new Date(now)
-      monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7))
-      const weekStart = monday.toISOString().split("T")[0]
+      const dayOfWeek = zonedNow.getDay()
+      const monday = new Date(zonedNow)
+      monday.setDate(zonedNow.getDate() - ((dayOfWeek + 6) % 7))
+      const weekStart = format(startOfDay(monday), "yyyy-MM-dd")
 
       const { data: weekWorkDays } = await supabase
         .from("WorkDay")
@@ -90,7 +93,7 @@ export async function GET(request: NextRequest) {
         .select("userId, type, timestampServer, location:Location(code, name)")
         .in("userId", memberIds)
         .order("timestampServer", { ascending: false })
-        .limit(memberIds.length * 2)
+        .limit(Math.max(200, memberIds.length * 10))
 
       // Extract latest entry per member
       const latestEntryMap = new Map<string, NonNullable<typeof recentEntries>[number]>()

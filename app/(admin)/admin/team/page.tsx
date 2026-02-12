@@ -59,7 +59,7 @@ import {
   Send,
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
-import { cn } from "@/lib/utils"
+import { cn, tzHeaders } from "@/lib/utils"
 import { MemberActivitySheet } from "@/components/member-activity-sheet"
 
 interface Member {
@@ -130,7 +130,7 @@ export default function TeamPage() {
   const fetchData = useCallback(async () => {
     try {
       const [membersRes, policyRes, invitesRes] = await Promise.all([
-        fetch("/api/org/members"),
+        fetch("/api/org/members", { headers: tzHeaders() }),
         fetch("/api/org/policy"),
         fetch("/api/org/invite"),
       ])
