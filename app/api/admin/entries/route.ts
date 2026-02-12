@@ -2,10 +2,133 @@ import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin as supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
 import { logAudit } from "@/lib/audit"
-import { startOfDay, endOfDay } from "date-fns"
-import { toZonedTime } from "date-fns-tz"
+import { startOfDay, endOfDay, addDays } from "date-fns"
+import { toZonedTime, fromZonedTime } from "date-fns-tz"
 import { getRequestTimezone } from "@/lib/validations"
 import { z } from "zod"
+
+// Recalculate WorkDay totals from all entries for a given user/date/location
+async function recalculateWorkDay(
+  userId: string,
+  dateStr: string, // YYYY-MM-DD (in user's timezone)
+  locationId: string,
+  timezone: string
+) {
+  // Find existing WorkDay
+  const { data: workDay } = await supabase
+    .from("WorkDay")
+    .select("*")
+    .eq("date", dateStr)
+    .eq("locationId", locationId)
+    .eq("userId", userId)
+    .single()
+
+  // Convert timezone-local date boundaries to UTC for querying entries
+  const localDayStart = new Date(`${dateStr}T00:00:00`)
+  const utcStart = fromZonedTime(localDayStart, timezone)
+  const utcEnd = fromZonedTime(addDays(localDayStart, 1), timezone)
+
+  // Get all entries for this user on this date (in their timezone)
+  const { data: dayEntries } = await supabase
+    .from("Entry")
+    .select("id, type, timestampServer")
+    .eq("userId", userId)
+    .eq("locationId", locationId)
+    .gte("timestampServer", utcStart.toISOString())
+    .lt("timestampServer", utcEnd.toISOString())
+    .order("timestampServer", { ascending: true })
+
+  if (!dayEntries || dayEntries.length === 0) {
+    // No entries left - delete WorkDay if it exists
+    if (workDay) {
+      await supabase.from("WorkDay").delete().eq("id", workDay.id)
+    }
+    return
+  }
+
+  // Calculate totals
+  let workMs = 0
+  let breakMs = 0
+  let lastClockIn: Date | null = null
+  let lastBreakStart: Date | null = null
+  let firstClockIn: Date | null = null
+  let lastClockOut: Date | null = null
+
+  for (const e of dayEntries) {
+    const ts = new Date(e.timestampServer)
+    switch (e.type) {
+      case "CLOCK_IN":
+        lastClockIn = ts
+        if (!firstClockIn || ts < firstClockIn) firstClockIn = ts
+        break
+      case "CLOCK_OUT":
+        if (lastClockIn) {
+          workMs += ts.getTime() - lastClockIn.getTime()
+          lastClockIn = null
+        }
+        if (!lastClockOut || ts > lastClockOut) lastClockOut = ts
+        break
+      case "BREAK_START":
+        lastBreakStart = ts
+        break
+      case "BREAK_END":
+        if (lastBreakStart) {
+          breakMs += ts.getTime() - lastBreakStart.getTime()
+          lastBreakStart = null
+        }
+        break
+    }
+  }
+
+  const totalMinutes = Math.max(0, Math.floor((workMs - breakMs) / 60000))
+  const breakMinutes = Math.floor(breakMs / 60000)
+  const meetsPolicy = totalMinutes >= 480
+
+  if (workDay) {
+    // Update existing WorkDay
+    await supabase
+      .from("WorkDay")
+      .update({
+        totalMinutes,
+        breakMinutes,
+        meetsPolicy,
+        firstClockIn: firstClockIn?.toISOString() || null,
+        lastClockOut: lastClockOut?.toISOString() || null,
+      })
+      .eq("id", workDay.id)
+
+    // Link entries to this WorkDay
+    const entryIds = dayEntries.map((e) => e.id)
+    await supabase
+      .from("Entry")
+      .update({ workDayId: workDay.id })
+      .in("id", entryIds)
+  } else {
+    // Create new WorkDay
+    const { data: newWorkDay } = await supabase
+      .from("WorkDay")
+      .insert({
+        date: dateStr,
+        locationId,
+        userId,
+        totalMinutes,
+        breakMinutes,
+        meetsPolicy,
+        firstClockIn: firstClockIn?.toISOString() || null,
+        lastClockOut: lastClockOut?.toISOString() || null,
+      })
+      .select()
+      .single()
+
+    if (newWorkDay) {
+      const entryIds = dayEntries.map((e) => e.id)
+      await supabase
+        .from("Entry")
+        .update({ workDayId: newWorkDay.id })
+        .in("id", entryIds)
+    }
+  }
+}
 
 // Schema for creating a new entry
 const createEntrySchema = z.object({
@@ -227,6 +350,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create entry" }, { status: 500 })
     }
 
+    // Update or create WorkDay for this entry
+    const tz = getRequestTimezone(request)
+    const serverDate = new Date(entry.timestampServer)
+    const zonedDate = toZonedTime(serverDate, tz)
+    const workDayDate = startOfDay(zonedDate).toISOString().split("T")[0]
+    await recalculateWorkDay(userId, workDayDate, locationId, tz)
+
     // Log audit event
     await logAudit({
       orgId: org!.orgId,
@@ -311,6 +441,22 @@ export async function PATCH(request: NextRequest) {
             timestampClient: newTimestamp.toISOString(),
           })
           .eq("id", entry.id)
+      }
+
+      // Recalculate WorkDays for all affected entries
+      const tz = getRequestTimezone(request)
+      const affectedDays = new Set<string>()
+      for (const entry of entries) {
+        // Recalc for both old and new timestamps (in case day changed)
+        for (const ts of [entry.timestampServer, new Date(new Date(entry.timestampServer).getTime() + shiftMinutes * 60000).toISOString()]) {
+          const zonedDate = toZonedTime(new Date(ts), tz)
+          const dateStr = startOfDay(zonedDate).toISOString().split("T")[0]
+          const key = `${entry.userId}|${dateStr}|${entry.locationId}`
+          if (!affectedDays.has(key)) {
+            affectedDays.add(key)
+            await recalculateWorkDay(entry.userId, dateStr, entry.locationId, tz)
+          }
+        }
       }
 
       // Log audit event
@@ -399,6 +545,29 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Failed to update entry" }, { status: 500 })
     }
 
+    // Recalculate WorkDay for affected date(s)
+    const tz = getRequestTimezone(request)
+    const effectiveLocationId = locationId || existingEntry.locationId
+    const affectedDates = new Set<string>()
+
+    // Old timestamp date
+    const oldZoned = toZonedTime(new Date(existingEntry.timestampServer), tz)
+    affectedDates.add(startOfDay(oldZoned).toISOString().split("T")[0])
+
+    // New timestamp date (if changed)
+    if (timestamp) {
+      const newZoned = toZonedTime(new Date(timestamp), tz)
+      affectedDates.add(startOfDay(newZoned).toISOString().split("T")[0])
+    }
+
+    for (const dateStr of affectedDates) {
+      await recalculateWorkDay(existingEntry.userId, dateStr, effectiveLocationId, tz)
+      // If location changed, also recalculate old location
+      if (locationId && locationId !== existingEntry.locationId) {
+        await recalculateWorkDay(existingEntry.userId, dateStr, existingEntry.locationId, tz)
+      }
+    }
+
     // Log audit event
     await logAudit({
       orgId: org!.orgId,
@@ -450,7 +619,7 @@ export async function DELETE(request: NextRequest) {
     // Get entries to verify they belong to org
     const { data: entries } = await supabase
       .from("Entry")
-      .select("id, userId, type, timestampServer")
+      .select("id, userId, type, timestampServer, locationId")
       .in("id", entryIds)
 
     if (!entries || entries.length === 0) {
@@ -492,6 +661,19 @@ export async function DELETE(request: NextRequest) {
     if (deleteError) {
       console.error("Error deleting entries:", deleteError)
       return NextResponse.json({ error: "Failed to delete entries" }, { status: 500 })
+    }
+
+    // Recalculate WorkDays for all affected dates/locations
+    const tz = getRequestTimezone(request)
+    const recalculated = new Set<string>()
+    for (const entry of entries) {
+      const zonedDate = toZonedTime(new Date(entry.timestampServer), tz)
+      const dateStr = startOfDay(zonedDate).toISOString().split("T")[0]
+      const key = `${entry.userId}|${dateStr}|${entry.locationId}`
+      if (!recalculated.has(key)) {
+        recalculated.add(key)
+        await recalculateWorkDay(entry.userId, dateStr, entry.locationId, tz)
+      }
     }
 
     // Log audit event
