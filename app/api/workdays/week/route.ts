@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     const zonedDate = toZonedTime(targetDate, getRequestTimezone(request))
 
     // Get week boundaries (Monday to Sunday)
-    const weekStart = startOfWeek(zonedDate, { weekStartsOn: 1 })
-    const weekEnd = endOfWeek(zonedDate, { weekStartsOn: 1 })
+    const weekStart = startOfWeek(zonedDate, { weekStartsOn: 0 })
+    const weekEnd = endOfWeek(zonedDate, { weekStartsOn: 0 })
 
     const { data: workDays, error } = await supabase
       .from("WorkDay")

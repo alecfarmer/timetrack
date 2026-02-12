@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
     const zonedNow = toZonedTime(now, tz)
     const todayStart = startOfDay(zonedNow)
     const todayEnd = endOfDay(zonedNow)
-    const weekStart = startOfWeek(zonedNow, { weekStartsOn: 1 })
-    const weekEnd = endOfWeek(zonedNow, { weekStartsOn: 1 })
+    const weekStart = startOfWeek(zonedNow, { weekStartsOn: 0 })
+    const weekEnd = endOfWeek(zonedNow, { weekStartsOn: 0 })
 
     // Run all queries in parallel
     const [
