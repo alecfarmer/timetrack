@@ -126,17 +126,19 @@ export function HeroClockSection({
           />
         )}
 
-        {/* Quick Actions */}
-        <QuickActionsBar
-          actions={getDefaultQuickActions({
-            isClockedIn,
-            onStartBreak: clock.handleBreakStart,
-            onEndBreak: clock.handleBreakEnd,
-            isOnBreak: clock.isOnBreak,
-          })}
-          layout="horizontal"
-          size="md"
-        />
+        {/* Quick Actions (mobile only — desktop has these in sidebar) */}
+        <div className="lg:hidden">
+          <QuickActionsBar
+            actions={getDefaultQuickActions({
+              isClockedIn,
+              onStartBreak: clock.handleBreakStart,
+              onEndBreak: clock.handleBreakEnd,
+              isOnBreak: clock.isOnBreak,
+            })}
+            layout="horizontal"
+            size="md"
+          />
+        </div>
       </motion.section>
     </>
   )

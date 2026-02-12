@@ -341,7 +341,7 @@ export async function POST(request: NextRequest) {
         const totalMinutes = Math.max(0, Math.floor((workMs - breakMs) / 60000))
         updateData.totalMinutes = totalMinutes
         updateData.breakMinutes = Math.floor(breakMs / 60000)
-        updateData.meetsPolicy = totalMinutes > 0
+        updateData.meetsPolicy = totalMinutes >= 480 // 8 hours required for on-site day to count
       }
 
       if (Object.keys(updateData).length > 0) {
@@ -359,7 +359,7 @@ export async function POST(request: NextRequest) {
           userId: user!.id,
           firstClockIn: type === "CLOCK_IN" ? serverDate.toISOString() : null,
           lastClockOut: type === "CLOCK_OUT" ? serverDate.toISOString() : null,
-          meetsPolicy: type === "CLOCK_IN",
+          meetsPolicy: false,
         })
         .select()
         .single()
