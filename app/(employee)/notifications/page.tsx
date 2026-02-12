@@ -112,7 +112,7 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex items-center justify-center py-32 bg-background">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -132,7 +132,7 @@ export default function NotificationsPage() {
 
   return (
     <motion.div
-      className="flex flex-col min-h-screen bg-background"
+      className="flex flex-col bg-background"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >

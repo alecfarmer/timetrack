@@ -81,7 +81,7 @@ export default function SettingsPage() {
 
   return (
     <motion.div
-      className="flex flex-col min-h-screen bg-background"
+      className="flex flex-col bg-background"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >

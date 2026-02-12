@@ -66,7 +66,7 @@ export function LiveTimer({
     },
     xl: {
       container: "w-72 h-72",
-      text: "text-5xl sm:text-6xl",
+      text: "text-4xl sm:text-5xl",
       subtext: "text-sm",
       ring: 130,
       stroke: 8,

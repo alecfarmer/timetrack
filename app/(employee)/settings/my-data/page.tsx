@@ -111,16 +111,10 @@ export default function MyDataPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <header className="sticky top-0 z-50 glass border-b">
-          <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-            <div className="flex items-center gap-3 lg:hidden">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Database className="h-5 w-5 text-primary" />
-              </div>
-              <h1 className="text-lg font-bold">My Data</h1>
-            </div>
-            <h1 className="hidden lg:block text-xl font-semibold">My Data</h1>
+      <div className="flex flex-col bg-background">
+        <header className="hidden lg:block sticky top-0 z-40 glass border-b">
+          <div className="flex items-center justify-between px-8 h-16 max-w-6xl mx-auto">
+            <h1 className="text-xl font-semibold">My Data</h1>
             <ThemeToggle />
           </div>
         </header>
@@ -143,20 +137,15 @@ export default function MyDataPage() {
 
   return (
     <motion.div
-      className="flex flex-col min-h-screen bg-background"
+      className="flex flex-col bg-background"
       initial="initial"
       animate="animate"
       variants={pageVariants}
     >
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
-        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Database className="h-5 w-5 text-primary" />
-            </div>
-            <h1 className="text-lg font-bold">My Data</h1>
-          </div>
-          <h1 className="hidden lg:block text-xl font-semibold">Data Transparency</h1>
+      {/* Header - desktop only (mobile uses EmployeeNav header) */}
+      <header className="hidden lg:block sticky top-0 z-40 glass border-b">
+        <div className="flex items-center justify-between px-8 h-16 max-w-6xl mx-auto">
+          <h1 className="text-xl font-semibold">Data Transparency</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button
@@ -166,14 +155,14 @@ export default function MyDataPage() {
               className="gap-2 rounded-xl"
             >
               <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Download JSON</span>
+              <span>Download JSON</span>
             </Button>
           </div>
         </div>
       </header>
 
       <motion.main
-        className="flex-1 pb-24 lg:pb-8 lg:ml-64"
+        className="flex-1 pb-24 lg:pb-8"
         variants={staggerContainer}
         initial="initial"
         animate="animate"

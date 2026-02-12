@@ -190,7 +190,7 @@ export default function RewardsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex items-center justify-center py-32 bg-background">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -210,7 +210,7 @@ export default function RewardsPage() {
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex items-center justify-center py-32 bg-background">
         <p className="text-muted-foreground">Failed to load rewards</p>
       </div>
     )
@@ -221,25 +221,19 @@ export default function RewardsPage() {
 
   return (
     <motion.div
-      className="flex flex-col min-h-screen bg-background"
+      className="flex flex-col bg-background"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
-        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto lg:px-8">
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
-              <Trophy className="h-5 w-5 text-amber-500" />
-            </div>
-            <h1 className="text-lg font-bold">Rewards</h1>
-          </div>
-          <h1 className="hidden lg:block text-xl font-semibold">Rewards & Achievements</h1>
+      {/* Header - desktop only (mobile uses EmployeeNav header) */}
+      <header className="hidden lg:block sticky top-0 z-40 glass border-b">
+        <div className="flex items-center justify-between px-8 h-16 max-w-6xl mx-auto">
+          <h1 className="text-xl font-semibold">Rewards & Achievements</h1>
           <ThemeToggle />
         </div>
       </header>
 
-      <main className="flex-1 pb-24 lg:pb-8 lg:ml-64">
+      <main className="flex-1 pb-24 lg:pb-8">
         <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8">
           {/* Hero Level Card */}
           <Card className="border-0 shadow-xl mb-6 overflow-hidden">

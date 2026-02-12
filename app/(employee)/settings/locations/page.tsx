@@ -91,9 +91,10 @@ export default function LocationsPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-        <div className="flex items-center gap-3 px-4 h-14">
+    <div className="flex flex-col bg-background">
+      {/* Header - desktop only (mobile uses EmployeeNav header) */}
+      <header className="hidden lg:block sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
+        <div className="flex items-center gap-3 px-8 h-14">
           <Link href="/settings">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
@@ -103,7 +104,7 @@ export default function LocationsPage() {
         </div>
       </header>
 
-      <main className="flex-1 p-4 space-y-4">
+      <main className="flex-1 p-4 pb-24 lg:pb-8 space-y-4">
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">
             Loading locations...

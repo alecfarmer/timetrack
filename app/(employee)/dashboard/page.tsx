@@ -104,7 +104,7 @@ export default function Dashboard() {
 
   if (authLoading || clock.loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex items-center justify-center py-32 bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
@@ -163,8 +163,8 @@ export default function Dashboard() {
         </AnimatePresence>
       </div>
 
-      <PullToRefresh onRefresh={handleRefresh} className="min-h-screen">
-        <div className="min-h-screen bg-background pb-24 lg:pb-8">
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="bg-background pb-24 lg:pb-8">
           {/* Desktop-only header (mobile uses EmployeeNav hamburger menu) */}
           <header className="hidden lg:block sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
