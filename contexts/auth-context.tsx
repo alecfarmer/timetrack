@@ -8,6 +8,7 @@ interface OrgInfo {
   orgId: string
   orgName: string
   orgSlug: string
+  orgTimezone: string
   role: "ADMIN" | "MEMBER"
   firstName: string | null
   lastName: string | null
@@ -53,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role,
           firstName,
           lastName,
-          org:Organization (id, name, slug)
+          org:Organization (id, name, slug, timezone)
         `)
         .eq("userId", userId)
         .limit(1)
@@ -67,10 +68,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (membership?.org) {
         const orgData = Array.isArray(membership.org) ? membership.org[0] : membership.org
+        const orgTimezone = orgData.timezone || "America/New_York"
+
+        // Store org timezone so getTimezone() can use it as fallback
+        localStorage.setItem("org_timezone", orgTimezone)
+
         setOrg({
           orgId: membership.orgId,
           orgName: orgData.name,
           orgSlug: orgData.slug,
+          orgTimezone,
           role: membership.role as "ADMIN" | "MEMBER",
           firstName: (membership as Record<string, unknown>).firstName as string | null,
           lastName: (membership as Record<string, unknown>).lastName as string | null,
@@ -154,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut()
     setOrg(null)
+    localStorage.removeItem("org_timezone")
   }
 
   return (

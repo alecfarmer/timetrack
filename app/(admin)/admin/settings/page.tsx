@@ -109,7 +109,7 @@ export default function SettingsPage() {
     setOrgInfo({
       orgId: org.orgId,
       orgName: org.orgName || "My Organization",
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timezone: org.orgTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
     })
 
     try {

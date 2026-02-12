@@ -13,6 +13,7 @@ model Organization {
   name      String
   slug      String   @unique
   createdBy String
+  timezone  String   @default("America/New_York")
   features  Json     @default("{\"photoVerification\":false,\"breakTracking\":false,\"timesheetApproval\":false,\"alerts\":true,\"analytics\":true,\"manualCorrections\":true,\"auditLog\":true}")
 
   createdAt DateTime @default(now())

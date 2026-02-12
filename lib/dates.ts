@@ -1,7 +1,7 @@
 import { format, formatDistance, startOfWeek, endOfWeek, startOfDay, endOfDay, isWithinInterval, parseISO, differenceInMinutes } from "date-fns"
 import { toZonedTime, fromZonedTime, formatInTimeZone } from "date-fns-tz"
 
-// Fallback timezone if detection fails
+// Hardcoded fallback timezone if all else fails
 const FALLBACK_TIMEZONE = "America/New_York"
 
 // Parse date string ensuring UTC interpretation
@@ -14,16 +14,22 @@ function parseAsUTC(date: Date | string): Date {
   return parseISO(date)
 }
 
-// Detect user's current timezone from browser
-export function detectUserTimezone(): string {
+// Detect user's current timezone from browser (returns null if detection fails)
+function detectBrowserTimezone(): string | null {
   if (typeof window !== "undefined") {
     try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+      if (tz) return tz
     } catch {
-      return FALLBACK_TIMEZONE
+      // Detection failed
     }
   }
-  return FALLBACK_TIMEZONE
+  return null
+}
+
+// Public wrapper that always returns a string
+export function detectUserTimezone(): string {
+  return detectBrowserTimezone() || FALLBACK_TIMEZONE
 }
 
 // Get the manual timezone override (without fallback)
@@ -36,12 +42,21 @@ export function getTimezoneOverride(): string | null {
 
 export function getTimezone(): string {
   if (typeof window !== "undefined") {
-    // Check for manual override first, otherwise use detected timezone
+    // 1. Manual override from settings
     const manualOverride = localStorage.getItem("timezone_override")
     if (manualOverride) {
       return manualOverride
     }
-    return detectUserTimezone()
+    // 2. Browser-detected timezone
+    const browserTz = detectBrowserTimezone()
+    if (browserTz) {
+      return browserTz
+    }
+    // 3. Organization timezone (set by auth context on login)
+    const orgTimezone = localStorage.getItem("org_timezone")
+    if (orgTimezone) {
+      return orgTimezone
+    }
   }
   return FALLBACK_TIMEZONE
 }
