@@ -137,6 +137,7 @@ export async function GET(request: NextRequest) {
           displayName,
           isOwner: member.userId === ownerId,
           isClockedIn,
+          clockedInSince: isClockedIn ? latestEntry?.timestampServer || null : null,
           todayMinutes,
           todayLocation: todayLocName,
           weekDaysWorked: uniqueOfficeDays,

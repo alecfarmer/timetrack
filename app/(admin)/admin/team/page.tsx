@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -72,6 +72,7 @@ interface Member {
   isOwner?: boolean
   createdAt: string
   isClockedIn?: boolean
+  clockedInSince?: string | null
   todayMinutes?: number
   todayLocation?: string | null
   weekDaysWorked?: number
@@ -361,6 +362,30 @@ export default function TeamPage() {
     members.filter((m) => m.role === "ADMIN").length,
     [members]
   )
+
+  // Live timer tick for clocked-in members
+  const [tick, setTick] = useState(0)
+  const tickRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    if (clockedInCount > 0) {
+      tickRef.current = setInterval(() => setTick((t) => t + 1), 1000)
+    } else if (tickRef.current) {
+      clearInterval(tickRef.current)
+      tickRef.current = null
+    }
+    return () => { if (tickRef.current) clearInterval(tickRef.current) }
+  }, [clockedInCount])
+
+  const formatElapsed = useCallback((since: string) => {
+    void tick
+    const diff = Math.max(0, Math.floor((Date.now() - new Date(since).getTime()) / 1000))
+    const h = Math.floor(diff / 3600)
+    const m = Math.floor((diff % 3600) / 60)
+    const s = diff % 60
+    const pad = (n: number) => n.toString().padStart(2, "0")
+    return `${pad(h)}:${pad(m)}:${pad(s)}`
+  }, [tick])
 
   if (authLoading || loading) {
     return (
@@ -701,15 +726,23 @@ export default function TeamPage() {
                                   {member.todayLocation}
                                 </span>
                               )}
+                              {member.clockedInSince && (
+                                <span className="flex items-center gap-1 font-mono text-emerald-600 dark:text-emerald-400">
+                                  <Clock className="h-3 w-3" />
+                                  {formatElapsed(member.clockedInSince)}
+                                </span>
+                              )}
                             </>
                           ) : (
-                            <span className="text-muted-foreground">Offline</span>
-                          )}
-                          {member.todayMinutes !== undefined && member.todayMinutes > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatMinutes(member.todayMinutes)} today
-                            </span>
+                            <>
+                              <span className="text-muted-foreground">Offline</span>
+                              {member.todayMinutes !== undefined && member.todayMinutes > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {formatMinutes(member.todayMinutes)} today
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
