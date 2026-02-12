@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Flame, Trophy, Target, Zap, Award, Star, ChevronRight, Clock, Calendar } from "lucide-react"
+import { Flame, Trophy, Target, Zap, Award, Star, ChevronRight, Shield } from "lucide-react"
 import { cn, tzHeaders } from "@/lib/utils"
 import Link from "next/link"
 
@@ -16,7 +16,7 @@ interface BadgeData {
   icon: string
   category: string
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary"
-  xp: number
+  xpReward: number
   earnedAt: string | null
   progress?: number
   target?: number
@@ -31,31 +31,34 @@ interface Challenge {
   target: number
   progress: number
   xpReward: number
+  coinReward: number
   expiresAt: string
-  completed: boolean
-}
-
-interface Level {
-  level: number
-  name: string
-  minXp: number
-  maxXp: number
+  status: string
 }
 
 interface StreakData {
-  currentStreak: number
-  longestStreak: number
-  totalOnsiteDays: number
-  totalHours: number
-  thisMonthDays: number
-  perfectWeeks: number
-  badges: BadgeData[]
-  xp: number
-  level: Level
-  nextLevel: Level
-  xpProgress: number
-  xpToNext: number
-  challenges: Challenge[]
+  profile: {
+    currentStreak: number
+    longestStreak: number
+    totalXp: number
+    level: number
+    coins: number
+    streakShields: number
+    xpMultiplier: number
+  }
+  levelProgress: {
+    currentLevel: { level: number; title: string; minXp: number }
+    nextLevel: { level: number; title: string; minXp: number } | null
+    xpInLevel: number
+    xpNeeded: number
+    progressPercent: number
+  }
+  earnedBadges: Array<{
+    badgeDefinitionId: string
+    earnedAt: string
+    badge?: BadgeData
+  }>
+  activeChallenges: Challenge[]
 }
 
 const rarityColors: Record<string, string> = {
@@ -76,28 +79,34 @@ const rarityGlow: Record<string, string> = {
 
 export function StreaksWidget() {
   const [data, setData] = useState<StreakData | null>(null)
+  const [badges, setBadges] = useState<BadgeData[]>([])
   const [activeTab, setActiveTab] = useState<"streak" | "badges" | "challenges">("streak")
   const [selectedBadge, setSelectedBadge] = useState<BadgeData | null>(null)
 
   useEffect(() => {
-    fetch("/api/streaks", { headers: tzHeaders() })
-      .then((res) => res.json())
-      .then(setData)
+    Promise.all([
+      fetch("/api/rewards/profile", { headers: tzHeaders() }).then((r) => r.ok ? r.json() : null),
+      fetch("/api/rewards/badges", { headers: tzHeaders() }).then((r) => r.ok ? r.json() : null),
+    ])
+      .then(([profileData, badgesData]) => {
+        if (profileData) setData(profileData)
+        if (badgesData?.badges) setBadges(badgesData.badges)
+      })
       .catch(console.error)
   }, [])
 
   if (!data) return null
 
-  const earnedBadges = data.badges.filter((b) => b.earnedAt)
-  const lockedBadges = data.badges.filter((b) => !b.earnedAt)
+  const earnedBadges = badges.filter((b) => b.earnedAt)
+  const lockedBadges = badges.filter((b) => !b.earnedAt)
   const nextBadge = lockedBadges.sort((a, b) => {
     const aProgress = a.progress && a.target ? a.progress / a.target : 0
     const bProgress = b.progress && b.target ? b.progress / b.target : 0
     return bProgress - aProgress
   })[0]
-  const activeChallenges = data.challenges.filter((c) => !c.completed)
-  const completedChallenges = data.challenges.filter((c) => c.completed)
-  const xpProgressPercent = data.xpToNext > 0 ? Math.min(100, (data.xpProgress / data.xpToNext) * 100) : 100
+  const activeChallenges = data.activeChallenges?.filter((c) => c.status === "active") || []
+  const completedChallenges = data.activeChallenges?.filter((c) => c.status === "completed") || []
+  const xpProgressPercent = data.levelProgress?.progressPercent || 0
 
   return (
     <Card className="border-0 shadow-lg overflow-hidden">
@@ -107,7 +116,7 @@ export function StreaksWidget() {
         <div className="flex items-center gap-3 mb-4">
           <div className="relative">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-              {data.level.level}
+              {data.profile.level}
             </div>
             <motion.div
               className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center"
@@ -120,18 +129,26 @@ export function StreaksWidget() {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-bold text-lg">{data.level.name}</span>
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{data.xp} XP</Badge>
+              <span className="font-bold text-lg">{data.levelProgress.currentLevel.title}</span>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{data.profile.totalXp} XP</Badge>
+              {data.profile.streakShields > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-500/10 text-blue-500">
+                  <Shield className="h-2.5 w-2.5 mr-0.5" />
+                  {data.profile.streakShields}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Progress value={xpProgressPercent} className="h-2 flex-1" />
               <span className="text-[10px] text-muted-foreground tabular-nums">
-                {data.xpProgress}/{data.xpToNext}
+                {data.levelProgress.xpInLevel}/{data.levelProgress.xpNeeded}
               </span>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {data.xpToNext - data.xpProgress} XP to {data.nextLevel.name}
-            </p>
+            {data.levelProgress.nextLevel && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {data.levelProgress.xpNeeded - data.levelProgress.xpInLevel} XP to {data.levelProgress.nextLevel.title}
+              </p>
+            )}
           </div>
         </div>
 
@@ -171,29 +188,32 @@ export function StreaksWidget() {
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "w-12 h-12 rounded-xl flex items-center justify-center",
-                  data.currentStreak > 0 ? "bg-amber-500/15" : "bg-muted"
+                  data.profile.currentStreak > 0 ? "bg-amber-500/15" : "bg-muted"
                 )}>
                   <Flame className={cn(
                     "h-6 w-6 transition-all",
-                    data.currentStreak >= 10 ? "text-red-500 animate-pulse" :
-                    data.currentStreak >= 5 ? "text-orange-500" :
-                    data.currentStreak > 0 ? "text-amber-500" : "text-muted-foreground"
+                    data.profile.currentStreak >= 10 ? "text-red-500 animate-pulse" :
+                    data.profile.currentStreak >= 5 ? "text-orange-500" :
+                    data.profile.currentStreak > 0 ? "text-amber-500" : "text-muted-foreground"
                   )} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-baseline gap-1">
                     <motion.span
-                      key={data.currentStreak}
+                      key={data.profile.currentStreak}
                       initial={{ scale: 1.2, color: "hsl(var(--primary))" }}
                       animate={{ scale: 1, color: "inherit" }}
                       className="text-3xl font-bold tabular-nums"
                     >
-                      {data.currentStreak}
+                      {data.profile.currentStreak}
                     </motion.span>
                     <span className="text-sm text-muted-foreground">day streak</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Best: <span className="font-medium text-foreground">{data.longestStreak}</span> days
+                    Best: <span className="font-medium text-foreground">{data.profile.longestStreak}</span> days
+                    {data.profile.xpMultiplier > 1.0 && (
+                      <span className="ml-2 text-green-500 font-medium">{data.profile.xpMultiplier.toFixed(1)}x XP</span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -201,9 +221,9 @@ export function StreaksWidget() {
               {/* Quick stats */}
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { value: data.totalOnsiteDays, label: "On-Site", icon: "📍" },
-                  { value: `${data.totalHours}h`, label: "Total", icon: "⏱️" },
-                  { value: data.perfectWeeks, label: "Perfect Wks", icon: "✅" },
+                  { value: data.profile.coins, label: "Coins", icon: "🪙" },
+                  { value: earnedBadges.length, label: "Badges", icon: "🏆" },
+                  { value: data.profile.streakShields, label: "Shields", icon: "🛡️" },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-muted/50 rounded-lg p-2.5 text-center">
                     <span className="text-sm mr-1">{stat.icon}</span>
@@ -288,7 +308,7 @@ export function StreaksWidget() {
                       <Badge variant="outline" className={cn("text-[10px]", rarityColors[selectedBadge.rarity])}>
                         {selectedBadge.rarity}
                       </Badge>
-                      <Badge variant="secondary" className="text-[10px]">+{selectedBadge.xp} XP</Badge>
+                      <Badge variant="secondary" className="text-[10px]">+{selectedBadge.xpReward} XP</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{selectedBadge.description}</p>
                     {selectedBadge.progress !== undefined && selectedBadge.target !== undefined && (
@@ -418,7 +438,7 @@ export function StreaksWidget() {
                   {completedChallenges.map((challenge) => (
                     <div
                       key={challenge.id}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-success/10 text-success"
+                      className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 text-green-600"
                     >
                       <span>{challenge.icon}</span>
                       <span className="text-xs font-medium flex-1">{challenge.name}</span>

@@ -24,6 +24,7 @@ import {
   Menu,
   LogOut,
   Home,
+  Trophy,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,7 @@ const moreNavItems: QuickNavItem[] = [
   { href: "/admin/shifts", icon: Calendar, label: "Shifts" },
   { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/admin/wellbeing", icon: Heart, label: "Well-being" },
+  { href: "/admin/rewards", icon: Trophy, label: "Rewards" },
   { href: "/admin/settings", icon: Settings, label: "Settings" },
   { href: "/admin/features", icon: Shield, label: "Features" },
   { href: "/admin/jurisdictions", icon: MapPin, label: "Policies" },
@@ -68,6 +70,7 @@ function getPageTitle(pathname: string): string {
     "/admin/shifts": "Shifts",
     "/admin/analytics": "Analytics",
     "/admin/wellbeing": "Well-being",
+    "/admin/rewards": "Rewards",
     "/admin/settings": "Settings",
     "/admin/features": "Features",
     "/admin/jurisdictions": "Policies",

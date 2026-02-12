@@ -22,6 +22,7 @@ import {
   ChevronDown,
   LogOut,
   Building2,
+  Trophy,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
@@ -73,6 +74,12 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
       { href: "/admin/wellbeing", icon: Heart, label: "Well-being" },
+    ],
+  },
+  {
+    title: "Engagement",
+    items: [
+      { href: "/admin/rewards", icon: Trophy, label: "Rewards" },
     ],
   },
   {

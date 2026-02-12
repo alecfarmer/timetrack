@@ -102,7 +102,7 @@ function MiniTimer({ sessionStart }: { sessionStart: string }) {
 export function EmployeeNav({ currentPath }: EmployeeNavProps) {
   const { isAdmin, signOut } = useAuth()
   const router = useRouter()
-  const { isClockedIn, clockInTime } = useRealtime()
+  const { isClockedIn, clockInTime, unclaimedRewards } = useRealtime()
   const sessionStart = clockInTime?.toISOString() ?? null
   const [menuOpen, setMenuOpen] = useState(false)
   const pageTitle = getPageTitle(currentPath)
@@ -269,6 +269,7 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
           {mobileNavItems.slice(2).map((item) => {
             const active = isActive(item.href)
             const Icon = item.icon
+            const showBadge = item.href === "/rewards" && unclaimedRewards > 0
             return (
               <Link
                 key={item.href}
@@ -286,7 +287,14 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   />
                 )}
-                <Icon className={cn("h-5 w-5", active ? "fill-primary/20" : "")} strokeWidth={active ? 2.5 : 1.8} />
+                <div className="relative">
+                  <Icon className={cn("h-5 w-5", active ? "fill-primary/20" : "")} strokeWidth={active ? 2.5 : 1.8} />
+                  {showBadge && (
+                    <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-amber-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                      {unclaimedRewards > 9 ? "9+" : unclaimedRewards}
+                    </span>
+                  )}
+                </div>
                 <span className={cn("text-[10px] mt-0.5", active ? "font-bold" : "font-medium")}>{item.label}</span>
               </Link>
             )

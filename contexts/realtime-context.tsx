@@ -12,31 +12,6 @@ import {
 import { useAuth } from "./auth-context"
 import { getTimezone } from "@/lib/dates"
 
-// XP rewards per action
-const XP_REWARDS = {
-  CLOCK_IN: 10,
-  CLOCK_OUT: 5,
-  FULL_DAY: 25, // 8+ hours
-  EARLY_BIRD: 15, // Clock in before 7am
-  NIGHT_OWL: 15, // Clock in after 8pm
-  STREAK_DAY: 5, // Per day in streak
-  STREAK_MILESTONE_7: 50,
-  STREAK_MILESTONE_30: 200,
-  STREAK_MILESTONE_100: 500,
-  PER_HOUR_WORKED: 2, // Live accumulation
-}
-
-// Badge definitions
-const BADGES = {
-  EARLY_BIRD: { id: "early_bird", name: "Early Bird", emoji: "🐦", description: "Clock in before 7am" },
-  NIGHT_OWL: { id: "night_owl", name: "Night Owl", emoji: "🦉", description: "Clock in after 8pm" },
-  STREAK_7: { id: "streak_7", name: "Week Warrior", emoji: "🔥", description: "7-day streak" },
-  STREAK_30: { id: "streak_30", name: "Monthly Master", emoji: "💯", description: "30-day streak" },
-  CENTURY: { id: "century", name: "Century Club", emoji: "💯", description: "100 clock-ins" },
-  PERFECT_WEEK: { id: "perfect_week", name: "Perfect Week", emoji: "⭐", description: "5 full days in a week" },
-  IRON_WILL: { id: "iron_will", name: "Iron Will", emoji: "💪", description: "No missed days in a month" },
-}
-
 interface RealtimeState {
   // Clock state
   isClockedIn: boolean
@@ -50,9 +25,16 @@ interface RealtimeState {
   totalXP: number
   currentLevel: number
   xpToNextLevel: number
+  xpProgress: number // percentage 0-100
   sessionXP: number // XP earned this session (live)
-  recentBadges: string[]
+  recentBadges: Array<{ id: string; name: string; icon: string }>
   currentStreak: number
+  longestStreak: number
+  streakShields: number
+  xpMultiplier: number
+  coins: number
+  activeTitle: string | null
+  unclaimedRewards: number
 
   // Week summary
   daysWorked: number
@@ -88,9 +70,16 @@ const defaultState: RealtimeState = {
   totalXP: 0,
   currentLevel: 1,
   xpToNextLevel: 100,
+  xpProgress: 0,
   sessionXP: 0,
   recentBadges: [],
   currentStreak: 0,
+  longestStreak: 0,
+  streakShields: 0,
+  xpMultiplier: 1.0,
+  coins: 0,
+  activeTitle: null,
+  unclaimedRewards: 0,
   daysWorked: 0,
   requiredDays: 3,
   weeklyMinutes: 0,
@@ -101,32 +90,6 @@ const defaultState: RealtimeState = {
 }
 
 const RealtimeContext = createContext<RealtimeContextValue | null>(null)
-
-// Calculate level from XP (exponential curve)
-function calculateLevel(xp: number): { level: number; xpToNext: number } {
-  // Level thresholds: 100, 250, 500, 1000, 2000, 4000, 8000...
-  const baseXP = 100
-  let level = 1
-  let xpNeeded = baseXP
-  let totalXpForLevel = 0
-
-  while (xp >= totalXpForLevel + xpNeeded) {
-    totalXpForLevel += xpNeeded
-    level++
-    xpNeeded = Math.floor(baseXP * Math.pow(1.5, level - 1))
-  }
-
-  const xpInCurrentLevel = xp - totalXpForLevel
-  const xpToNext = xpNeeded - xpInCurrentLevel
-
-  return { level, xpToNext }
-}
-
-// Calculate session XP based on minutes worked
-function calculateSessionXP(minutes: number): number {
-  const hours = minutes / 60
-  return Math.floor(hours * XP_REWARDS.PER_HOUR_WORKED)
-}
 
 export function RealtimeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
@@ -146,15 +109,15 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     try {
       const headers = { "x-timezone": getTimezone() }
 
-      // Fetch dashboard data, streaks, and notifications in parallel
-      const [dashboardRes, streaksRes, alertsRes] = await Promise.all([
+      // Fetch dashboard data, rewards profile, and notifications in parallel
+      const [dashboardRes, rewardsRes, alertsRes] = await Promise.all([
         fetch("/api/dashboard", { headers }),
-        fetch("/api/streaks", { headers }),
+        fetch("/api/rewards/profile", { headers }),
         fetch("/api/alerts?unreadOnly=true&limit=10", { headers }),
       ])
 
       const dashboard = dashboardRes.ok ? await dashboardRes.json() : null
-      const streaks = streaksRes.ok ? await streaksRes.json() : null
+      const rewards = rewardsRes.ok ? await rewardsRes.json() : null
       const alertsData = alertsRes.ok ? await alertsRes.json() : null
 
       if (!dashboard) return
@@ -170,12 +133,24 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         currentSessionMinutes = Math.floor((Date.now() - clockInTime.getTime()) / 60000)
       }
 
-      const totalXP = streaks?.xp || 0
-      const { level, xpToNext } = calculateLevel(totalXP)
-      const sessionXP = calculateSessionXP(currentSessionMinutes)
+      const profile = rewards?.profile
+      const totalXP = profile?.totalXp || 0
+      const level = profile?.level || 1
+      const levelProgress = rewards?.levelProgress
+      const sessionXP = Math.floor((currentSessionMinutes / 60) * 2)
 
       // Extract notifications array from alerts response
       const notifications = alertsData?.notifications || []
+
+      // Map recent earned badges for display
+      const earnedBadges = rewards?.earnedBadges || []
+      const recentBadges = earnedBadges
+        .slice(0, 5)
+        .map((b: { badgeDefinitionId: string; badge?: { name: string; icon: string } }) => ({
+          id: b.badgeDefinitionId,
+          name: b.badge?.name || "",
+          icon: b.badge?.icon || "🏆",
+        }))
 
       const newState: RealtimeState = {
         isClockedIn,
@@ -188,10 +163,17 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           : null,
         totalXP,
         currentLevel: level,
-        xpToNextLevel: xpToNext,
+        xpToNextLevel: levelProgress?.xpNeeded || 100,
+        xpProgress: levelProgress?.progressPercent || 0,
         sessionXP,
-        recentBadges: streaks?.recentBadges || [],
-        currentStreak: streaks?.currentStreak || 0,
+        recentBadges,
+        currentStreak: profile?.currentStreak || 0,
+        longestStreak: profile?.longestStreak || 0,
+        streakShields: profile?.streakShields || 0,
+        xpMultiplier: profile?.xpMultiplier || 1.0,
+        coins: profile?.coins || 0,
+        activeTitle: rewards?.activeTitle?.name || null,
+        unclaimedRewards: rewards?.unclaimedCount || 0,
         daysWorked: dashboard.weekSummary?.daysWorked || 0,
         requiredDays: dashboard.weekSummary?.requiredDays || 3,
         weeklyMinutes: dashboard.weekSummary?.totalMinutes || 0,
@@ -316,14 +298,18 @@ export function useRealtime() {
 
 // Hook for live XP display with animation support
 export function useLiveXP() {
-  const { totalXP, sessionXP, currentLevel, xpToNextLevel } = useRealtime()
+  const { totalXP, sessionXP, currentLevel, xpToNextLevel, xpProgress, coins, streakShields, xpMultiplier, activeTitle } = useRealtime()
 
   return {
     totalXP,
     sessionXP,
     level: currentLevel,
     xpToNext: xpToNextLevel,
-    xpProgress: Math.max(0, 100 - (xpToNextLevel / (totalXP + xpToNextLevel)) * 100),
+    xpProgress,
+    coins,
+    streakShields,
+    xpMultiplier,
+    activeTitle,
   }
 }
 

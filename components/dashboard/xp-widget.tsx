@@ -5,25 +5,12 @@ import { Widget } from "@/components/dashboard/widget-grid"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { useLiveXP, useRealtime } from "@/contexts/realtime-context"
-import { Award, Flame, Sparkles, ChevronRight } from "lucide-react"
+import { Award, Flame, Sparkles, ChevronRight, Coins, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
-function getBadgeEmoji(badge: string): string {
-  const badges: Record<string, string> = {
-    early_bird: "\u{1F426}",
-    night_owl: "\u{1F989}",
-    streak_7: "\u{1F525}",
-    streak_30: "\u{1F4AF}",
-    century: "\u{1F4AF}",
-    perfect_week: "\u2B50",
-    iron_will: "\u{1F4AA}",
-  }
-  return badges[badge] || "\u{1F3C6}"
-}
-
 function MobileXPCard() {
-  const { totalXP, sessionXP, level, xpToNext, xpProgress } = useLiveXP()
+  const { totalXP, sessionXP, level, xpToNext, xpProgress, coins, streakShields, xpMultiplier, activeTitle } = useLiveXP()
   const { recentBadges, currentStreak } = useRealtime()
 
   return (
@@ -45,18 +32,19 @@ function MobileXPCard() {
           {/* XP info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">Level {level}</span>
+              <span className="text-sm font-semibold">
+                {activeTitle || `Level ${level}`}
+              </span>
               {currentStreak > 0 && (
                 <Badge variant="secondary" className="gap-0.5 text-[10px] h-5 bg-orange-500/10 text-orange-600 border-orange-500/20">
                   <Flame className="h-2.5 w-2.5" />
                   {currentStreak}
                 </Badge>
               )}
-              {sessionXP > 0 && (
-                <span className="text-[10px] font-medium text-amber-600 flex items-center gap-0.5">
-                  <Sparkles className="h-2.5 w-2.5" />
-                  +{sessionXP}
-                </span>
+              {xpMultiplier > 1.0 && (
+                <Badge variant="secondary" className="gap-0.5 text-[10px] h-5 bg-green-500/10 text-green-600 border-green-500/20">
+                  {xpMultiplier.toFixed(1)}x
+                </Badge>
               )}
             </div>
             <div className="flex items-center gap-2 mt-1">
@@ -70,7 +58,21 @@ function MobileXPCard() {
               </div>
               <span className="text-[10px] tabular-nums text-muted-foreground flex-shrink-0">{xpToNext} XP</span>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{totalXP.toLocaleString()} XP total</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-[10px] text-muted-foreground">{totalXP.toLocaleString()} XP</p>
+              {coins > 0 && (
+                <span className="text-[10px] text-yellow-600 flex items-center gap-0.5">
+                  <Coins className="h-2.5 w-2.5" />
+                  {coins}
+                </span>
+              )}
+              {streakShields > 0 && (
+                <span className="text-[10px] text-blue-500 flex items-center gap-0.5">
+                  <Shield className="h-2.5 w-2.5" />
+                  {streakShields}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -80,14 +82,14 @@ function MobileXPCard() {
             <div className="flex gap-1.5 flex-1">
               {recentBadges.slice(0, 4).map((badge, i) => (
                 <motion.div
-                  key={badge}
+                  key={badge.id}
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.08 }}
                   className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-sm"
-                  title={badge}
+                  title={badge.name}
                 >
-                  {getBadgeEmoji(badge)}
+                  {badge.icon}
                 </motion.div>
               ))}
             </div>
@@ -106,7 +108,7 @@ function MobileXPCard() {
 }
 
 export function XPWidget() {
-  const { totalXP, sessionXP, level, xpToNext, xpProgress } = useLiveXP()
+  const { totalXP, sessionXP, level, xpToNext, xpProgress, coins, streakShields, xpMultiplier, activeTitle } = useLiveXP()
   const { recentBadges, currentStreak } = useRealtime()
 
   return (
@@ -134,11 +136,17 @@ export function XPWidget() {
               </motion.div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold">Level {level}</p>
+                  <p className="font-semibold">{activeTitle || `Level ${level}`}</p>
                   {currentStreak > 0 && (
                     <Badge variant="secondary" className="gap-1 bg-orange-500/10 text-orange-600 border-orange-500/20">
                       <Flame className="h-3 w-3" />
                       {currentStreak}
+                    </Badge>
+                  )}
+                  {xpMultiplier > 1.0 && (
+                    <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-600 border-green-500/20">
+                      <Sparkles className="h-3 w-3" />
+                      {xpMultiplier.toFixed(1)}x
                     </Badge>
                   )}
                 </div>
@@ -154,16 +162,31 @@ export function XPWidget() {
               <Progress value={xpProgress} className="h-2" />
             </div>
 
-            {sessionXP > 0 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex items-center justify-center gap-2 py-2 rounded-lg bg-amber-500/10 text-amber-600"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span className="text-sm font-medium">+{sessionXP} XP this session</span>
-              </motion.div>
-            )}
+            {/* Coins, shields, session XP row */}
+            <div className="flex items-center gap-3">
+              {coins > 0 && (
+                <div className="flex items-center gap-1.5 text-sm text-yellow-600">
+                  <Coins className="h-4 w-4" />
+                  <span className="font-medium">{coins}</span>
+                </div>
+              )}
+              {streakShields > 0 && (
+                <div className="flex items-center gap-1.5 text-sm text-blue-500">
+                  <Shield className="h-4 w-4" />
+                  <span className="font-medium">{streakShields}</span>
+                </div>
+              )}
+              {sessionXP > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex items-center gap-1.5 text-sm text-amber-600 ml-auto"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span className="font-medium">+{sessionXP} XP</span>
+                </motion.div>
+              )}
+            </div>
 
             {recentBadges.length > 0 && (
               <div className="pt-2 border-t">
@@ -171,14 +194,14 @@ export function XPWidget() {
                 <div className="flex gap-2">
                   {recentBadges.slice(0, 4).map((badge, i) => (
                     <motion.div
-                      key={badge}
+                      key={badge.id}
                       initial={{ opacity: 0, scale: 0 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: i * 0.1 }}
                       className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-lg"
-                      title={badge}
+                      title={badge.name}
                     >
-                      {getBadgeEmoji(badge)}
+                      {badge.icon}
                     </motion.div>
                   ))}
                 </div>

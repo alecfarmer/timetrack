@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Star, Trophy, Flame, Zap, X } from "lucide-react"
+import { Sparkles, Star, Trophy, Flame, Zap, X, Coins, Shield } from "lucide-react"
 import {
   levelUp,
   confettiPiece,
@@ -55,6 +55,9 @@ interface LevelUpModalProps {
   level: number
   totalXP: number
   unlockedRewards?: string[]
+  coinBonus?: number
+  shieldEarned?: boolean
+  titleUnlocked?: string | null
 }
 
 export function LevelUpModal({
@@ -63,6 +66,9 @@ export function LevelUpModal({
   level,
   totalXP,
   unlockedRewards = [],
+  coinBonus = 0,
+  shieldEarned = false,
+  titleUnlocked = null,
 }: LevelUpModalProps) {
   const [showConfetti, setShowConfetti] = useState(false)
 
@@ -144,9 +150,33 @@ export function LevelUpModal({
             </motion.div>
 
             {/* XP total */}
-            <motion.p variants={scaleUp} className="text-white/80 mb-6">
+            <motion.p variants={scaleUp} className="text-white/80 mb-4">
               {totalXP.toLocaleString()} XP Total
             </motion.p>
+
+            {/* Level-up bonuses */}
+            {(coinBonus > 0 || shieldEarned || titleUnlocked) && (
+              <motion.div variants={scaleUp} className="flex flex-wrap justify-center gap-2 mb-4">
+                {coinBonus > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 text-sm font-medium">
+                    <Coins className="h-4 w-4 text-yellow-200" />
+                    +{coinBonus} Coins
+                  </div>
+                )}
+                {shieldEarned && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 text-sm font-medium">
+                    <Shield className="h-4 w-4 text-blue-200" />
+                    +1 Streak Shield
+                  </div>
+                )}
+                {titleUnlocked && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 text-sm font-medium">
+                    <Star className="h-4 w-4 text-yellow-200" />
+                    Title: {titleUnlocked}
+                  </div>
+                )}
+              </motion.div>
+            )}
 
             {/* Unlocked rewards */}
             {unlockedRewards.length > 0 && (
@@ -380,7 +410,7 @@ export function XPGainToast({ amount, reason, onComplete }: XPGainToastProps) {
 // Gamification context hook for managing modals
 interface GamificationState {
   showLevelUp: boolean
-  levelUpData: { level: number; totalXP: number; rewards: string[] } | null
+  levelUpData: { level: number; totalXP: number; rewards: string[]; coinBonus?: number; shieldEarned?: boolean; titleUnlocked?: string | null } | null
   showBadgeUnlock: boolean
   badgeData: { name: string; description: string; icon: string; xpReward: number } | null
   showStreakMilestone: boolean
@@ -400,11 +430,11 @@ export function useGamificationModals() {
   })
 
   const triggerLevelUp = useCallback(
-    (level: number, totalXP: number, rewards: string[] = []) => {
+    (level: number, totalXP: number, rewards: string[] = [], coinBonus?: number, shieldEarned?: boolean, titleUnlocked?: string | null) => {
       setState((s) => ({
         ...s,
         showLevelUp: true,
-        levelUpData: { level, totalXP, rewards },
+        levelUpData: { level, totalXP, rewards, coinBonus, shieldEarned, titleUnlocked },
       }))
     },
     []

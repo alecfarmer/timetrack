@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth"
 import { startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 import { createEntrySchema, validateBody, getRequestTimezone } from "@/lib/validations"
+import { processRewardsEvent } from "@/lib/rewards/events"
 
 // Evaluate alert rules and fire notifications on clock events
 async function evaluateAlertRules(
@@ -372,7 +373,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(entry, { status: 201 })
+    // Process rewards events (non-blocking)
+    let rewardsEvents = null
+    if (org) {
+      try {
+        rewardsEvents = await processRewardsEvent(
+          user!.id, org.orgId, type, entry, getRequestTimezone(request)
+        )
+      } catch (err) {
+        // Rewards processing is non-critical
+        console.error("Rewards processing error:", err)
+      }
+    }
+
+    return NextResponse.json({ ...entry, rewardsEvents }, { status: 201 })
   } catch (error) {
     console.error("Error creating entry:", error)
     return NextResponse.json(
