@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select"
 import { Loader2, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react"
 import { formatDateTime, toLocalTime, getTimezone } from "@/lib/dates"
+import { tzHeaders } from "@/lib/utils"
 import { fromZonedTime } from "date-fns-tz"
 
 interface Correction {
@@ -122,7 +123,7 @@ export function CorrectionDialog({
 
       const res = await fetch("/api/entries/corrections", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...tzHeaders() },
         body: JSON.stringify({ entryId, field, newValue: submittedValue, reason }),
       })
 

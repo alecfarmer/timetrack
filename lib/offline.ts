@@ -1,3 +1,5 @@
+import { getTimezone } from "@/lib/dates"
+
 // IndexedDB-based offline queue for clock in/out actions
 const DB_NAME = "onsite-offline"
 const DB_VERSION = 1
@@ -136,7 +138,7 @@ export async function syncPendingEntries(): Promise<{ synced: number; failed: nu
     try {
       const res = await fetch("/api/entries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-timezone": getTimezone() },
         body: JSON.stringify({
           type: entry.type,
           locationId: entry.locationId,

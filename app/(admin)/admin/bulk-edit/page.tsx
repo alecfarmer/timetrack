@@ -10,6 +10,7 @@ import { NotificationCenter } from "@/components/notification-center"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
+import { tzHeaders } from "@/lib/utils"
 import { format, subDays } from "date-fns"
 import {
   ArrowLeft,
@@ -103,7 +104,7 @@ export default function BulkEditPage() {
     try {
       const res = await fetch("/api/entries/bulk", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...tzHeaders() },
         body: JSON.stringify({
           correctionIds: Array.from(selected),
           action,

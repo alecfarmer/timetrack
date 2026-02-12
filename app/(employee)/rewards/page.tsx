@@ -23,7 +23,7 @@ import {
   Gift,
   Lock,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, tzHeaders } from "@/lib/utils"
 import { format, formatDistanceToNow } from "date-fns"
 
 interface BadgeData {
@@ -149,7 +149,7 @@ export default function RewardsPage() {
   const [showEarnedOnly, setShowEarnedOnly] = useState(false)
 
   useEffect(() => {
-    fetch("/api/streaks")
+    fetch("/api/streaks", { headers: tzHeaders() })
       .then((res) => res.json())
       .then((data) => {
         setData(data)

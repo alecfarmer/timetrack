@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Flame, Trophy, Target, Zap, Award, Star, ChevronRight, Clock, Calendar } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, tzHeaders } from "@/lib/utils"
 import Link from "next/link"
 
 interface BadgeData {
@@ -80,7 +80,7 @@ export function StreaksWidget() {
   const [selectedBadge, setSelectedBadge] = useState<BadgeData | null>(null)
 
   useEffect(() => {
-    fetch("/api/streaks")
+    fetch("/api/streaks", { headers: tzHeaders() })
       .then((res) => res.json())
       .then(setData)
       .catch(console.error)

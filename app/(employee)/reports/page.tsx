@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/page-header"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { BarChart3, Download, FileText, Clock, TrendingUp } from "lucide-react"
+import { tzHeaders } from "@/lib/utils"
 import { WeeklyReport } from "@/components/reports/weekly-report"
 import { MonthlyReport } from "@/components/reports/monthly-report"
 
@@ -59,8 +60,8 @@ export default function ReportsPage() {
   const fetchReports = async () => {
     try {
       const [weekRes, monthRes] = await Promise.all([
-        fetch("/api/workdays/week"),
-        fetch("/api/reports/monthly"),
+        fetch("/api/workdays/week", { headers: tzHeaders() }),
+        fetch("/api/reports/monthly", { headers: tzHeaders() }),
       ])
       if (weekRes.ok) setWeekSummary(await weekRes.json())
       if (monthRes.ok) setMonthSummary(await monthRes.json())

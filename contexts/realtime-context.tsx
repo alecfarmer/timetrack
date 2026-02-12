@@ -10,6 +10,7 @@ import {
   ReactNode,
 } from "react"
 import { useAuth } from "./auth-context"
+import { getTimezone } from "@/lib/dates"
 
 // XP rewards per action
 const XP_REWARDS = {
@@ -143,8 +144,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     if (!user) return
 
     try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
-      const headers = { "x-timezone": tz }
+      const headers = { "x-timezone": getTimezone() }
 
       // Fetch dashboard data, streaks, and notifications in parallel
       const [dashboardRes, streaksRes, alertsRes] = await Promise.all([
