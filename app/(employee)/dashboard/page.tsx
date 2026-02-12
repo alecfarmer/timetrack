@@ -13,6 +13,7 @@ import { PullToRefresh } from "@/components/pull-to-refresh"
 import { Widget } from "@/components/dashboard/widget-grid"
 import { useGamificationModals } from "@/components/gamification/level-up-modal"
 import { HeroClockSection } from "@/components/dashboard/hero-clock-section"
+import { DesktopClockBar } from "@/components/dashboard/desktop-clock-bar"
 import { StatsGrid } from "@/components/dashboard/stats-grid"
 import { XPWidget } from "@/components/dashboard/xp-widget"
 import { WeeklyOverviewWidget } from "@/components/dashboard/weekly-overview-widget"
@@ -206,6 +207,15 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+
+            <DesktopClockBar
+              clock={clock}
+              position={position}
+              gpsLoading={gpsLoading}
+              refreshGps={refreshGps}
+              onClockIn={handleClockInWithPhoto}
+              isOvertime={isOvertime}
+            />
           </header>
 
           <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">

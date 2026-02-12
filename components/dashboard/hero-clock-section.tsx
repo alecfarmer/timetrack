@@ -1,9 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { ClockButton } from "@/components/clock-button"
 import { LocationPicker } from "@/components/location-picker"
-import { LiveTimer } from "@/components/dashboard/live-timer"
 import { MobileClockTimer } from "@/components/dashboard/mobile-clock-timer"
 import { BreakActions, QuickActionsBar, getDefaultQuickActions } from "@/components/dashboard/quick-actions"
 import { GeoPosition } from "@/lib/geo"
@@ -28,7 +26,6 @@ export function HeroClockSection({
   gpsLoading,
   refreshGps,
   onClockIn,
-  isOvertime,
   eightHourAlert,
   onDismissAlert,
 }: HeroClockSectionProps) {
@@ -87,62 +84,45 @@ export function HeroClockSection({
           />
         </div>
 
-        {/* Desktop: Standard Live Timer */}
-        <div className="hidden lg:flex justify-center py-4">
-          <LiveTimer
-            startTime={sessionStart}
-            isOnBreak={clock.isOnBreak}
-            targetHours={8}
-            showProgress={true}
-            size="xl"
-          />
-        </div>
+        {/* Desktop: Live Timer moved to DesktopClockBar */}
 
-        {/* Location Selection */}
-        {!position && !gpsLoading ? (
-          <button
-            onClick={refreshGps}
-            className="w-full flex items-center justify-between p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5" />
-              <span className="font-medium">Enable Location</span>
+        {/* Location Selection (mobile only — desktop uses DesktopClockBar) */}
+        <div className="lg:hidden">
+          {!position && !gpsLoading ? (
+            <button
+              onClick={refreshGps}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <MapPin className="h-5 w-5" />
+                <span className="font-medium">Enable Location</span>
+              </div>
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          ) : gpsLoading ? (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50">
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-muted-foreground">Getting location...</span>
             </div>
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        ) : gpsLoading ? (
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50">
-            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-muted-foreground">Getting location...</span>
-          </div>
-        ) : clock.locations.length > 0 ? (
-          <LocationPicker
-            locations={clock.locations}
-            selectedId={clock.selectedLocationId}
-            userPosition={position}
-            onSelect={clock.setSelectedLocationId}
-          />
-        ) : null}
-
-        {/* Desktop: Giant Clock Button (hidden on mobile since timer is interactive) */}
-        <div className="hidden lg:block">
-          <ClockButton
-            isClockedIn={isClockedIn}
-            onClockIn={onClockIn}
-            onClockOut={clock.handleClockOut}
-            disabled={clockDisabled}
-            variant="giant"
-            isOnBreak={clock.isOnBreak}
-            isOvertime={isOvertime}
-          />
+          ) : clock.locations.length > 0 ? (
+            <LocationPicker
+              locations={clock.locations}
+              selectedId={clock.selectedLocationId}
+              userPosition={position}
+              onSelect={clock.setSelectedLocationId}
+            />
+          ) : null}
         </div>
 
-        {/* Break Actions */}
+        {/* Desktop: Giant Clock Button moved to DesktopClockBar */}
+
+        {/* Break Actions (mobile only — desktop uses DesktopClockBar) */}
         {isClockedIn && (
           <BreakActions
             isOnBreak={clock.isOnBreak}
             onStartBreak={clock.handleBreakStart}
             onEndBreak={clock.handleBreakEnd}
+            className="lg:hidden"
           />
         )}
 
