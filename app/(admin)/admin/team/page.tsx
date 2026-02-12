@@ -60,6 +60,7 @@ import {
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
+import { MemberActivitySheet } from "@/components/member-activity-sheet"
 
 interface Member {
   id: string
@@ -117,6 +118,9 @@ export default function TeamPage() {
   const [editFirstName, setEditFirstName] = useState("")
   const [editLastName, setEditLastName] = useState("")
   const [editNameLoading, setEditNameLoading] = useState(false)
+
+  // Activity sheet state
+  const [activityMember, setActivityMember] = useState<Member | null>(null)
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("")
@@ -783,7 +787,7 @@ export default function TeamPage() {
                               {member.role === "ADMIN" ? "Demote to Member" : "Promote to Admin"}
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setActivityMember(member)}>
                             <Eye className="h-4 w-4 mr-2" />
                             View Activity
                           </DropdownMenuItem>
@@ -868,6 +872,13 @@ export default function TeamPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Member Activity Sheet */}
+      <MemberActivitySheet
+        open={!!activityMember}
+        onOpenChange={(open) => !open && setActivityMember(null)}
+        member={activityMember}
+      />
     </motion.div>
   )
 }
