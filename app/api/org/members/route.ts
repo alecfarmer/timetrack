@@ -31,6 +31,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch members" }, { status: 500 })
     }
 
+    // Get org owner
+    const { data: orgData } = await supabase
+      .from("Organization")
+      .select("createdBy")
+      .eq("id", org.orgId)
+      .single()
+
+    const ownerId = orgData?.createdBy || null
+
     // Look up emails for all members via auth admin API
     const memberIds = (members || []).map((m) => m.userId)
     const emailMap: Record<string, string> = {}
@@ -126,6 +135,7 @@ export async function GET(request: NextRequest) {
           ...member,
           email: emailMap[member.userId] || null,
           displayName,
+          isOwner: member.userId === ownerId,
           isClockedIn,
           todayMinutes,
           todayLocation: todayLocName,
@@ -142,6 +152,7 @@ export async function GET(request: NextRequest) {
       ...m,
       email: emailMap[m.userId] || null,
       displayName: [m.firstName, m.lastName].filter(Boolean).join(" ") || null,
+      isOwner: m.userId === ownerId,
     }))
     return NextResponse.json(basicMembers)
   } catch (error) {
@@ -183,6 +194,19 @@ export async function PATCH(request: NextRequest) {
     // Can't change own role (but can update names)
     if (role && target.userId === user!.id) {
       return NextResponse.json({ error: "Cannot change your own role" }, { status: 400 })
+    }
+
+    // Prevent demoting the org owner
+    if (role && role !== "ADMIN") {
+      const { data: orgData } = await supabase
+        .from("Organization")
+        .select("createdBy")
+        .eq("id", org.orgId)
+        .single()
+
+      if (orgData?.createdBy === target.userId) {
+        return NextResponse.json({ error: "Cannot demote the organization owner" }, { status: 400 })
+      }
     }
 
     const updateData: Record<string, unknown> = {}
@@ -242,6 +266,17 @@ export async function DELETE(request: NextRequest) {
 
     if (target.userId === user!.id) {
       return NextResponse.json({ error: "Cannot remove yourself" }, { status: 400 })
+    }
+
+    // Prevent removing the org owner
+    const { data: orgData } = await supabase
+      .from("Organization")
+      .select("createdBy")
+      .eq("id", org.orgId)
+      .single()
+
+    if (orgData?.createdBy === target.userId) {
+      return NextResponse.json({ error: "Cannot remove the organization owner" }, { status: 400 })
     }
 
     const { error } = await supabase

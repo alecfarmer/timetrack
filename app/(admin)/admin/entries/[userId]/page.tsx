@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { motion } from "framer-motion"
 import { formatDateTime, formatDateInZone } from "@/lib/dates"
 import {
   ArrowLeft,
@@ -17,7 +18,8 @@ import {
   AlertCircle,
   History,
   MoreHorizontal,
-  ArrowUpDown
+  ArrowUpDown,
+  Edit3,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,6 +27,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationCenter } from "@/components/notification-center"
 import {
   Select,
   SelectContent,
@@ -97,6 +101,7 @@ interface UserInfo {
   id: string
   email: string
   role: string
+  displayName?: string | null
 }
 
 export default function EmployeeEntriesPage() {
@@ -413,28 +418,111 @@ export default function EmployeeEntriesPage() {
     ? corrections.filter(c => c.entryId === historyEntry.id)
     : []
 
+  const memberName = userInfo?.displayName || userInfo?.email || "Employee"
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+    <motion.div
+      className="flex flex-col min-h-screen bg-background"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      {/* Premium Dark Hero Header */}
+      <div className="hidden lg:block relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-orange-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+
+        <header className="relative z-10 safe-area-pt">
+          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push("/admin/entries")}
+                className="text-white/70 hover:text-white hover:bg-white/10"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                <Edit3 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-white">{memberName}</h1>
+                {userInfo?.displayName && userInfo?.email && (
+                  <p className="text-xs text-white/60">{userInfo.email}</p>
+                )}
+              </div>
+              {userInfo && (
+                <Badge variant="outline" className="text-white/70 border-white/20">{userInfo.role}</Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={openAddDialog}
+                className="gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/10"
+              >
+                <Plus className="h-4 w-4" />
+                Add Entry
+              </Button>
+              <ThemeToggle />
+              <NotificationCenter />
+            </div>
+          </div>
+        </header>
+
+        {/* Stats Cards in Hero */}
+        <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
+                <Clock className="h-5 w-5 text-blue-400" />
+              </div>
+              <p className="text-2xl font-bold text-white">{entries.length}</p>
+              <p className="text-xs text-white/60 mt-0.5">Total Entries</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
+                <History className="h-5 w-5 text-amber-400" />
+              </div>
+              <p className="text-2xl font-bold text-white">{corrections.length}</p>
+              <p className="text-xs text-white/60 mt-0.5">Corrections</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Header */}
+      <div className="lg:hidden flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => router.push("/admin/entries")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Employee Entries</h1>
-            {userInfo && (
-              <p className="text-muted-foreground">
-                {userInfo.email} <Badge variant="outline" className="ml-2">{userInfo.role}</Badge>
-              </p>
+            <h1 className="text-lg font-semibold">{memberName}</h1>
+            {userInfo?.displayName && userInfo?.email && (
+              <p className="text-xs text-muted-foreground">{userInfo.email}</p>
             )}
           </div>
         </div>
-        <Button onClick={openAddDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Entry
+        <Button size="sm" onClick={openAddDialog}>
+          <Plus className="h-4 w-4 mr-1" />
+          Add
         </Button>
       </div>
+
+      {/* Main Content */}
+      <main className="flex-1 pb-24 lg:pb-8 pt-2 lg:pt-6">
+        <div className="max-w-6xl mx-auto px-4 lg:px-8 space-y-6">
 
       {/* Error display */}
       {error && (
@@ -937,6 +1025,8 @@ export default function EmployeeEntriesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+        </div>
+      </main>
+    </motion.div>
   )
 }

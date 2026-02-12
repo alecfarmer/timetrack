@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
     // Get user info
     const { data: userInfo } = await supabase
       .from("Membership")
-      .select("userId, role")
+      .select("userId, role, firstName, lastName")
       .eq("userId", userId)
       .eq("orgId", org?.orgId)
       .single()
@@ -136,12 +136,15 @@ export async function GET(request: NextRequest) {
           .order("createdAt", { ascending: false })
       : { data: [] }
 
+    const displayName = [userInfo?.firstName, userInfo?.lastName].filter(Boolean).join(" ") || null
+
     return NextResponse.json({
       entries: entries || [],
       user: {
         id: userId,
         email: authUser?.user?.email || "Unknown",
         role: userInfo?.role || "MEMBER",
+        displayName,
       },
       corrections: corrections || [],
     })
