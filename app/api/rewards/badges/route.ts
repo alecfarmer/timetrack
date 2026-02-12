@@ -56,7 +56,7 @@ async function gatherStats(userId: string, orgId: string, timezone: string) {
   const now = new Date()
   const zonedNow = toZonedTime(now, timezone)
 
-  const [workDaysResult, kudosGiven, kudosReceived, challengesCompleted, shieldsResult, hiddenResult] = await Promise.all([
+  const [workDaysResult, kudosGiven, kudosReceived, challengesCompleted, shieldsResult, hiddenResult, streakHistoryResult] = await Promise.all([
     supabase
       .from("WorkDay")
       .select("date, totalMinutes, firstClockIn, lastClockOut, breakMinutes, location:Location(category)")
@@ -67,6 +67,7 @@ async function gatherStats(userId: string, orgId: string, timezone: string) {
     supabase.from("ActiveChallenge").select("id", { count: "exact", head: true }).eq("userId", userId).eq("orgId", orgId).eq("status", "claimed"),
     supabase.from("StreakHistory").select("shieldsUsed").eq("userId", userId).eq("orgId", orgId),
     supabase.from("EarnedBadge").select("badgeDefinitionId").eq("userId", userId).eq("orgId", orgId),
+    supabase.from("StreakHistory").select("length, endDate").eq("userId", userId).eq("orgId", orgId),
   ])
 
   const allWorkDays = workDaysResult.data || []
@@ -92,7 +93,7 @@ async function gatherStats(userId: string, orgId: string, timezone: string) {
 
   const { data: profile } = await supabase
     .from("RewardsProfile")
-    .select("currentStreak, longestStreak")
+    .select("currentStreak, longestStreak, xpMultiplier, streakShields")
     .eq("userId", userId)
     .eq("orgId", orgId)
     .single()
@@ -105,6 +106,12 @@ async function gatherStats(userId: string, orgId: string, timezone: string) {
     const { count } = await supabase.from("BadgeDefinition").select("id", { count: "exact", head: true }).in("id", badgeIds).eq("isHidden", true)
     hiddenBadgesFound = count || 0
   }
+
+  const allStreakHistories = streakHistoryResult.data || []
+  const completedStreakLengths = allStreakHistories
+    .filter((s) => s.endDate !== null)
+    .map((s) => s.length || 0)
+  const totalStreakDays = allStreakHistories.reduce((sum, s) => sum + (s.length || 0), 0)
 
   return {
     totalOnsiteDays: onsiteDays.length,
@@ -133,5 +140,9 @@ async function gatherStats(userId: string, orgId: string, timezone: string) {
     challengesCompleted: challengesCompleted.count || 0,
     hiddenBadgesFound,
     shieldsUsed: totalShieldsUsed,
+    xpMultiplier: Number(profile?.xpMultiplier || 1.0),
+    streakShields: profile?.streakShields || 0,
+    totalStreakDays,
+    streakLengths: completedStreakLengths,
   }
 }

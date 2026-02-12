@@ -24,15 +24,13 @@ BEGIN
       WHERE rp."userId" = w."userId" AND rp."orgId" = m."orgId"
     )
   LOOP
-    -- Calculate total on-site days (excluding HOME)
+    -- Calculate total work days (all locations including HOME)
     SELECT COUNT(DISTINCT w."date")
     INTO user_xp
     FROM "WorkDay" w
-    JOIN "Location" l ON l."id" = w."locationId"
-    WHERE w."userId" = r."userId"
-      AND l."category" != 'HOME';
+    WHERE w."userId" = r."userId";
 
-    -- Simple XP: 15 XP per on-site day as migration baseline
+    -- Simple XP: 15 XP per work day as migration baseline
     user_xp := user_xp * 15;
 
     -- Calculate level from XP using the 20-level table
@@ -67,9 +65,7 @@ BEGIN
     FOR badge_rec IN
       SELECT DISTINCT w."date"
       FROM "WorkDay" w
-      JOIN "Location" l ON l."id" = w."locationId"
       WHERE w."userId" = r."userId"
-        AND l."category" != 'HOME'
       ORDER BY w."date" DESC
     LOOP
       -- Skip weekends

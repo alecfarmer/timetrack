@@ -129,7 +129,7 @@ async function getUserStats(userId: string, orgId: string, timezone: string) {
   const now = new Date()
   const zonedNow = toZonedTime(now, timezone)
 
-  const [workDaysResult, kudosGivenResult, kudosReceivedResult, challengesResult, shieldsResult, hiddenResult] = await Promise.all([
+  const [workDaysResult, kudosGivenResult, kudosReceivedResult, challengesResult, shieldsResult, hiddenResult, streakHistoryResult] = await Promise.all([
     supabaseAdmin
       .from("WorkDay")
       .select("date, totalMinutes, firstClockIn, lastClockOut, breakMinutes, location:Location(category)")
@@ -166,6 +166,12 @@ async function getUserStats(userId: string, orgId: string, timezone: string) {
       .select("badgeDefinitionId")
       .eq("userId", userId)
       .eq("orgId", orgId),
+
+    supabaseAdmin
+      .from("StreakHistory")
+      .select("length, endDate")
+      .eq("userId", userId)
+      .eq("orgId", orgId),
   ])
 
   const allWorkDays = workDaysResult.data || []
@@ -194,7 +200,7 @@ async function getUserStats(userId: string, orgId: string, timezone: string) {
   // Profile for streak info
   const { data: profile } = await supabaseAdmin
     .from("RewardsProfile")
-    .select("currentStreak, longestStreak")
+    .select("currentStreak, longestStreak, xpMultiplier, streakShields")
     .eq("userId", userId)
     .eq("orgId", orgId)
     .single()
@@ -215,6 +221,13 @@ async function getUserStats(userId: string, orgId: string, timezone: string) {
       .eq("isHidden", true)
     hiddenBadgesFound = count || 0
   }
+
+  // Compute streak history stats
+  const allStreakHistories = streakHistoryResult.data || []
+  const completedStreakLengths = allStreakHistories
+    .filter((s) => s.endDate !== null)
+    .map((s) => s.length || 0)
+  const totalStreakDays = allStreakHistories.reduce((sum, s) => sum + (s.length || 0), 0)
 
   return {
     totalOnsiteDays: onsiteDays.length,
@@ -243,5 +256,9 @@ async function getUserStats(userId: string, orgId: string, timezone: string) {
     challengesCompleted: challengesResult.count || 0,
     hiddenBadgesFound,
     shieldsUsed: totalShieldsUsed,
+    xpMultiplier: Number(profile?.xpMultiplier || 1.0),
+    streakShields: profile?.streakShields || 0,
+    totalStreakDays,
+    streakLengths: completedStreakLengths,
   }
 }
