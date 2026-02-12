@@ -39,47 +39,30 @@ import {
   MapPin,
   Shield,
   ShieldCheck,
-  ShieldAlert,
   Trash2,
-  Settings,
   AlertCircle,
   Download,
-  Sliders,
-  BarChart3,
-  Bell,
-  ScrollText,
   ClipboardCheck,
-  HeartPulse,
-  Scale,
-  DollarSign,
-  CalendarClock,
   Edit3,
-  Palmtree,
   TrendingUp,
-  TrendingDown,
   LogIn,
-  LogOut,
   LayoutDashboard,
   Search,
-  Filter,
   MoreHorizontal,
   RefreshCw,
-  ChevronRight,
   Activity,
   Zap,
   Building2,
-  Globe,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
   ArrowUpRight,
   ArrowDownRight,
   Eye,
-  UserCheck,
   UserX,
   Mail,
-  ExternalLink,
   Loader2,
+  Scale,
+  CheckCircle2,
+  Coffee,
+  Target,
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -122,75 +105,34 @@ interface AdminMetrics {
   weeklyTotal: number
 }
 
-// Metric card component
-function MetricCard({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  trend,
-  trendValue,
-  color = "primary",
-  onClick,
-}: {
-  title: string
-  value: string | number
-  subtitle?: string
-  icon: React.ElementType
-  trend?: "up" | "down" | "neutral"
-  trendValue?: string
-  color?: "primary" | "success" | "warning" | "danger" | "info"
-  onClick?: () => void
-}) {
-  const colorClasses = {
-    primary: "bg-primary/10 text-primary",
-    success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    warning: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    danger: "bg-red-500/10 text-red-600 dark:text-red-400",
-    info: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-  }
+// --- Metric ring mini chart ---
+function MetricRing({ value, max, color, size = 40 }: { value: number; max: number; color: string; size?: number }) {
+  const radius = (size - 6) / 2
+  const circumference = 2 * Math.PI * radius
+  const progress = Math.min(100, (value / Math.max(max, 1)) * 100)
+  const offset = circumference - (progress / 100) * circumference
 
   return (
-    <Card
-      className={cn(
-        "border shadow-sm hover:shadow-md transition-all duration-200",
-        onClick && "cursor-pointer hover:border-primary/50"
-      )}
-      onClick={onClick}
-    >
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold tracking-tight">{value}</p>
-              {trend && trendValue && (
-                <span className={cn(
-                  "flex items-center text-xs font-medium",
-                  trend === "up" && "text-emerald-600",
-                  trend === "down" && "text-red-600",
-                  trend === "neutral" && "text-muted-foreground"
-                )}>
-                  {trend === "up" && <ArrowUpRight className="h-3 w-3" />}
-                  {trend === "down" && <ArrowDownRight className="h-3 w-3" />}
-                  {trendValue}
-                </span>
-              )}
-            </div>
-            {subtitle && (
-              <p className="text-xs text-muted-foreground">{subtitle}</p>
-            )}
-          </div>
-          <div className={cn("p-3 rounded-xl", colorClasses[color])}>
-            <Icon className="h-5 w-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <svg width={size} height={size} className="-rotate-90">
+      <circle
+        cx={size / 2} cy={size / 2} r={radius}
+        fill="none" strokeWidth={3}
+        className="stroke-muted"
+      />
+      <motion.circle
+        cx={size / 2} cy={size / 2} r={radius}
+        fill="none" strokeWidth={3} strokeLinecap="round"
+        className={color}
+        strokeDasharray={circumference}
+        initial={{ strokeDashoffset: circumference }}
+        animate={{ strokeDashoffset: offset }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      />
+    </svg>
   )
 }
 
-// Team member row component
+// --- Team member row ---
 function MemberRow({
   member,
   policy,
@@ -206,18 +148,14 @@ function MemberRow({
   formatMinutes: (mins: number) => string
   onEditEntries: () => void
 }) {
-  const [showActions, setShowActions] = useState(false)
-
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="group"
     >
       <div className="flex items-center gap-4 p-4 rounded-xl border bg-card hover:bg-accent/50 transition-colors">
-        {/* Status indicator */}
         <div className="relative">
           <div className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold",
@@ -232,7 +170,6 @@ function MemberRow({
           )}
         </div>
 
-        {/* Member info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="font-medium truncate">
@@ -275,19 +212,25 @@ function MemberRow({
           </div>
         </div>
 
-        {/* Compliance indicator */}
-        <div className="hidden sm:flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-3">
           {member.weekDaysWorked !== undefined && (
-            <div className="text-right">
-              <p className="text-sm font-medium">
-                {member.weekDaysWorked}/{policy.requiredDaysPerWeek}
-              </p>
-              <p className="text-xs text-muted-foreground">days this week</p>
+            <div className="flex items-center gap-2">
+              <MetricRing
+                value={member.weekDaysWorked}
+                max={policy.requiredDaysPerWeek}
+                color={member.weekDaysWorked >= policy.requiredDaysPerWeek ? "stroke-emerald-500" : "stroke-primary"}
+                size={32}
+              />
+              <div className="text-right">
+                <p className="text-sm font-semibold tabular-nums">
+                  {member.weekDaysWorked}/{policy.requiredDaysPerWeek}
+                </p>
+                <p className="text-[10px] text-muted-foreground">days</p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Actions */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -328,51 +271,6 @@ function MemberRow({
   )
 }
 
-// Quick action card
-function QuickActionCard({
-  href,
-  icon: Icon,
-  label,
-  description,
-  badge,
-}: {
-  href: string
-  icon: React.ElementType
-  label: string
-  description: string
-  badge?: number
-}) {
-  return (
-    <Link href={href}>
-      <Card className="border hover:border-primary/50 hover:shadow-md transition-all duration-200 cursor-pointer group h-full">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              <Icon className="h-5 w-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="font-medium text-sm group-hover:text-primary transition-colors">
-                  {label}
-                </p>
-                {badge !== undefined && badge > 0 && (
-                  <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-[10px]">
-                    {badge}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                {description}
-              </p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  )
-}
-
 export default function AdminPage() {
   const { org, isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
@@ -385,19 +283,16 @@ export default function AdminPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // UI State
   const [activeTab, setActiveTab] = useState("overview")
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "online" | "offline">("all")
   const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "member">("all")
 
-  // Invite state
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteRole, setInviteRole] = useState<"MEMBER" | "ADMIN">("MEMBER")
   const [creatingInvite, setCreatingInvite] = useState(false)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
-  // Policy state
   const [editingPolicy, setEditingPolicy] = useState(false)
   const [policyDays, setPolicyDays] = useState(3)
   const [savingPolicy, setSavingPolicy] = useState(false)
@@ -437,7 +332,6 @@ export default function AdminPage() {
     }
   }, [authLoading, isAdmin, router, fetchData])
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     if (!authLoading && isAdmin) {
       const interval = setInterval(fetchData, 30000)
@@ -564,21 +458,17 @@ export default function AdminPage() {
     return h > 0 ? `${h}h ${m}m` : `${m}m`
   }
 
-  // Filtered members
   const filteredMembers = useMemo(() => {
     return members.filter(member => {
       const matchesSearch = searchQuery === "" ||
         member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.userId.toLowerCase().includes(searchQuery.toLowerCase())
-
       const matchesStatus = statusFilter === "all" ||
         (statusFilter === "online" && member.isClockedIn) ||
         (statusFilter === "offline" && !member.isClockedIn)
-
       const matchesRole = roleFilter === "all" ||
         (roleFilter === "admin" && member.role === "ADMIN") ||
         (roleFilter === "member" && member.role === "MEMBER")
-
       return matchesSearch && matchesStatus && matchesRole
     })
   }, [members, searchQuery, statusFilter, roleFilter])
@@ -595,6 +485,14 @@ export default function AdminPage() {
 
   const adminCount = useMemo(() =>
     members.filter((m) => m.role === "ADMIN").length,
+    [members]
+  )
+
+  const onSitePercent = Math.round((clockedInCount / Math.max(members.length, 1)) * 100)
+
+  // Total team hours today
+  const totalTeamMinutesToday = useMemo(() =>
+    members.reduce((sum, m) => sum + (m.todayMinutes || 0), 0),
     [members]
   )
 
@@ -618,32 +516,33 @@ export default function AdminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <LayoutDashboard className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-semibold">Admin Dashboard</h1>
-                  {org && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Building2 className="h-3 w-3" />
-                      {org.orgName}
-                    </p>
-                  )}
-                </div>
+              <div className="p-2 rounded-lg bg-primary/10">
+                <LayoutDashboard className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold">Dashboard</h1>
+                {org && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Building2 className="h-3 w-3" />
+                    {org.orgName}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs gap-1.5 px-2.5 py-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                {clockedInCount} on-site
+              </Badge>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="gap-2"
+                className="h-8 w-8"
               >
                 <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-                <span className="hidden sm:inline">Refresh</span>
               </Button>
               <NotificationCenter />
               <ThemeToggle />
@@ -652,7 +551,6 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Error Alert */}
         <AnimatePresence>
@@ -672,262 +570,442 @@ export default function AdminPage() {
           )}
         </AnimatePresence>
 
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <MetricCard
-            title="Team Size"
-            value={metrics?.totalMembers || members.length}
-            subtitle={`${adminCount} admins, ${members.length - adminCount} members`}
-            icon={Users}
-            color="primary"
-          />
-          <MetricCard
-            title="Currently On-Site"
-            value={metrics?.currentlyOnSite || clockedInCount}
-            subtitle={`${Math.round((clockedInCount / Math.max(members.length, 1)) * 100)}% of team`}
-            icon={MapPin}
-            color="success"
-            trend={clockedInCount > 0 ? "up" : "neutral"}
-            trendValue={clockedInCount > 0 ? "Active" : ""}
-          />
-          <MetricCard
-            title="Today's Clock-ins"
-            value={metrics?.todayClockIns || 0}
-            subtitle="Total arrivals today"
-            icon={LogIn}
-            color="info"
-          />
-          <MetricCard
-            title="Compliance Rate"
-            value={`${metrics?.complianceRate || 100}%`}
-            subtitle={`${metrics?.weeklyCompliant || 0}/${metrics?.weeklyTotal || 0} this week`}
-            icon={TrendingUp}
-            color={metrics?.complianceRate && metrics.complianceRate >= 90 ? "success" : "warning"}
-            trend={metrics?.complianceRate && metrics.complianceRate >= 90 ? "up" : "down"}
-            trendValue={metrics?.complianceRate && metrics.complianceRate >= 90 ? "On track" : "Needs attention"}
-          />
+        {/* ──────── Hero Metrics ──────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* On-site now — hero stat */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="relative overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-emerald-500/0">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">On-Site Now</p>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className="text-4xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                        {metrics?.currentlyOnSite || clockedInCount}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        / {metrics?.totalMembers || members.length}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{onSitePercent}% of team</p>
+                  </div>
+                  <div className="relative">
+                    <MetricRing
+                      value={clockedInCount}
+                      max={members.length}
+                      color="stroke-emerald-500"
+                      size={52}
+                    />
+                    <MapPin className="h-4 w-4 text-emerald-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Today's arrivals */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <Card className="relative overflow-hidden border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-blue-500/0">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Today&apos;s Arrivals</p>
+                    <p className="text-4xl font-bold tracking-tight mt-1 text-blue-600 dark:text-blue-400">
+                      {metrics?.todayClockIns || 0}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatMinutes(totalTeamMinutesToday)} team total
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-blue-500/10">
+                    <LogIn className="h-5 w-5 text-blue-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Compliance */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className={cn(
+              "relative overflow-hidden",
+              metrics?.complianceRate && metrics.complianceRate >= 90
+                ? "border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-emerald-500/0"
+                : "border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-amber-500/0"
+            )}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Compliance</p>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className={cn(
+                        "text-4xl font-bold tracking-tight",
+                        metrics?.complianceRate && metrics.complianceRate >= 90
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-amber-600 dark:text-amber-400"
+                      )}>
+                        {metrics?.complianceRate || 100}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      {metrics?.complianceRate && metrics.complianceRate >= 90 ? (
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                          <ArrowUpRight className="h-3 w-3" />
+                          On track
+                        </span>
+                      ) : (
+                        <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                          <ArrowDownRight className="h-3 w-3" />
+                          Needs attention
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <MetricRing
+                      value={metrics?.weeklyCompliant || 0}
+                      max={metrics?.weeklyTotal || 1}
+                      color={metrics?.complianceRate && metrics.complianceRate >= 90 ? "stroke-emerald-500" : "stroke-amber-500"}
+                      size={52}
+                    />
+                    <Target className="h-4 w-4 text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Pending timesheets */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <Card className={cn(
+              "relative overflow-hidden",
+              metrics?.pendingTimesheets && metrics.pendingTimesheets > 0
+                ? "border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-violet-500/0"
+                : ""
+            )}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Timesheets</p>
+                    <p className={cn(
+                      "text-4xl font-bold tracking-tight mt-1",
+                      metrics?.pendingTimesheets && metrics.pendingTimesheets > 0
+                        ? "text-violet-600 dark:text-violet-400"
+                        : "text-muted-foreground"
+                    )}>
+                      {metrics?.pendingTimesheets || 0}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {metrics?.pendingTimesheets && metrics.pendingTimesheets > 0 ? (
+                        <Link href="/admin/timesheets" className="text-violet-600 dark:text-violet-400 hover:underline">
+                          Review pending
+                        </Link>
+                      ) : (
+                        "All caught up"
+                      )}
+                    </p>
+                  </div>
+                  <div className={cn(
+                    "p-3 rounded-xl",
+                    metrics?.pendingTimesheets && metrics.pendingTimesheets > 0
+                      ? "bg-violet-500/10"
+                      : "bg-muted"
+                  )}>
+                    <ClipboardCheck className={cn(
+                      "h-5 w-5",
+                      metrics?.pendingTimesheets && metrics.pendingTimesheets > 0
+                        ? "text-violet-500"
+                        : "text-muted-foreground"
+                    )} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
-        {/* Quick Actions */}
-        <div>
-          <h2 className="text-sm font-medium text-muted-foreground mb-3">Quick Actions</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <QuickActionCard
-              href="/admin/analytics"
-              icon={BarChart3}
-              label="Analytics"
-              description="View team insights"
-            />
-            <QuickActionCard
-              href="/admin/timesheets"
-              icon={ClipboardCheck}
-              label="Timesheets"
-              description="Approve submissions"
-              badge={metrics?.pendingTimesheets}
-            />
-            <QuickActionCard
-              href="/admin/shifts"
-              icon={CalendarClock}
-              label="Shifts"
-              description="Manage schedules"
-            />
-            <QuickActionCard
-              href="/admin/wellbeing"
-              icon={HeartPulse}
-              label="Well-being"
-              description="Monitor health"
-            />
-            <QuickActionCard
-              href="/admin/audit"
-              icon={ScrollText}
-              label="Audit Log"
-              description="Track changes"
-            />
-            <QuickActionCard
-              href="/admin/settings"
-              icon={Settings}
-              label="Settings"
-              description="Configure org"
-            />
-          </div>
-        </div>
-
-        {/* Main Dashboard Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <TabsList className="grid w-full sm:w-auto grid-cols-3">
-              <TabsTrigger value="overview" className="gap-2">
-                <Activity className="h-4 w-4" />
-                <span className="hidden sm:inline">Overview</span>
-              </TabsTrigger>
-              <TabsTrigger value="team" className="gap-2">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Team</span>
+        {/* ──────── Tabs ──────── */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full sm:w-auto sm:inline-grid grid-cols-3 bg-muted/50">
+            <TabsTrigger value="overview" className="gap-2">
+              <Activity className="h-4 w-4" />
+              <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="team" className="gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Team</span>
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                {members.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="invites" className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">Invites</span>
+              {activeInvites.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
-                  {members.length}
+                  {activeInvites.length}
                 </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="invites" className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Invites</span>
-                {activeInvites.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
-                    {activeInvites.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </div>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Overview Tab */}
+          {/* ──────── Overview Tab ──────── */}
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Activity Feed */}
-              <div className="lg:col-span-2">
+            {/* Team at a Glance — avatar grid */}
+            {members.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
                 <Card>
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base font-medium flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-primary" />
-                        Live Activity
+                        <Users className="h-4 w-4 text-primary" />
+                        Team Status
                       </CardTitle>
-                      <Badge variant="outline" className="text-xs gap-1">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        Live
-                      </Badge>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          On-site ({clockedInCount})
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-muted-foreground/30" />
+                          Offline ({members.length - clockedInCount})
+                        </span>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <AdminActivityFeed limit={8} />
+                    <div className="flex flex-wrap gap-2">
+                      {members
+                        .sort((a, b) => (b.isClockedIn ? 1 : 0) - (a.isClockedIn ? 1 : 0))
+                        .map((member, i) => (
+                        <motion.div
+                          key={member.id}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: i * 0.02 }}
+                          className="group relative"
+                        >
+                          <div
+                            className={cn(
+                              "w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-all cursor-default",
+                              member.isClockedIn
+                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-2 ring-emerald-500/30"
+                                : "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            {(member.email?.[0] || "U").toUpperCase()}
+                          </div>
+                          {member.isClockedIn && (
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
+                          )}
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-popover border shadow-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                            <p className="font-medium">{member.email || `User ${member.userId.slice(0, 6)}`}</p>
+                            {member.isClockedIn ? (
+                              <p className="text-emerald-500">
+                                {member.todayLocation || "On-site"} &middot; {formatMinutes(member.todayMinutes || 0)}
+                              </p>
+                            ) : (
+                              <p className="text-muted-foreground">Offline</p>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
+              </motion.div>
+            )}
+
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Activity Feed */}
+              <div className="lg:col-span-2">
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base font-medium flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-primary" />
+                          Live Activity
+                        </CardTitle>
+                        <Badge variant="outline" className="text-xs gap-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          Live
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <AdminActivityFeed limit={10} />
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </div>
 
               {/* Sidebar */}
               <div className="space-y-6">
-                {/* Online Now */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-medium flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-emerald-500" />
-                      Online Now
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {clockedInCount > 0 ? (
-                      <div className="space-y-3">
-                        {members.filter(m => m.isClockedIn).slice(0, 5).map(member => (
-                          <div key={member.id} className="flex items-center gap-3">
-                            <div className="relative">
-                              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-xs font-medium text-emerald-600">
-                                {(member.email?.[0] || "U").toUpperCase()}
-                              </div>
-                              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-background" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">
-                                {member.email || `User ${member.userId.slice(0, 6)}`}
-                              </p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {member.todayLocation || "Working"}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                        {clockedInCount > 5 && (
-                          <p className="text-xs text-muted-foreground text-center pt-2">
-                            +{clockedInCount - 5} more online
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6">
-                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                          <Users className="h-6 w-6 text-muted-foreground" />
+                {/* Today's Breakdown */}
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-medium flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-amber-500" />
+                        Today&apos;s Breakdown
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Team hours */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Team hours</span>
+                          <span className="font-semibold tabular-nums">
+                            {formatMinutes(totalTeamMinutesToday)}
+                          </span>
                         </div>
-                        <p className="text-sm text-muted-foreground">No one online yet</p>
+                        <Progress
+                          value={Math.min(100, (totalTeamMinutesToday / (members.length * 480)) * 100)}
+                          className="h-1.5"
+                        />
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+
+                      {/* Breakdown stats */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            <span className="text-xs text-muted-foreground">Active</span>
+                          </div>
+                          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                            {members.filter(m => m.isClockedIn && !m.todayLocation?.includes("Break")).length}
+                          </p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Coffee className="h-3.5 w-3.5 text-amber-500" />
+                            <span className="text-xs text-muted-foreground">On Break</span>
+                          </div>
+                          <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                            {members.filter(m => m.todayLocation?.includes("Break")).length}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Top workers */}
+                      {members.filter(m => (m.todayMinutes || 0) > 0).length > 0 && (
+                        <div className="pt-2 border-t">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Top hours today</p>
+                          <div className="space-y-2">
+                            {members
+                              .filter(m => (m.todayMinutes || 0) > 0)
+                              .sort((a, b) => (b.todayMinutes || 0) - (a.todayMinutes || 0))
+                              .slice(0, 3)
+                              .map((m, i) => (
+                                <div key={m.id} className="flex items-center gap-2.5">
+                                  <span className={cn(
+                                    "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                                    i === 0 ? "bg-amber-500/15 text-amber-600" :
+                                    i === 1 ? "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300" :
+                                    "bg-orange-500/10 text-orange-600"
+                                  )}>
+                                    {i + 1}
+                                  </span>
+                                  <span className="text-sm truncate flex-1">
+                                    {m.email?.split("@")[0] || `User ${m.userId.slice(0, 6)}`}
+                                  </span>
+                                  <span className="text-sm font-medium tabular-nums">
+                                    {formatMinutes(m.todayMinutes || 0)}
+                                  </span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
                 {/* Policy Card */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-medium flex items-center gap-2">
-                      <Scale className="h-4 w-4 text-primary" />
-                      Work Policy
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="p-4 rounded-lg bg-muted/50">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Required days/week</span>
-                        <span className="text-lg font-bold">{policy.requiredDaysPerWeek}</span>
-                      </div>
-                      <Progress
-                        value={(policy.requiredDaysPerWeek / 7) * 100}
-                        className="h-2"
-                      />
-                    </div>
-                    {editingPolicy ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            max={7}
-                            value={policyDays}
-                            onChange={(e) => setPolicyDays(parseInt(e.target.value) || 0)}
-                            className="w-20"
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-medium flex items-center gap-2">
+                        <Scale className="h-4 w-4 text-primary" />
+                        Work Policy
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
+                        <div className="relative">
+                          <MetricRing
+                            value={policy.requiredDaysPerWeek}
+                            max={5}
+                            color="stroke-primary"
+                            size={44}
                           />
-                          <span className="text-sm text-muted-foreground">days per week</span>
+                          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs font-bold">
+                            {policy.requiredDaysPerWeek}
+                          </span>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={handleSavePolicy}
-                            disabled={savingPolicy}
-                            className="flex-1"
-                          >
-                            {savingPolicy ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              "Save"
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setEditingPolicy(false)
-                              setPolicyDays(policy.requiredDaysPerWeek)
-                            }}
-                          >
-                            Cancel
-                          </Button>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {policy.requiredDaysPerWeek} days per week
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            8 hours minimum per day
+                          </p>
                         </div>
                       </div>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => setEditingPolicy(true)}
-                      >
-                        <Edit3 className="h-4 w-4 mr-2" />
-                        Edit Policy
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
+
+                      {editingPolicy ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={7}
+                              value={policyDays}
+                              onChange={(e) => setPolicyDays(parseInt(e.target.value) || 0)}
+                              className="w-20"
+                            />
+                            <span className="text-sm text-muted-foreground">days per week</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={handleSavePolicy}
+                              disabled={savingPolicy}
+                              className="flex-1"
+                            >
+                              {savingPolicy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { setEditingPolicy(false); setPolicyDays(policy.requiredDaysPerWeek) }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setEditingPolicy(true)}
+                        >
+                          <Edit3 className="h-4 w-4 mr-2" />
+                          Edit Policy
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </div>
             </div>
           </TabsContent>
 
-          {/* Team Tab */}
+          {/* ──────── Team Tab ──────── */}
           <TabsContent value="team" className="space-y-4">
-            {/* Filters */}
             <Card>
               <CardContent className="p-4">
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -970,7 +1048,6 @@ export default function AdminPage() {
               </CardContent>
             </Card>
 
-            {/* Team List */}
             <div className="space-y-3">
               <AnimatePresence mode="popLayout">
                 {filteredMembers.length > 0 ? (
@@ -1004,10 +1081,9 @@ export default function AdminPage() {
             </div>
           </TabsContent>
 
-          {/* Invites Tab */}
+          {/* ──────── Invites Tab ──────── */}
           <TabsContent value="invites" className="space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
-              {/* Create Invite */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -1069,7 +1145,6 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
 
-              {/* Active Invites */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base font-medium flex items-center gap-2">
