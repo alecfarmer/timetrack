@@ -13,6 +13,7 @@ DECLARE
   user_last_date DATE;
   badge_rec RECORD;
   streak_start DATE;
+  org_tz TEXT;
 BEGIN
   -- For each user with WorkDay records, create a RewardsProfile
   FOR r IN
@@ -24,6 +25,11 @@ BEGIN
       WHERE rp."userId" = w."userId" AND rp."orgId" = m."orgId"
     )
   LOOP
+    -- Get org timezone for time-based badge calculations
+    SELECT COALESCE(o."timezone", 'America/New_York')
+    INTO org_tz
+    FROM "Organization" o WHERE o."id" = r."orgId";
+
     -- Calculate total work days (all locations including HOME)
     SELECT COUNT(DISTINCT w."date")
     INTO user_xp
@@ -179,17 +185,17 @@ BEGIN
             SELECT COUNT(*) INTO stat_value
             FROM "WorkDay" w WHERE w."userId" = r."userId"
               AND w."firstClockIn" IS NOT NULL
-              AND EXTRACT(HOUR FROM w."firstClockIn") < 8;
+              AND EXTRACT(HOUR FROM w."firstClockIn" AT TIME ZONE org_tz) < 8;
           ELSIF stat_name = 'nightOwlCount' THEN
             SELECT COUNT(*) INTO stat_value
             FROM "WorkDay" w WHERE w."userId" = r."userId"
               AND w."lastClockOut" IS NOT NULL
-              AND EXTRACT(HOUR FROM w."lastClockOut") >= 19;
+              AND EXTRACT(HOUR FROM w."lastClockOut" AT TIME ZONE org_tz) >= 19;
           ELSIF stat_name = 'onTimeCount' THEN
             SELECT COUNT(*) INTO stat_value
             FROM "WorkDay" w WHERE w."userId" = r."userId"
               AND w."firstClockIn" IS NOT NULL
-              AND EXTRACT(HOUR FROM w."firstClockIn") BETWEEN 9 AND 10;
+              AND EXTRACT(HOUR FROM w."firstClockIn" AT TIME ZONE org_tz) BETWEEN 9 AND 10;
           END IF;
 
           IF stat_value >= threshold THEN

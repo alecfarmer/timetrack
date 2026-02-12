@@ -120,12 +120,12 @@ async function gatherStats(userId: string, orgId: string, timezone: string) {
     longestStreak: profile?.longestStreak || 0,
     perfectWeeks: [...weekMap.values()].filter((count) => count >= 3).length,
     thisMonthDays: onsiteDays.filter((d) => d.date >= monthStart && d.date <= monthEnd).length,
-    earlyBirdCount: allWorkDays.filter((wd) => wd.firstClockIn && getHours(new Date(wd.firstClockIn)) < 8).length,
-    dawnPatrolCount: allWorkDays.filter((wd) => wd.firstClockIn && getHours(new Date(wd.firstClockIn)) < 7).length,
-    nightOwlCount: allWorkDays.filter((wd) => wd.lastClockOut && getHours(new Date(wd.lastClockOut)) >= 19).length,
+    earlyBirdCount: allWorkDays.filter((wd) => wd.firstClockIn && getHours(toZonedTime(new Date(wd.firstClockIn), timezone)) < 8).length,
+    dawnPatrolCount: allWorkDays.filter((wd) => wd.firstClockIn && getHours(toZonedTime(new Date(wd.firstClockIn), timezone)) < 7).length,
+    nightOwlCount: allWorkDays.filter((wd) => wd.lastClockOut && getHours(toZonedTime(new Date(wd.lastClockOut), timezone)) >= 19).length,
     onTimeCount: allWorkDays.filter((wd) => {
       if (!wd.firstClockIn) return false
-      const h = getHours(new Date(wd.firstClockIn))
+      const h = getHours(toZonedTime(new Date(wd.firstClockIn), timezone))
       return h >= 9 && h <= 10
     }).length,
     breaksTaken: allWorkDays.filter((wd) => (wd.breakMinutes || 0) > 0).length,
