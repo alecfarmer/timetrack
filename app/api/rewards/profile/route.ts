@@ -45,14 +45,26 @@ export async function GET(request: NextRequest) {
         .order("sortOrder", { ascending: true }),
     ])
 
-    const profile = profileResult.data
+    let profile = profileResult.data
     if (!profile) {
       // Create a default profile
-      const { data: newProfile } = await supabase
+      const { data: newProfile, error: insertError } = await supabase
         .from("RewardsProfile")
         .insert({ userId, orgId, totalXp: 0, level: 1 })
         .select("*")
         .single()
+
+      if (insertError || !newProfile) {
+        // Tables may not exist yet — return a safe fallback
+        return NextResponse.json({
+          profile: { userId, orgId, totalXp: 0, level: 1, currentStreak: 0, longestStreak: 0, streakShields: 0, coins: 0, xpMultiplier: 1.0, titleId: null, showcaseBadges: [], leaderboardOptIn: true, activeTitle: null },
+          levelProgress: getXpProgress(0),
+          earnedBadges: [],
+          activeChallenges: [],
+          titles: [],
+          unclaimedCount: 0,
+        })
+      }
 
       return NextResponse.json({
         profile: newProfile,
@@ -103,6 +115,14 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("Rewards profile error:", error)
-    return NextResponse.json({ error: "Failed to fetch rewards profile" }, { status: 500 })
+    // Return a safe fallback so the UI doesn't crash
+    return NextResponse.json({
+      profile: { totalXp: 0, level: 1, currentStreak: 0, longestStreak: 0, streakShields: 0, coins: 0, xpMultiplier: 1.0, titleId: null, showcaseBadges: [], leaderboardOptIn: true, activeTitle: null },
+      levelProgress: getXpProgress(0),
+      earnedBadges: [],
+      activeChallenges: [],
+      titles: [],
+      unclaimedCount: 0,
+    })
   }
 }

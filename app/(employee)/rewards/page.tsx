@@ -128,12 +128,12 @@ export default function RewardsPage() {
   useEffect(() => {
     const headers = tzHeaders()
     Promise.all([
-      fetch("/api/rewards/profile", { headers }).then((r) => r.json()),
-      fetch("/api/rewards/badges", { headers }).then((r) => r.json()),
+      fetch("/api/rewards/profile", { headers }).then((r) => r.ok ? r.json() : null),
+      fetch("/api/rewards/badges", { headers }).then((r) => r.ok ? r.json() : null),
     ])
       .then(([profileData, badgesData]) => {
-        setProfile(profileData)
-        setBadges(badgesData)
+        if (profileData?.profile) setProfile(profileData)
+        if (badgesData) setBadges(badgesData)
         setLoading(false)
       })
       .catch((err) => {

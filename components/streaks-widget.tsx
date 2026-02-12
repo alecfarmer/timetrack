@@ -47,11 +47,12 @@ interface StreakData {
     xpMultiplier: number
   }
   levelProgress: {
-    currentLevel: { level: number; title: string; minXp: number }
-    nextLevel: { level: number; title: string; minXp: number } | null
+    level: number
+    title: string
     xpInLevel: number
-    xpNeeded: number
-    progressPercent: number
+    xpForLevel: number
+    progress: number
+    nextLevel: { level: number; title: string } | null
   }
   earnedBadges: Array<{
     badgeDefinitionId: string
@@ -106,7 +107,7 @@ export function StreaksWidget() {
   })[0]
   const activeChallenges = data.activeChallenges?.filter((c) => c.status === "active") || []
   const completedChallenges = data.activeChallenges?.filter((c) => c.status === "completed") || []
-  const xpProgressPercent = data.levelProgress?.progressPercent || 0
+  const xpProgressPercent = data.levelProgress?.progress || 0
 
   return (
     <Card className="border-0 shadow-lg overflow-hidden">
@@ -129,7 +130,7 @@ export function StreaksWidget() {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-bold text-lg">{data.levelProgress.currentLevel.title}</span>
+              <span className="font-bold text-lg">{data.levelProgress.title}</span>
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{data.profile.totalXp} XP</Badge>
               {data.profile.streakShields > 0 && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-500/10 text-blue-500">
@@ -141,12 +142,12 @@ export function StreaksWidget() {
             <div className="flex items-center gap-2">
               <Progress value={xpProgressPercent} className="h-2 flex-1" />
               <span className="text-[10px] text-muted-foreground tabular-nums">
-                {data.levelProgress.xpInLevel}/{data.levelProgress.xpNeeded}
+                {data.levelProgress.xpInLevel}/{data.levelProgress.xpForLevel}
               </span>
             </div>
             {data.levelProgress.nextLevel && (
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                {data.levelProgress.xpNeeded - data.levelProgress.xpInLevel} XP to {data.levelProgress.nextLevel.title}
+                {data.levelProgress.xpForLevel - data.levelProgress.xpInLevel} XP to {data.levelProgress.nextLevel.title}
               </p>
             )}
           </div>
