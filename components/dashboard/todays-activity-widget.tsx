@@ -89,7 +89,7 @@ function MobileActivityTimeline({ entries, showAll, setShowAll }: { entries: any
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{label}</span>
                     <span className="text-xs tabular-nums text-muted-foreground">
-                      {formatTime(new Date(entry.timestampServer))}
+                      {formatTime(entry.timestampServer)}
                     </span>
                   </div>
                   {entry.location?.name && (
@@ -139,7 +139,7 @@ export function TodaysActivityWidget({ entries, showAll, setShowAll }: { entries
         ? (entry.type === "BREAK_START" ? "Break Started" : "Break Ended")
         : isClockIn ? "Clocked In" : "Clocked Out",
       subtitle: entry.location?.name || "Unknown location",
-      timestamp: formatTime(new Date(entry.timestampServer)),
+      timestamp: formatTime(entry.timestampServer),
     }
   })
 
