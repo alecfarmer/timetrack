@@ -91,12 +91,15 @@ export default function SettingsPage() {
       <div className="px-4 pt-4 pb-2 max-w-3xl mx-auto lg:px-8">
         <Card className="border-0 shadow-lg rounded-2xl p-5">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <User className="h-7 w-7 text-primary-foreground" />
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-lg font-bold text-primary-foreground">
+              {org?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
             </div>
             <div className="flex-1">
-              <p className="font-semibold">{user?.email}</p>
-              <p className="text-sm text-muted-foreground">Personal Account</p>
+              {(org?.firstName || org?.lastName) && (
+                <p className="font-semibold">{[org.firstName, org.lastName].filter(Boolean).join(" ")}</p>
+              )}
+              <p className={org?.firstName ? "text-sm text-muted-foreground" : "font-semibold"}>{user?.email}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Name is managed by your administrator</p>
             </div>
           </div>
         </Card>

@@ -71,6 +71,9 @@ interface Member {
   id: string
   userId: string
   email?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  displayName?: string | null
   role: string
   createdAt: string
   isClockedIn?: boolean
@@ -163,7 +166,7 @@ function MemberRow({
               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
               : "bg-muted text-muted-foreground"
           )}>
-            {(member.email?.[0] || "U").toUpperCase()}
+            {(member.displayName?.[0] || member.email?.[0] || "U").toUpperCase()}
           </div>
           {member.isClockedIn && (
             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-background" />
@@ -173,7 +176,7 @@ function MemberRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="font-medium truncate">
-              {member.email || `User ${member.userId.slice(0, 8)}`}
+              {member.displayName || member.email || `User ${member.userId.slice(0, 8)}`}
             </p>
             <Badge
               variant={member.role === "ADMIN" ? "default" : "secondary"}
@@ -186,6 +189,9 @@ function MemberRow({
               )}
             </Badge>
           </div>
+          {member.displayName && member.email && (
+            <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+          )}
           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
             {member.isClockedIn ? (
               <>
@@ -461,6 +467,7 @@ export default function AdminPage() {
   const filteredMembers = useMemo(() => {
     return members.filter(member => {
       const matchesSearch = searchQuery === "" ||
+        member.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.userId.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesStatus = statusFilter === "all" ||
@@ -793,14 +800,14 @@ export default function AdminPage() {
                                 : "bg-muted text-muted-foreground"
                             )}
                           >
-                            {(member.email?.[0] || "U").toUpperCase()}
+                            {(member.displayName?.[0] || member.email?.[0] || "U").toUpperCase()}
                           </div>
                           {member.isClockedIn && (
                             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
                           )}
                           {/* Tooltip */}
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-popover border shadow-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                            <p className="font-medium">{member.email || `User ${member.userId.slice(0, 6)}`}</p>
+                            <p className="font-medium">{member.displayName || member.email || `User ${member.userId.slice(0, 6)}`}</p>
                             {member.isClockedIn ? (
                               <p className="text-emerald-500">
                                 {member.todayLocation || "On-site"} &middot; {formatMinutes(member.todayMinutes || 0)}
@@ -909,7 +916,7 @@ export default function AdminPage() {
                                     {i + 1}
                                   </span>
                                   <span className="text-sm truncate flex-1">
-                                    {m.email?.split("@")[0] || `User ${m.userId.slice(0, 6)}`}
+                                    {m.displayName || m.email?.split("@")[0] || `User ${m.userId.slice(0, 6)}`}
                                   </span>
                                   <span className="text-sm font-medium tabular-nums">
                                     {formatMinutes(m.todayMinutes || 0)}

@@ -162,6 +162,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Pull name from auth user_metadata
+    const { data: authUserData } = await supabase.auth.admin.getUserById(user!.id)
+    const meta = authUserData?.user?.user_metadata || {}
+    const firstName = (meta.first_name as string) || (meta.full_name as string)?.split(" ")[0] || null
+    const lastName = (meta.last_name as string) || (meta.full_name as string)?.split(" ").slice(1).join(" ") || null
+
     let orgId: string
 
     if (inviteCode) {
@@ -196,6 +202,8 @@ export async function POST(request: NextRequest) {
           userId: user!.id,
           orgId,
           role: invite.role || "MEMBER",
+          firstName,
+          lastName,
         })
 
       if (memberError) {
@@ -240,6 +248,8 @@ export async function POST(request: NextRequest) {
           userId: user!.id,
           orgId,
           role: "ADMIN",
+          firstName,
+          lastName,
         })
 
       if (memberError) {

@@ -9,6 +9,8 @@ interface OrgInfo {
   orgName: string
   orgSlug: string
   role: "ADMIN" | "MEMBER"
+  firstName: string | null
+  lastName: string | null
 }
 
 interface AuthContextType {
@@ -49,6 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select(`
           orgId,
           role,
+          firstName,
+          lastName,
           org:Organization (id, name, slug)
         `)
         .eq("userId", userId)
@@ -68,6 +72,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           orgName: orgData.name,
           orgSlug: orgData.slug,
           role: membership.role as "ADMIN" | "MEMBER",
+          firstName: (membership as Record<string, unknown>).firstName as string | null,
+          lastName: (membership as Record<string, unknown>).lastName as string | null,
         })
       } else {
         setOrg(null)

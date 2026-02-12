@@ -6,7 +6,9 @@ import { z } from "zod"
 
 const updateMemberSchema = z.object({
   memberId: z.string().min(1),
-  role: z.enum(["ADMIN", "MEMBER"]),
+  role: z.enum(["ADMIN", "MEMBER"]).optional(),
+  firstName: z.string().max(100).optional(),
+  lastName: z.string().max(100).optional(),
 })
 
 // GET /api/org/members - List org members with their stats
@@ -118,9 +120,12 @@ export async function GET(request: NextRequest) {
         const latestEntry = status?.latestEntry
         const isClockedIn = latestEntry?.type === "CLOCK_IN"
 
+        const displayName = [member.firstName, member.lastName].filter(Boolean).join(" ") || null
+
         return {
           ...member,
           email: emailMap[member.userId] || null,
+          displayName,
           isClockedIn,
           todayMinutes,
           todayLocation: todayLocName,
@@ -136,6 +141,7 @@ export async function GET(request: NextRequest) {
     const basicMembers = (members || []).map((m) => ({
       ...m,
       email: emailMap[m.userId] || null,
+      displayName: [m.firstName, m.lastName].filter(Boolean).join(" ") || null,
     }))
     return NextResponse.json(basicMembers)
   } catch (error) {
@@ -160,9 +166,9 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 
-    const { memberId, role } = validation.data
+    const { memberId, role, firstName, lastName } = validation.data
 
-    // Can't change own role
+    // Verify member exists in this org
     const { data: target } = await supabase
       .from("Membership")
       .select("userId")
@@ -174,13 +180,23 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Member not found" }, { status: 404 })
     }
 
-    if (target.userId === user!.id) {
+    // Can't change own role (but can update names)
+    if (role && target.userId === user!.id) {
       return NextResponse.json({ error: "Cannot change your own role" }, { status: 400 })
+    }
+
+    const updateData: Record<string, unknown> = {}
+    if (role !== undefined) updateData.role = role
+    if (firstName !== undefined) updateData.firstName = firstName
+    if (lastName !== undefined) updateData.lastName = lastName
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: "No fields to update" }, { status: 400 })
     }
 
     const { data: updated, error } = await supabase
       .from("Membership")
-      .update({ role })
+      .update(updateData)
       .eq("id", memberId)
       .eq("orgId", org.orgId)
       .select()

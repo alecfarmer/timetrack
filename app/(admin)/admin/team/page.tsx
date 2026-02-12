@@ -41,6 +41,7 @@ import {
   Activity,
   Eye,
   Mail,
+  User,
   UserX,
   Edit3,
   Download,
@@ -61,6 +62,8 @@ interface Member {
   id: string
   userId: string
   email?: string | null
+  firstName?: string | null
+  lastName?: string | null
   displayName?: string | null
   role: string
   createdAt: string
@@ -103,6 +106,12 @@ export default function TeamPage() {
   const [inviteLoading, setInviteLoading] = useState(false)
   const [generatedLink, setGeneratedLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+
+  // Edit name state
+  const [editNameMember, setEditNameMember] = useState<Member | null>(null)
+  const [editFirstName, setEditFirstName] = useState("")
+  const [editLastName, setEditLastName] = useState("")
+  const [editNameLoading, setEditNameLoading] = useState(false)
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("")
@@ -277,6 +286,38 @@ export default function TeamPage() {
       setInvites((prev) => prev.filter((i) => i.id !== id))
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to revoke invite")
+    }
+  }
+
+  const handleEditName = (member: Member) => {
+    setEditNameMember(member)
+    setEditFirstName(member.firstName || "")
+    setEditLastName(member.lastName || "")
+  }
+
+  const handleSaveName = async () => {
+    if (!editNameMember) return
+    setEditNameLoading(true)
+    try {
+      const res = await fetch("/api/org/members", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          memberId: editNameMember.id,
+          firstName: editFirstName.trim(),
+          lastName: editLastName.trim(),
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Failed to update name")
+      }
+      setEditNameMember(null)
+      await fetchData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update name")
+    } finally {
+      setEditNameLoading(false)
     }
   }
 
@@ -634,6 +675,10 @@ export default function TeamPage() {
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleEditName(member)}>
+                        <User className="h-4 w-4 mr-2" />
+                        Edit Name
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => router.push(`/admin/entries/${member.userId}`)}>
                         <Edit3 className="h-4 w-4 mr-2" />
                         Edit Entries
@@ -680,6 +725,47 @@ export default function TeamPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Edit Name Dialog */}
+      <Dialog open={!!editNameMember} onOpenChange={(open) => !open && setEditNameMember(null)}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Edit Name</DialogTitle>
+            <DialogDescription>
+              Update the name for {editNameMember?.email || "this member"}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">First Name</label>
+                <Input
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  placeholder="First name"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Last Name</label>
+                <Input
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  placeholder="Last name"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditNameMember(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveName} disabled={editNameLoading}>
+                {editNameLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

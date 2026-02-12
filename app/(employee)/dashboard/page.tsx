@@ -52,7 +52,7 @@ function getGreeting() {
 
 export default function Dashboard() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, org } = useAuth()
   const { position, loading: gpsLoading, refresh: refreshGps } = useGeolocation(true)
   const [showPhotoCapture, setShowPhotoCapture] = useState(false)
   const [showAllEntries, setShowAllEntries] = useState(false)
@@ -120,7 +120,7 @@ export default function Dashboard() {
   const todayMinutes = (clock.currentStatus?.totalMinutesToday || 0) % 60
   const todayProgress = Math.min(100, (todayHours / 8) * 100)
   const entries = clock.currentStatus?.todayEntries || []
-  const firstName = user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "there"
+  const firstName = org?.firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "there"
   const isOvertime = todayHours >= 8
 
   return (

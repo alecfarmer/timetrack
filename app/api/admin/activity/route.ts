@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20")
     const locationId = searchParams.get("locationId")
 
-    // Get all org members
+    // Get all org members with names
     const { data: members } = await supabase
       .from("Membership")
-      .select("userId")
+      .select("userId, firstName, lastName")
       .eq("orgId", org.orgId)
 
     if (!members || members.length === 0) {
@@ -63,33 +63,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch activity" }, { status: 500 })
     }
 
-    // Get user emails for display
-    const { data: userMemberships } = await supabase
-      .from("Membership")
-      .select("userId, user:User(email, name)")
-      .in("userId", memberIds)
+    // Build name map from membership data
+    const nameMap = new Map<string, string>()
+    for (const m of members) {
+      const name = [m.firstName, m.lastName].filter(Boolean).join(" ")
+      if (name) nameMap.set(m.userId, name)
+    }
 
-    const userMap = new Map<string, { email: string; name: string | null }>()
-    for (const m of userMemberships || []) {
-      const userData = Array.isArray(m.user) ? m.user[0] : m.user
-      if (userData) {
-        userMap.set(m.userId, {
-          email: userData.email || "",
-          name: userData.name || null
-        })
+    // Get emails from auth admin API
+    const emailMap: Record<string, string> = {}
+    const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+    if (authData?.users) {
+      for (const u of authData.users) {
+        if (memberIds.includes(u.id)) {
+          emailMap[u.id] = u.email || u.id
+        }
       }
     }
 
     // Transform to activity events
     const activity: ActivityEvent[] = (entries || []).map((entry) => {
       const location = Array.isArray(entry.location) ? entry.location[0] : entry.location
-      const userData = userMap.get(entry.userId)
 
       return {
         id: entry.id,
         userId: entry.userId,
-        userName: userData?.name || "Team Member",
-        userEmail: userData?.email || "",
+        userName: nameMap.get(entry.userId) || "Team Member",
+        userEmail: emailMap[entry.userId] || "",
         type: entry.type,
         locationName: location?.name || "Unknown",
         timestamp: entry.timestampServer,
