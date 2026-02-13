@@ -5,6 +5,7 @@ import { startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 import { createEntrySchema, validateBody, getRequestTimezone } from "@/lib/validations"
 import { processRewardsEvent } from "@/lib/rewards/events"
+import { recalculateWorkDay } from "@/lib/workday"
 
 // Evaluate alert rules and fire notifications on clock events
 async function evaluateAlertRules(
@@ -269,109 +270,12 @@ export async function POST(request: NextRequest) {
       evaluateAlertRules(user!.id, org.orgId, type, getRequestTimezone(request))
     }
 
-    // Update or create WorkDay
+    // Recalculate WorkDay (creates if needed, links all entries by date range)
+    const tz = getRequestTimezone(request)
     const serverDate = new Date(entry.timestampServer)
-    const zonedDate = toZonedTime(serverDate, getRequestTimezone(request))
-    const workDayDate = startOfDay(zonedDate)
-
-    const { data: existingWorkDay } = await supabase
-      .from("WorkDay")
-      .select("*")
-      .eq("date", workDayDate.toISOString().split("T")[0])
-      .eq("locationId", locationId)
-      .eq("userId", user!.id)
-      .single()
-
-    if (existingWorkDay) {
-      // Link this entry to the WorkDay first
-      await supabase
-        .from("Entry")
-        .update({ workDayId: existingWorkDay.id })
-        .eq("id", entry.id)
-
-      const updateData: Record<string, unknown> = {}
-
-      if (type === "CLOCK_IN") {
-        if (!existingWorkDay.firstClockIn || serverDate < new Date(existingWorkDay.firstClockIn)) {
-          updateData.firstClockIn = serverDate.toISOString()
-        }
-      } else if (type === "CLOCK_OUT") {
-        if (!existingWorkDay.lastClockOut || serverDate > new Date(existingWorkDay.lastClockOut)) {
-          updateData.lastClockOut = serverDate.toISOString()
-        }
-      }
-
-      // Recalculate totalMinutes from all entries linked to this WorkDay
-      // This correctly handles multiple sessions and break deductions
-      const { data: dayEntries } = await supabase
-        .from("Entry")
-        .select("type, timestampServer")
-        .eq("workDayId", existingWorkDay.id)
-        .order("timestampServer", { ascending: true })
-
-      if (dayEntries && dayEntries.length > 0) {
-        let workMs = 0
-        let breakMs = 0
-        let lastClockIn: Date | null = null
-        let lastBreakStart: Date | null = null
-
-        for (const e of dayEntries) {
-          const ts = new Date(e.timestampServer)
-          switch (e.type) {
-            case "CLOCK_IN":
-              lastClockIn = ts
-              break
-            case "CLOCK_OUT":
-              if (lastClockIn) {
-                workMs += ts.getTime() - lastClockIn.getTime()
-                lastClockIn = null
-              }
-              break
-            case "BREAK_START":
-              lastBreakStart = ts
-              break
-            case "BREAK_END":
-              if (lastBreakStart) {
-                breakMs += ts.getTime() - lastBreakStart.getTime()
-                lastBreakStart = null
-              }
-              break
-          }
-        }
-
-        const totalMinutes = Math.max(0, Math.floor((workMs - breakMs) / 60000))
-        updateData.totalMinutes = totalMinutes
-        updateData.breakMinutes = Math.floor(breakMs / 60000)
-        updateData.meetsPolicy = totalMinutes >= 480 // 8 hours required for on-site day to count
-      }
-
-      if (Object.keys(updateData).length > 0) {
-        await supabase
-          .from("WorkDay")
-          .update(updateData)
-          .eq("id", existingWorkDay.id)
-      }
-    } else {
-      const { data: workDay } = await supabase
-        .from("WorkDay")
-        .insert({
-          date: workDayDate.toISOString().split("T")[0],
-          locationId,
-          userId: user!.id,
-          firstClockIn: type === "CLOCK_IN" ? serverDate.toISOString() : null,
-          lastClockOut: type === "CLOCK_OUT" ? serverDate.toISOString() : null,
-          meetsPolicy: false,
-        })
-        .select()
-        .single()
-
-      if (workDay) {
-        await supabase
-          .from("Entry")
-          .update({ workDayId: workDay.id })
-          .eq("id", entry.id)
-      }
-    }
+    const zonedDate = toZonedTime(serverDate, tz)
+    const workDayDate = startOfDay(zonedDate).toISOString().split("T")[0]
+    await recalculateWorkDay(user!.id, workDayDate, locationId, tz)
 
     // Process rewards events (non-blocking)
     let rewardsEvents = null

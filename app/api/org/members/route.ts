@@ -95,17 +95,27 @@ export async function GET(request: NextRequest) {
         .order("timestampServer", { ascending: false })
         .limit(Math.max(200, memberIds.length * 10))
 
-      // Extract latest entry per member
+      // Extract latest entry, last CLOCK_IN, and last CLOCK_OUT per member
       const latestEntryMap = new Map<string, NonNullable<typeof recentEntries>[number]>()
+      const lastClockInMap = new Map<string, NonNullable<typeof recentEntries>[number]>()
+      const lastClockOutMap = new Map<string, NonNullable<typeof recentEntries>[number]>()
       for (const entry of recentEntries || []) {
         if (!latestEntryMap.has(entry.userId)) {
           latestEntryMap.set(entry.userId, entry)
+        }
+        if (entry.type === "CLOCK_IN" && !lastClockInMap.has(entry.userId)) {
+          lastClockInMap.set(entry.userId, entry)
+        }
+        if (entry.type === "CLOCK_OUT" && !lastClockOutMap.has(entry.userId)) {
+          lastClockOutMap.set(entry.userId, entry)
         }
       }
 
       const memberStatuses = memberIds.map((userId: string) => ({
         userId,
         latestEntry: latestEntryMap.get(userId) || null,
+        lastClockIn: lastClockInMap.get(userId) || null,
+        lastClockOut: lastClockOutMap.get(userId) || null,
       }))
 
       const enrichedMembers = (members || []).map((member) => {
@@ -130,13 +140,19 @@ export async function GET(request: NextRequest) {
           : null
 
         const latestEntry = status?.latestEntry
-        const isClockedIn = latestEntry?.type === "CLOCK_IN"
+        const lastClockIn = status?.lastClockIn
+        const lastClockOut = status?.lastClockOut
+
+        // User has an active session if their last CLOCK_IN is more recent
+        // than their last CLOCK_OUT (covers clocked-in, on-break, etc.)
+        const lastCITime = lastClockIn ? new Date(lastClockIn.timestampServer).getTime() : 0
+        const lastCOTime = lastClockOut ? new Date(lastClockOut.timestampServer).getTime() : 0
+        const isClockedIn = lastCITime > lastCOTime
 
         // Add elapsed time for active sessions (totalMinutes only updates on clock-out)
-        if (isClockedIn && latestEntry?.timestampServer) {
-          const clockInTime = new Date(latestEntry.timestampServer).getTime()
+        if (isClockedIn && lastClockIn) {
           const now = Date.now()
-          const activeMinutes = Math.floor((now - clockInTime) / 60000)
+          const activeMinutes = Math.floor((now - lastCITime) / 60000)
           todayMinutes += Math.max(0, activeMinutes)
         }
 
@@ -148,7 +164,7 @@ export async function GET(request: NextRequest) {
           displayName,
           isOwner: member.userId === ownerId,
           isClockedIn,
-          clockedInSince: isClockedIn ? latestEntry?.timestampServer || null : null,
+          clockedInSince: isClockedIn && lastClockIn ? lastClockIn.timestampServer : null,
           todayMinutes,
           todayLocation: todayLocName,
           weekDaysWorked: uniqueOfficeDays,
