@@ -319,7 +319,7 @@ export default function SignupPage() {
               </span>
             </h1>
             <p className="text-lg text-background/60 leading-relaxed mb-10">
-              OnSite replaces badge swipes and honor-system sign-ins with
+              KPR replaces badge swipes and honor-system sign-ins with
               GPS-verified clock in/out. Setup in under 5 minutes.
             </p>
 

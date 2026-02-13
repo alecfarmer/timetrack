@@ -5,7 +5,7 @@
  * Uses the Web Authentication API (navigator.credentials).
  */
 
-const RP_NAME = "OnSite"
+const RP_NAME = "KPR"
 
 function bufferToBase64url(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer)

@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
 
     if (exportCsv) {
       const rows: string[] = []
-      rows.push("OnSite Payroll Timesheet")
+      rows.push("KPR Payroll Timesheet")
       rows.push(`Employee: ${user!.email}`)
       rows.push(`Period: ${result.period}`)
       rows.push("")

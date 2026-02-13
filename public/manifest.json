@@ -1,11 +1,11 @@
 {
-  "name": "OnSite - Time & Attendance",
-  "short_name": "OnSite",
+  "name": "KPR - Time & Attendance",
+  "short_name": "KPR",
   "description": "Personal time and attendance tracking for work location compliance",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#6C5CE7",
+  "theme_color": "#2563EB",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [

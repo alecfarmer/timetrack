@@ -277,7 +277,7 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
   // Dynamic browser tab title with live timer
   useEffect(() => {
     if (!currentStatus?.isClockedIn) {
-      document.title = "OnSite"
+      document.title = "KPR"
       return
     }
 
@@ -290,9 +290,9 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
       const timeStr = `${h}h ${m.toString().padStart(2, "0")}m`
 
       if (eightHourAlert) {
-        document.title = `[8h+] ${timeStr} - OnSite`
+        document.title = `[8h+] ${timeStr} - KPR`
       } else {
-        document.title = `${timeStr} - OnSite`
+        document.title = `${timeStr} - KPR`
       }
     }
 
@@ -300,7 +300,7 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
     const interval = setInterval(updateTitle, 15000)
     return () => {
       clearInterval(interval)
-      document.title = "OnSite"
+      document.title = "KPR"
     }
   }, [currentStatus?.isClockedIn, currentStatus?.totalMinutesToday, eightHourAlert])
 

@@ -9,6 +9,9 @@ import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { IPhoneFrame } from "@/components/landing/iphone-frame"
+import { BrowserFrame } from "@/components/landing/browser-frame"
+import { DashboardMockup, AdminMockup, RewardsMockup } from "@/components/landing/mockup-screens"
 import {
   MapPin,
   Clock,
@@ -79,8 +82,8 @@ const featureTabs = [
       title: "Compliance Engine",
       items: [
         { region: "California", status: "Meal breaks enforced", color: "emerald" },
-        { region: "Oregon", status: "Predictive scheduling", color: "purple" },
-        { region: "New York City", status: "Fair Workweek compliant", color: "violet" },
+        { region: "Oregon", status: "Predictive scheduling", color: "blue" },
+        { region: "New York City", status: "Fair Workweek compliant", color: "cyan" },
       ],
       score: "100%",
     },
@@ -149,9 +152,9 @@ const featureTabs = [
       levelName: "Star",
       xp: "4,250",
       badges: [
-        { icon: "🔥", name: "On Fire" },
-        { icon: "🐦", name: "Early Bird" },
-        { icon: "💯", name: "Century" },
+        { icon: "\uD83D\uDD25", name: "On Fire" },
+        { icon: "\uD83D\uDC26", name: "Early Bird" },
+        { icon: "\uD83D\uDCAF", name: "Century" },
       ],
     },
   },
@@ -326,44 +329,6 @@ function AnimatedCounter({
   )
 }
 
-function AppWindow({
-  title,
-  live,
-  children,
-}: {
-  title: string
-  live?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <div className="rounded-2xl border border-border/50 bg-card shadow-xl overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/50 bg-muted/30">
-        <div className="flex gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-[10px] text-muted-foreground/60 px-3 py-0.5 rounded bg-muted/50 font-mono">
-            {title}
-          </span>
-        </div>
-        {live && (
-          <div className="flex items-center gap-1.5">
-            <motion.div
-              className="w-1.5 h-1.5 rounded-full bg-emerald-500"
-              animate={{ opacity: [1, 0.4, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            />
-            <span className="text-[10px] text-emerald-500 font-medium">Live</span>
-          </div>
-        )}
-      </div>
-      <div className="p-5">{children}</div>
-    </div>
-  )
-}
-
 function FloatingShapes() {
   const shapes = [
     { size: 40, top: "10%", left: "5%", dur: 20, delay: 0, round: true },
@@ -408,198 +373,22 @@ function FloatingShapes() {
 }
 
 // ============================================
-// SUB-COMPONENTS
+// FEATURE TAB MOCKUPS
 // ============================================
-
-function PhoneMockup() {
-  const [showToast, setShowToast] = useState(false)
-
-  useEffect(() => {
-    const show = () => {
-      setShowToast(true)
-      setTimeout(() => setShowToast(false), 3000)
-    }
-    const timer = setTimeout(show, 2000)
-    const interval = setInterval(show, 6000)
-    return () => {
-      clearTimeout(timer)
-      clearInterval(interval)
-    }
-  }, [])
-
-  return (
-    <div className="relative">
-      {/* Glow behind phone */}
-      <div className="absolute -inset-8 bg-gradient-to-r from-purple-500/30 via-violet-500/20 to-blue-500/30 blur-3xl rounded-full" />
-
-      {/* Phone frame */}
-      <motion.div
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="relative w-[260px] sm:w-[280px] mx-auto"
-      >
-        <div className="rounded-[2.5rem] border-[3px] border-white/20 bg-gradient-to-b from-gray-900 to-gray-950 p-2 shadow-2xl shadow-black/50">
-          {/* Screen */}
-          <div className="rounded-[2rem] bg-gray-950 overflow-hidden">
-            {/* Status bar */}
-            <div className="flex items-center justify-between px-6 pt-3 pb-2">
-              <span className="text-white/60 text-[10px] font-medium">9:41</span>
-              <div className="w-20 h-5 rounded-full bg-black" />
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-2.5 rounded-sm border border-white/40">
-                  <div className="w-2.5 h-1.5 rounded-[1px] bg-green-400 ml-0.5 mt-[1px]" />
-                </div>
-              </div>
-            </div>
-
-            {/* App content */}
-            <div className="px-5 pb-6 pt-2">
-              {/* Greeting */}
-              <p className="text-white/50 text-xs">Good morning</p>
-              <p className="text-white font-semibold text-base mb-4">Ready to clock in</p>
-
-              {/* Clock button with pulsing ring */}
-              <div className="flex justify-center mb-5">
-                <div className="relative">
-                  <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-purple-400/60"
-                    animate={{ scale: [1, 1.5, 1], opacity: [0.4, 0, 0.4] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30 relative z-10">
-                    <div className="text-center">
-                      <Clock className="h-6 w-6 text-white mx-auto mb-0.5" />
-                      <span className="text-white text-[10px] font-semibold uppercase tracking-wider">
-                        Clock In
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Today's hours */}
-              <div className="text-center mb-4">
-                <p className="text-white text-2xl font-bold tabular-nums">0h 00m</p>
-                <p className="text-white/40 text-xs">Today</p>
-              </div>
-
-              {/* Animated week strip */}
-              <div className="flex gap-1.5">
-                {["M", "T", "W", "T", "F"].map((day, i) => (
-                  <motion.div
-                    key={`${day}-${i}`}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{
-                      delay: 0.8 + i * 0.1,
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 20,
-                    }}
-                    className={cn(
-                      "flex-1 rounded-lg py-1.5 text-center",
-                      i < 3
-                        ? "bg-emerald-500/20 border border-emerald-500/30"
-                        : "bg-white/5 border border-white/10"
-                    )}
-                  >
-                    <p className="text-[9px] text-white/40 mb-0.5">{day}</p>
-                    <p
-                      className={cn(
-                        "text-[10px] font-semibold",
-                        i < 3 ? "text-emerald-400" : "text-white/20"
-                      )}
-                    >
-                      {i < 3 ? "8h" : "—"}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Floating notification toast */}
-        <AnimatePresence>
-          {showToast && (
-            <motion.div
-              initial={{ opacity: 0, x: 40, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="absolute -right-4 top-24 z-20 bg-gray-800 border border-white/10 rounded-xl px-3 py-2 shadow-xl shadow-black/30 w-[180px]"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-white text-[10px] font-medium truncate">
-                    Sarah C. clocked in
-                  </p>
-                  <p className="text-white/40 text-[9px]">9:41 AM</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Reflection */}
-        <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
-      </motion.div>
-    </div>
-  )
-}
 
 function FeatureTabMockup({ tab }: { tab: (typeof featureTabs)[number] }) {
   if (tab.mockup.type === "phone") {
-    const feedEntries = [
-      { name: "Alex M.", time: "9:02 AM", action: "clocked in" },
-      { name: "Jordan K.", time: "9:15 AM", action: "clocked in" },
-      { name: "Sam T.", time: "9:31 AM", action: "started break" },
-    ]
     return (
-      <AppWindow title="app.onsite.io/dashboard" live>
-        <div className="space-y-2.5 mb-4">
-          {feedEntries.map((entry, i) => (
-            <motion.div
-              key={entry.name}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{
-                delay: 0.3 + i * 0.15,
-                type: "spring",
-                stiffness: 200,
-                damping: 20,
-              }}
-              className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/50"
-            >
-              <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{entry.name}</p>
-                <p className="text-xs text-muted-foreground">{entry.action}</p>
-              </div>
-              <span className="text-xs text-muted-foreground tabular-nums">{entry.time}</span>
-            </motion.div>
-          ))}
-        </div>
-        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-          <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-primary to-primary/70"
-            initial={{ width: 0 }}
-            animate={{ width: "65%" }}
-            transition={{ delay: 0.8, duration: 1.2, ease: "easeOut" }}
-          />
-        </div>
-        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
-          Today&apos;s attendance: 65%
-        </p>
-      </AppWindow>
+      <IPhoneFrame className="w-[240px] mx-auto">
+        <DashboardMockup />
+      </IPhoneFrame>
     )
   }
 
   if (tab.mockup.type === "dashboard") {
     return (
-      <AppWindow title="app.onsite.io/compliance">
-        <div className="space-y-2.5">
+      <BrowserFrame url="app.kpr.com/compliance">
+        <div className="p-5 space-y-2.5">
           {tab.mockup.items?.map((item, i) => (
             <motion.div
               key={item.region}
@@ -611,19 +400,19 @@ function FeatureTabMockup({ tab }: { tab: (typeof featureTabs)[number] }) {
                 stiffness: 200,
                 damping: 20,
               }}
-              className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/50"
+              className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5"
             >
               <div
                 className={cn(
                   "w-2 h-2 rounded-full",
                   item.color === "emerald" && "bg-emerald-500",
-                  item.color === "purple" && "bg-purple-500",
-                  item.color === "violet" && "bg-violet-500"
+                  item.color === "blue" && "bg-blue-500",
+                  item.color === "cyan" && "bg-cyan-500"
                 )}
               />
               <div className="flex-1">
-                <p className="text-sm font-medium">{item.region}</p>
-                <p className="text-xs text-muted-foreground">{item.status}</p>
+                <p className="text-sm font-medium text-white/90">{item.region}</p>
+                <p className="text-xs text-white/50">{item.status}</p>
               </div>
               <motion.div
                 initial={{ scale: 0 }}
@@ -639,239 +428,129 @@ function FeatureTabMockup({ tab }: { tab: (typeof featureTabs)[number] }) {
               </motion.div>
             </motion.div>
           ))}
+          <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+            <span className="text-sm text-white/50">Overall Compliance</span>
+            <AnimatedCounter
+              target={100}
+              suffix="%"
+              className="text-2xl font-bold text-emerald-400"
+            />
+          </div>
         </div>
-        <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Overall Compliance</span>
-          <AnimatedCounter
-            target={100}
-            suffix="%"
-            className="text-2xl font-bold text-emerald-500"
-          />
-        </div>
-      </AppWindow>
+      </BrowserFrame>
     )
   }
 
   if (tab.mockup.type === "export") {
     return (
-      <AppWindow title="app.onsite.io/payroll">
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {tab.mockup.providers?.map((p, i) => (
-            <motion.div
-              key={p}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{
-                delay: 0.2 + i * 0.1,
-                type: "spring",
-                stiffness: 250,
-                damping: 20,
-              }}
-              className="p-3 rounded-xl bg-muted/50 text-center text-sm font-medium border border-border/50"
-            >
-              {p}
-            </motion.div>
-          ))}
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Exporting...</span>
-            <span>Complete</span>
+      <BrowserFrame url="app.kpr.com/payroll">
+        <div className="p-5">
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {tab.mockup.providers?.map((p, i) => (
+              <motion.div
+                key={p}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{
+                  delay: 0.2 + i * 0.1,
+                  type: "spring",
+                  stiffness: 250,
+                  damping: 20,
+                }}
+                className="p-3 rounded-xl bg-white/5 text-center text-sm font-medium text-white/80 border border-white/10"
+              >
+                {p}
+              </motion.div>
+            ))}
           </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-white/50">
+              <span>Exporting...</span>
+              <span>Complete</span>
+            </div>
+            <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-emerald-500"
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ delay: 0.8, duration: 2, ease: "easeInOut" }}
+              />
+            </div>
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500"
-              initial={{ width: 0 }}
-              animate={{ width: "100%" }}
-              transition={{ delay: 0.8, duration: 2, ease: "easeInOut" }}
-            />
-          </div>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2.8 }}
-            className="flex items-center justify-center gap-2 pt-1"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{
-                delay: 2.8,
-                type: "spring",
-                stiffness: 300,
-                damping: 15,
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 2.8 }}
+              className="flex items-center justify-center gap-2 pt-1"
             >
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              <span className="text-sm font-medium text-emerald-400">
+                {tab.mockup.totalHours} exported
+              </span>
             </motion.div>
-            <span className="text-sm font-medium text-emerald-500">
-              {tab.mockup.totalHours} exported
-            </span>
-          </motion.div>
+          </div>
         </div>
-      </AppWindow>
+      </BrowserFrame>
     )
   }
 
   if (tab.mockup.type === "chart") {
     const barHeights = [60, 80, 45, 90, 70]
     return (
-      <AppWindow title="app.onsite.io/analytics">
-        <div className="flex items-end gap-2.5 h-32 mb-4 px-2">
-          {barHeights.map((h, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+      <BrowserFrame url="app.kpr.com/analytics">
+        <div className="p-5">
+          <div className="flex items-end gap-2.5 h-32 mb-4 px-2">
+            {barHeights.map((h, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <motion.div
+                  className="w-full rounded-t-md bg-gradient-to-t from-blue-600 to-blue-400"
+                  initial={{ height: 0 }}
+                  animate={{ height: `${h}%` }}
+                  transition={{
+                    delay: 0.3 + i * 0.1,
+                    duration: 0.8,
+                    ease: "easeOut",
+                  }}
+                />
+                <span className="text-[9px] text-white/40">
+                  {["Mon", "Tue", "Wed", "Thu", "Fri"][i]}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {tab.mockup.metrics?.map((m, i) => (
               <motion.div
-                className="w-full rounded-t-md bg-gradient-to-t from-primary to-primary/60"
-                initial={{ height: 0 }}
-                animate={{ height: `${h}%` }}
-                transition={{
-                  delay: 0.3 + i * 0.1,
-                  duration: 0.8,
-                  ease: "easeOut",
-                }}
-              />
-              <span className="text-[9px] text-muted-foreground">
-                {["Mon", "Tue", "Wed", "Thu", "Fri"][i]}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="space-y-2">
-          {tab.mockup.metrics?.map((m, i) => (
-            <motion.div
-              key={m.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 + i * 0.1 }}
-              className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
-            >
-              <span className="text-xs font-medium">{m.label}</span>
-              <motion.span
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{
-                  delay: 1 + i * 0.1,
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 20,
-                }}
-                className={cn(
-                  "text-xs font-semibold px-2 py-0.5 rounded-full",
-                  m.trend?.startsWith("-")
-                    ? "text-emerald-500 bg-emerald-500/10"
-                    : "text-emerald-500 bg-emerald-500/10"
-                )}
+                key={m.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 + i * 0.1 }}
+                className="flex items-center justify-between p-2 rounded-lg bg-white/5"
               >
-                {m.trend}
-              </motion.span>
-            </motion.div>
-          ))}
+                <span className="text-xs font-medium text-white/80">{m.label}</span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-emerald-400 bg-emerald-500/10">
+                  {m.trend}
+                </span>
+              </motion.div>
+            ))}
+          </div>
         </div>
-      </AppWindow>
+      </BrowserFrame>
     )
   }
 
   if (tab.mockup.type === "gamification") {
     return (
-      <AppWindow title="app.onsite.io/rewards">
-        <div className="flex items-center gap-4 mb-4">
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex flex-col items-center justify-center text-white shadow-lg shadow-amber-500/25"
-          >
-            <AnimatedCounter target={7} className="text-2xl font-bold" />
-            <span className="text-[8px] uppercase tracking-wider opacity-80">Level</span>
-          </motion.div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-bold text-lg">{tab.mockup.levelName}</span>
-              <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-medium">
-                {tab.mockup.xp} XP
-              </span>
-            </div>
-            <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500"
-                initial={{ width: 0 }}
-                animate={{ width: "75%" }}
-                transition={{ delay: 0.5, duration: 1, ease: "easeOut" }}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {tab.mockup.badges?.map((b, i) => (
-            <motion.div
-              key={b.name}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{
-                delay: 0.6 + i * 0.12,
-                type: "spring",
-                stiffness: 300,
-                damping: 15,
-              }}
-              className="flex-1 flex flex-col items-center gap-1 p-2.5 rounded-xl border border-border/50 bg-muted/30"
-            >
-              <span className="text-xl">{b.icon}</span>
-              <span className="text-[9px] font-medium text-muted-foreground">{b.name}</span>
-            </motion.div>
-          ))}
-        </div>
-      </AppWindow>
+      <IPhoneFrame className="w-[240px] mx-auto">
+        <RewardsMockup />
+      </IPhoneFrame>
     )
   }
 
   // admin type
-  const adminFeed = [
-    { name: "Lisa R.", action: "clocked in", time: "2m ago", color: "bg-emerald-500" },
-    { name: "Mike D.", action: "started break", time: "5m ago", color: "bg-amber-500" },
-    { name: "Anna W.", action: "clocked out", time: "8m ago", color: "bg-red-400" },
-  ]
   return (
-    <AppWindow title="app.onsite.io/admin" live>
-      <div className="grid grid-cols-2 gap-2.5 mb-4">
-        {[
-          { label: "On-Site", value: 24, color: "text-emerald-500" },
-          { label: "Clock-Ins", value: 31, color: "text-primary" },
-          { label: "Pending", value: 3, color: "text-amber-500" },
-          { label: "Compliance", value: 98, suffix: "%", color: "text-emerald-500" },
-        ].map((s, i) => (
-          <motion.div
-            key={s.label}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 + i * 0.08 }}
-            className="p-2.5 rounded-xl bg-muted/50 text-center"
-          >
-            <AnimatedCounter
-              target={s.value}
-              suffix={s.suffix}
-              className={cn("text-2xl font-bold", s.color)}
-            />
-            <p className="text-[10px] text-muted-foreground">{s.label}</p>
-          </motion.div>
-        ))}
-      </div>
-      <div className="space-y-2">
-        {adminFeed.map((entry, i) => (
-          <motion.div
-            key={entry.name}
-            initial={{ opacity: 0, x: -15 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6 + i * 0.12 }}
-            className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30"
-          >
-            <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", entry.color)} />
-            <span className="text-xs font-medium flex-1">{entry.name}</span>
-            <span className="text-[10px] text-muted-foreground">{entry.action}</span>
-            <span className="text-[10px] text-muted-foreground/60">{entry.time}</span>
-          </motion.div>
-        ))}
-      </div>
-    </AppWindow>
+    <BrowserFrame url="app.kpr.com/admin" live>
+      <AdminMockup />
+    </BrowserFrame>
   )
 }
 
@@ -971,22 +650,22 @@ export default function LandingPage() {
       </nav>
 
       {/* ==========================================
-          2. HERO (DARK GRADIENT, FULL VIEWPORT)
+          2. HERO (DARK SLATE GRADIENT, FULL VIEWPORT)
           ========================================== */}
       <section
         ref={heroRef}
         className="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden"
       >
-        {/* Always-dark background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0a1e] via-[#1a1035] to-[#0d0d1a]" />
+        {/* Dark slate background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0f1e] via-[#0f172a] to-[#0c1425]" />
 
-        {/* Floating gradient orbs */}
+        {/* Floating gradient orbs — electric blue */}
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
             className="absolute top-1/4 -left-32 w-[500px] h-[500px] rounded-full"
             style={{
               background:
-                "radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)",
+                "radial-gradient(circle, rgba(37,99,235,0.15) 0%, transparent 70%)",
             }}
             animate={{ x: [0, 50, 0], y: [0, 30, 0] }}
             transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
@@ -995,7 +674,7 @@ export default function LandingPage() {
             className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] rounded-full"
             style={{
               background:
-                "radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%)",
+                "radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)",
             }}
             animate={{ x: [0, -40, 0], y: [0, -40, 0] }}
             transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
@@ -1004,7 +683,7 @@ export default function LandingPage() {
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full"
             style={{
               background:
-                "radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 60%)",
+                "radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 60%)",
             }}
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
@@ -1027,7 +706,7 @@ export default function LandingPage() {
                 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-6 text-white"
               >
                 Know who&apos;s on-site,{" "}
-                <span className="bg-gradient-to-r from-purple-400 via-violet-400 to-indigo-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-300 bg-clip-text text-transparent">
                   in real time.
                 </span>
               </motion.h1>
@@ -1075,21 +754,46 @@ export default function LandingPage() {
                   "Free for small teams",
                 ].map((text) => (
                   <div key={text} className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-purple-400" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-400" />
                     <span>{text}</span>
                   </div>
                 ))}
               </motion.div>
             </motion.div>
 
-            {/* Right: Phone mockup */}
+            {/* Right: Device mockups with perspective */}
             <motion.div
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.8 }}
-              className="hidden lg:flex justify-center"
+              className="hidden lg:flex justify-center items-center relative"
             >
-              <PhoneMockup />
+              {/* Glow behind devices */}
+              <div className="absolute -inset-8 bg-gradient-to-r from-blue-500/20 via-cyan-500/10 to-blue-500/20 blur-3xl rounded-full" />
+
+              {/* Browser frame behind (admin) */}
+              <motion.div
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                className="absolute -top-4 -right-4 w-[320px] origin-center"
+                style={{ transform: "perspective(1200px) rotateY(-8deg) rotateX(2deg)" }}
+              >
+                <BrowserFrame url="app.kpr.com/admin" live>
+                  <AdminMockup />
+                </BrowserFrame>
+              </motion.div>
+
+              {/* iPhone frame in front (employee) */}
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="relative z-10"
+                style={{ transform: "perspective(1200px) rotateY(5deg) rotateX(2deg)" }}
+              >
+                <IPhoneFrame className="w-[240px]">
+                  <DashboardMockup />
+                </IPhoneFrame>
+              </motion.div>
             </motion.div>
           </div>
         </motion.div>
@@ -1304,7 +1008,7 @@ export default function LandingPage() {
                 variants={fadeUp}
                 className="text-xl text-muted-foreground mb-8"
               >
-                OnSite tracks outcomes, not keystrokes. We believe transparency
+                KPR tracks outcomes, not keystrokes. We believe transparency
                 builds better teams than surveillance ever could.
               </motion.p>
 
@@ -1503,7 +1207,7 @@ export default function LandingPage() {
               Trusted by teams everywhere.
             </h2>
             <p className="text-xl text-muted-foreground">
-              See what operations leaders are saying about OnSite.
+              See what operations leaders are saying about KPR.
             </p>
           </motion.div>
 
@@ -1607,7 +1311,7 @@ export default function LandingPage() {
               {
                 step: "3",
                 title: "Start tracking",
-                desc: "Configure required days and let OnSite handle compliance monitoring automatically.",
+                desc: "Configure required days and let KPR handle compliance monitoring automatically.",
                 icon: Clock,
               },
             ].map((item, i) => (
@@ -1787,12 +1491,12 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="card-gradient rounded-3xl px-8 py-16 sm:px-16 sm:py-20 text-center relative overflow-hidden"
           >
-            {/* Floating orbs behind CTA */}
+            {/* Floating orbs behind CTA — blue */}
             <motion.div
               className="absolute -top-20 -left-20 w-[300px] h-[300px] rounded-full pointer-events-none"
               style={{
                 background:
-                  "radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)",
+                  "radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 70%)",
               }}
               animate={{ x: [0, 30, 0], y: [0, 20, 0] }}
               transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
@@ -1801,7 +1505,7 @@ export default function LandingPage() {
               className="absolute -bottom-24 -right-16 w-[350px] h-[350px] rounded-full pointer-events-none"
               style={{
                 background:
-                  "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)",
+                  "radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%)",
               }}
               animate={{ x: [0, -25, 0], y: [0, -20, 0] }}
               transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
@@ -1940,7 +1644,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-border/50">
             <Logo size="sm" />
             <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} OnSite. All rights reserved.
+              &copy; {new Date().getFullYear()} KPR. All rights reserved.
             </p>
           </div>
         </div>

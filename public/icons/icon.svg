@@ -1,40 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1A2B4A"/>
-      <stop offset="100%" style="stop-color:#27509B"/>
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
     </linearGradient>
   </defs>
 
-  <!-- Background — Michelin dark to blue -->
+  <!-- Background — Dark Slate to Electric Blue -->
   <rect width="512" height="512" rx="108" fill="url(#bgGrad)"/>
 
-  <!-- Clock circle -->
-  <circle cx="256" cy="268" r="148" fill="none" stroke="white" stroke-width="22" opacity="0.95"/>
+  <!-- Bold geometric K mark -->
+  <!-- Vertical stem -->
+  <rect x="120" y="100" width="56" height="312" rx="18" fill="white" opacity="0.95"/>
 
-  <!-- Hour marks -->
-  <g stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.6">
-    <line x1="256" y1="132" x2="256" y2="148"/>
-    <line x1="256" y1="388" x2="256" y2="404"/>
-    <line x1="120" y1="268" x2="136" y2="268"/>
-    <line x1="376" y1="268" x2="392" y2="268"/>
-  </g>
+  <!-- Upper diagonal -->
+  <path d="M190 256L340 110C350 100 368 106 368 120V175L210 280" fill="white" opacity="0.95"/>
 
-  <!-- Clock center -->
-  <circle cx="256" cy="268" r="14" fill="white"/>
+  <!-- Lower diagonal -->
+  <path d="M190 256L340 402C350 412 368 406 368 392V337L210 232" fill="white" opacity="0.95"/>
 
-  <!-- Hour hand (pointing ~10 o'clock) -->
-  <line x1="256" y1="268" x2="210" y2="188" stroke="white" stroke-width="18" stroke-linecap="round"/>
+  <!-- Pulse accent at intersection -->
+  <circle cx="190" cy="256" r="24" fill="white" opacity="0.5"/>
 
-  <!-- Minute hand (pointing ~2 o'clock) -->
-  <line x1="256" y1="268" x2="340" y2="210" stroke="white" stroke-width="12" stroke-linecap="round"/>
+  <!-- Cyan accent dot -->
+  <circle cx="370" cy="120" r="20" fill="#06b6d4" opacity="0.8"/>
 
-  <!-- Location pin at top-right -->
-  <g transform="translate(370, 90)">
-    <path d="M0-8C-18-8-32 6-32 24C-32 50 0 72 0 72S32 50 32 24C32 6 18-8 0-8Z" fill="#FCE500"/>
-    <circle cx="0" cy="22" r="12" fill="#1A2B4A"/>
-  </g>
-
-  <!-- "OS" text at bottom -->
-  <text x="256" y="480" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="56" letter-spacing="6" opacity="0.9">OS</text>
+  <!-- "KPR" text at bottom -->
+  <text x="256" y="475" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="52" letter-spacing="8" opacity="0.9">KPR</text>
 </svg>

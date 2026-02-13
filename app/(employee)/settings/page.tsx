@@ -335,7 +335,7 @@ export default function SettingsPage() {
           {/* App Info */}
           <motion.div variants={staggerItem}>
             <div className="text-center text-sm text-muted-foreground py-4">
-              <p className="font-medium">OnSite v2.0.0</p>
+              <p className="font-medium">KPR v4.0.0</p>
               <p>Personal Time & Attendance Tracker</p>
             </div>
           </motion.div>

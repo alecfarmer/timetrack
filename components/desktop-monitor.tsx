@@ -183,7 +183,7 @@ export function DesktopMonitor({
               <div className="flex items-center gap-2">
                 <GripVertical className="w-4 h-4 text-muted-foreground" />
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  OnSite
+                  KPR
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -272,7 +272,7 @@ export function DesktopMonitor({
                   <div className="w-6 h-6 rounded-lg bg-gradient-primary flex items-center justify-center">
                     <Clock className="w-4 h-4 text-white" />
                   </div>
-                  <span className="font-semibold">OnSite Monitor</span>
+                  <span className="font-semibold">KPR Monitor</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">

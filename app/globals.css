@@ -1,35 +1,35 @@
 @import "tailwindcss";
 
 /* ============================================
-   ONSITE DESIGN SYSTEM v3.0
-   Connecteam-Inspired — Bold, Energetic, Modern
+   KPR DESIGN SYSTEM v4.0
+   Slate & Electric Blue — Bold, Modern, Professional
    ============================================ */
 
 :root {
   /* Core palette - Light mode */
-  --background: 210 20% 98%;
-  --foreground: 220 25% 10%;
+  --background: 210 18% 97%;
+  --foreground: 215 25% 12%;
   --card: 0 0% 100%;
-  --card-foreground: 220 25% 10%;
+  --card-foreground: 215 25% 12%;
   --popover: 0 0% 100%;
-  --popover-foreground: 220 25% 10%;
+  --popover-foreground: 215 25% 12%;
 
-  /* Brand colors — Vivid Purple-Blue */
-  --primary: 250 84% 54%;
+  /* Brand colors — Electric Blue */
+  --primary: 217 91% 55%;
   --primary-foreground: 0 0% 100%;
 
   /* Accent colors */
   --accent-orange: 26 100% 57%;
-  --accent-pink: 340 82% 52%;
-  --accent-cyan: 188 78% 47%;
+  --accent-pink: 240 60% 62%;
+  --accent-cyan: 192 85% 50%;
 
   /* Neutrals */
-  --secondary: 214 15% 95%;
-  --secondary-foreground: 220 25% 10%;
-  --muted: 214 15% 95%;
+  --secondary: 215 16% 94%;
+  --secondary-foreground: 215 25% 12%;
+  --muted: 215 16% 94%;
   --muted-foreground: 215 13% 46%;
-  --accent: 214 15% 93%;
-  --accent-foreground: 220 25% 10%;
+  --accent: 215 16% 92%;
+  --accent-foreground: 215 25% 12%;
 
   /* Semantic colors */
   --destructive: 0 72% 51%;
@@ -37,14 +37,14 @@
   --success: 152 60% 40%;
   --success-foreground: 0 0% 100%;
   --warning: 45 93% 47%;
-  --warning-foreground: 220 25% 10%;
-  --info: 188 78% 47%;
+  --warning-foreground: 215 25% 12%;
+  --info: 192 85% 50%;
   --info-foreground: 0 0% 100%;
 
   /* UI elements */
-  --border: 214 18% 88%;
-  --input: 214 18% 88%;
-  --ring: 250 84% 54%;
+  --border: 215 18% 88%;
+  --input: 215 18% 88%;
+  --ring: 217 91% 55%;
 
   /* Radius scale */
   --radius: 0.75rem;
@@ -62,12 +62,12 @@
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.06);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.06);
-  --shadow-glow: 0 0 40px -10px hsl(250 84% 54% / 0.25);
+  --shadow-glow: 0 0 40px -10px hsl(217 91% 55% / 0.25);
 
-  /* Gradient colors — Purple to Orange */
-  --gradient-start: 250 84% 54%;
-  --gradient-mid: 280 70% 50%;
-  --gradient-end: 26 100% 57%;
+  /* Gradient colors — Electric Blue to Deep Blue to Cyan */
+  --gradient-start: 217 91% 55%;
+  --gradient-mid: 224 76% 48%;
+  --gradient-end: 192 85% 50%;
 
   /* Sidebar */
   --sidebar-width: 280px;
@@ -83,27 +83,27 @@
 
 .dark {
   /* Deep dark base */
-  --background: 220 25% 7%;
+  --background: 222 25% 7%;
   --foreground: 210 20% 95%;
-  --card: 220 22% 10%;
+  --card: 222 22% 10%;
   --card-foreground: 210 20% 95%;
-  --popover: 220 22% 10%;
+  --popover: 222 22% 10%;
   --popover-foreground: 210 20% 95%;
 
-  /* Vivid Purple-Blue — lighter for dark mode */
-  --primary: 250 84% 65%;
+  /* Electric Blue — brighter for dark mode */
+  --primary: 217 91% 62%;
   --primary-foreground: 0 0% 100%;
 
   /* Accent colors - dark mode */
   --accent-orange: 26 100% 60%;
-  --accent-pink: 340 82% 58%;
-  --accent-cyan: 188 78% 55%;
+  --accent-pink: 240 60% 68%;
+  --accent-cyan: 192 85% 58%;
 
-  --secondary: 220 18% 16%;
+  --secondary: 222 18% 16%;
   --secondary-foreground: 210 20% 95%;
-  --muted: 220 18% 16%;
+  --muted: 222 18% 16%;
   --muted-foreground: 215 15% 60%;
-  --accent: 220 18% 18%;
+  --accent: 222 18% 18%;
   --accent-foreground: 210 20% 95%;
 
   --destructive: 0 62% 55%;
@@ -111,24 +111,24 @@
   --success: 152 55% 48%;
   --success-foreground: 0 0% 100%;
   --warning: 45 93% 55%;
-  --warning-foreground: 220 25% 7%;
-  --info: 188 78% 55%;
+  --warning-foreground: 222 25% 7%;
+  --info: 192 85% 58%;
   --info-foreground: 0 0% 100%;
 
-  --border: 220 18% 18%;
-  --input: 220 18% 18%;
-  --ring: 250 84% 65%;
+  --border: 222 18% 18%;
+  --input: 222 18% 18%;
+  --ring: 217 91% 62%;
 
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
-  --shadow-glow: 0 0 60px -10px hsl(250 84% 65% / 0.35);
+  --shadow-glow: 0 0 60px -10px hsl(217 91% 62% / 0.35);
 
-  --gradient-start: 250 84% 65%;
-  --gradient-mid: 280 70% 58%;
-  --gradient-end: 26 100% 60%;
+  --gradient-start: 217 91% 62%;
+  --gradient-mid: 224 76% 55%;
+  --gradient-end: 192 85% 58%;
 }
 
 /* Tailwind theme integration */

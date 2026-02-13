@@ -78,7 +78,7 @@ function getPageTitle(pathname: string): string {
     "/notifications": "Notifications",
     "/settings": "Settings",
   }
-  return titleMap[pathname] || "OnSite"
+  return titleMap[pathname] || "KPR"
 }
 
 function MiniTimer({ sessionStart }: { sessionStart: string }) {

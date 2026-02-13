@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test"
 test.describe("Smoke tests", () => {
   test("landing page loads", async ({ page }) => {
     await page.goto("/")
-    await expect(page).toHaveTitle(/OnSite/)
+    await expect(page).toHaveTitle(/KPR/)
   })
 
   test("login page loads", async ({ page }) => {

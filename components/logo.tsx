@@ -8,9 +8,9 @@ interface LogoProps {
 
 export function Logo({ size = "md", showText = true, className }: LogoProps) {
   const sizeMap = {
-    sm: { icon: "w-8 h-8", text: "text-base", sub: "text-[10px]" },
-    md: { icon: "w-10 h-10", text: "text-lg", sub: "text-xs" },
-    lg: { icon: "w-14 h-14", text: "text-2xl", sub: "text-sm" },
+    sm: { icon: "w-8 h-8", text: "text-base" },
+    md: { icon: "w-10 h-10", text: "text-lg" },
+    lg: { icon: "w-14 h-14", text: "text-2xl" },
   }
 
   const s = sizeMap[size]
@@ -22,27 +22,22 @@ export function Logo({ size = "md", showText = true, className }: LogoProps) {
           viewBox="0 0 32 32"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-[60%] h-[60%]"
+          className="w-[65%] h-[65%]"
         >
-          {/* Clock circle */}
-          <circle cx="16" cy="17" r="12" stroke="white" strokeWidth="2.2" opacity="0.95" />
-          {/* Clock center */}
-          <circle cx="16" cy="17" r="1.5" fill="white" />
-          {/* Hour hand */}
-          <line x1="16" y1="17" x2="12.5" y2="10" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          {/* Minute hand */}
-          <line x1="16" y1="17" x2="23" y2="13" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-          {/* Location pin */}
-          <g transform="translate(25, 4)">
-            <path d="M0-1C-2.5-1-4.5 1-4.5 3.5C-4.5 6.5 0 9.5 0 9.5S4.5 6.5 4.5 3.5C4.5 1 2.5-1 0-1Z" fill="#FCE500" />
-            <circle cx="0" cy="3.2" r="1.5" fill="white" opacity="0.9" />
-          </g>
+          {/* Bold geometric K with subtle clock-pulse motif */}
+          {/* K vertical stem */}
+          <rect x="6" y="4" width="4.5" height="24" rx="1.5" fill="white" opacity="0.95" />
+          {/* K upper diagonal */}
+          <path d="M12 16L22 5C22.8 4.2 24 4.8 24 5.9V9.5L14 17.5" fill="white" opacity="0.95" />
+          {/* K lower diagonal */}
+          <path d="M12 16L22 27C22.8 27.8 24 27.2 24 26.1V22.5L14 14.5" fill="white" opacity="0.95" />
+          {/* Subtle pulse-line accent on the K intersection */}
+          <circle cx="12" cy="16" r="2" fill="white" opacity="0.6" />
         </svg>
       </div>
       {showText && (
         <div className="flex flex-col">
-          <span className={cn(s.text, "font-bold leading-none tracking-tight")}>OnSite</span>
-          <span className={cn(s.sub, "text-muted-foreground leading-tight")}>Time Tracking</span>
+          <span className={cn(s.text, "font-bold leading-none tracking-tight")}>KPR</span>
         </div>
       )}
     </div>
@@ -56,16 +51,12 @@ export function LogoMark({ className }: { className?: string }) {
         viewBox="0 0 32 32"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-[60%] h-[60%]"
+        className="w-[65%] h-[65%]"
       >
-        <circle cx="16" cy="17" r="12" stroke="white" strokeWidth="2.2" opacity="0.95" />
-        <circle cx="16" cy="17" r="1.5" fill="white" />
-        <line x1="16" y1="17" x2="12.5" y2="10" stroke="white" strokeWidth="2" strokeLinecap="round" />
-        <line x1="16" y1="17" x2="23" y2="13" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-        <g transform="translate(25, 4)">
-          <path d="M0-1C-2.5-1-4.5 1-4.5 3.5C-4.5 6.5 0 9.5 0 9.5S4.5 6.5 4.5 3.5C4.5 1 2.5-1 0-1Z" fill="#FCE500" />
-          <circle cx="0" cy="3.2" r="1.5" fill="white" opacity="0.9" />
-        </g>
+        <rect x="6" y="4" width="4.5" height="24" rx="1.5" fill="white" opacity="0.95" />
+        <path d="M12 16L22 5C22.8 4.2 24 4.8 24 5.9V9.5L14 17.5" fill="white" opacity="0.95" />
+        <path d="M12 16L22 27C22.8 27.8 24 27.2 24 26.1V22.5L14 14.5" fill="white" opacity="0.95" />
+        <circle cx="12" cy="16" r="2" fill="white" opacity="0.6" />
       </svg>
     </div>
   )

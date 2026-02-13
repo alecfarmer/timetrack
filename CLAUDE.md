@@ -21,7 +21,7 @@ npm run typecheck    # TypeScript type checking (tsc --noEmit)
 
 ## Architecture
 
-**OnSite** is a SaaS for time and attendance tracking with separate admin portal and employee app, multi-tenant organization support, geofencing, and offline-first sync.
+\*\*KPR\*\* is a SaaS for time and attendance tracking with separate admin portal and employee app, multi-tenant organization support, geofencing, and offline-first sync.
 
 ### Route Structure
 

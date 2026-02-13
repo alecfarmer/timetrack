@@ -153,7 +153,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const steps = [
     // Step 0: Welcome
     {
-      title: "Welcome to OnSite",
+      title: "Welcome to KPR",
       content: (
         <div className="text-center space-y-6">
           <div className="flex justify-center">

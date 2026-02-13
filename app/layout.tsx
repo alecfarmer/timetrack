@@ -7,21 +7,21 @@ import { TimezonePrompt } from "@/components/timezone-prompt"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "OnSite - Time & Attendance",
+  title: "KPR - Time & Attendance",
   description: "Personal time and attendance tracking for work location compliance",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "OnSite",
+    title: "KPR",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: "website",
-    siteName: "OnSite",
-    title: "OnSite - Time & Attendance",
+    siteName: "KPR",
+    title: "KPR - Time & Attendance",
     description: "Personal time and attendance tracking for work location compliance",
   },
 }

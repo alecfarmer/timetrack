@@ -1,4 +1,5 @@
 import * as React from "react"
+import { motion, type HTMLMotionProps } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 const Card = React.forwardRef<
@@ -72,4 +73,24 @@ const CardFooter = React.forwardRef<
 ))
 CardFooter.displayName = "CardFooter"
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+const AnimatedCard = React.forwardRef<
+  HTMLDivElement,
+  HTMLMotionProps<"div"> & { className?: string }
+>(({ className, ...props }, ref) => (
+  <motion.div
+    ref={ref}
+    initial={{ opacity: 0, y: 15, scale: 0.98 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ type: "spring", stiffness: 300, damping: 24 }}
+    whileHover={{ y: -4, scale: 1.01, transition: { duration: 0.15 } }}
+    whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
+    className={cn(
+      "rounded-2xl border bg-card text-card-foreground shadow-sm cursor-pointer",
+      className
+    )}
+    {...props}
+  />
+))
+AnimatedCard.displayName = "AnimatedCard"
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, AnimatedCard }

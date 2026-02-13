@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=1&addressdetails=1`,
       {
         headers: {
-          "User-Agent": "OnSite-TimeTracker/1.0",
+          "User-Agent": "KPR-TimeTracker/1.0",
         },
       }
     )

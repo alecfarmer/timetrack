@@ -1,5 +1,5 @@
 /**
- * OnSite Animation System
+ * KPR Animation System
  * Framer Motion presets for consistent animations across the app
  */
 
@@ -664,4 +664,84 @@ export function createDelayedFade(delay: number): Variants {
       },
     },
   }
+}
+
+// ============================================
+// PAGE ENTER (for template.tsx transitions)
+// ============================================
+
+export const pageEnter: Variants = {
+  initial: { opacity: 0, y: 8 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: DURATIONS.slow, ease: EASINGS.easeOut },
+  },
+}
+
+export const pageEnterSubtle: Variants = {
+  initial: { opacity: 0 },
+  animate: {
+    opacity: 1,
+    transition: { duration: DURATIONS.normal },
+  },
+}
+
+// ============================================
+// INTERACTIVE CARD & BUTTON VARIANTS
+// ============================================
+
+export const cardInteractive: Variants = {
+  hidden: { opacity: 0, y: 15, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: transitions.spring,
+  },
+}
+
+export const cardInteractiveHover = {
+  y: -4,
+  scale: 1.01,
+  transition: { duration: DURATIONS.fast, ease: EASINGS.easeOut },
+}
+
+export const cardInteractiveTap = {
+  scale: 0.98,
+  transition: { duration: DURATIONS.instant },
+}
+
+export const buttonSpring = {
+  whileHover: { scale: 1.03, transition: { type: "spring", stiffness: 400, damping: 25 } },
+  whileTap: { scale: 0.97, transition: { duration: DURATIONS.instant } },
+}
+
+// ============================================
+// DRAMATIC STAGGER
+// ============================================
+
+export const staggerContainerDramatic: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.15,
+    },
+  },
+}
+
+export const staggerChildDramatic: Variants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24,
+    },
+  },
 }
