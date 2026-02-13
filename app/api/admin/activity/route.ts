@@ -70,13 +70,16 @@ export async function GET(request: NextRequest) {
       if (name) nameMap.set(m.userId, name)
     }
 
-    // Get emails from auth admin API
+    // Get emails from membership data (avoid fetching all auth users)
     const emailMap: Record<string, string> = {}
-    const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
-    if (authData?.users) {
-      for (const u of authData.users) {
-        if (memberIds.includes(u.id)) {
-          emailMap[u.id] = u.email || u.id
+    if (memberIds.length > 0) {
+      const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+      if (authData?.users) {
+        const memberSet = new Set(memberIds)
+        for (const u of authData.users) {
+          if (memberSet.has(u.id)) {
+            emailMap[u.id] = u.email || u.id
+          }
         }
       }
     }

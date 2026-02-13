@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       // Get org policy (use maybeSingle to handle missing policy gracefully)
       supabase
         .from("PolicyConfig")
-        .select("requiredOnsiteDays")
+        .select("requiredDaysPerWeek")
         .eq("orgId", org.orgId)
         .maybeSingle(),
     ])
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
 
     // Process week summary
     const workDays = weekWorkDaysResult.data || []
-    const requiredDays = policyResult.data?.requiredOnsiteDays ?? 3
+    const requiredDays = policyResult.data?.requiredDaysPerWeek ?? 3
 
     // Create a map of workdays by date for quick lookup
     const workDayMap = new Map(workDays.map((wd) => [wd.date, wd]))

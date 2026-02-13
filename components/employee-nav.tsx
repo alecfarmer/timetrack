@@ -70,7 +70,7 @@ const allMobileMenuItems = [
 
 function getPageTitle(pathname: string): string {
   const titleMap: Record<string, string> = {
-    "/dashboard": "Home",
+    "/dashboard": "KPR",
     "/schedule": "Schedule",
     "/history": "History",
     "/messages": "Messages",

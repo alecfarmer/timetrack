@@ -23,33 +23,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No organization found" }, { status: 403 })
     }
 
-    const { data: members, error } = await supabase
-      .from("Membership")
-      .select("*")
-      .eq("orgId", org.orgId)
-      .order("createdAt", { ascending: true })
+    // Fetch members and org owner in parallel
+    const [membersResult, orgResult] = await Promise.all([
+      supabase
+        .from("Membership")
+        .select("*")
+        .eq("orgId", org.orgId)
+        .order("createdAt", { ascending: true }),
+      supabase
+        .from("Organization")
+        .select("createdBy")
+        .eq("id", org.orgId)
+        .single(),
+    ])
 
-    if (error) {
+    if (membersResult.error) {
       return NextResponse.json({ error: "Failed to fetch members" }, { status: 500 })
     }
 
-    // Get org owner
-    const { data: orgData } = await supabase
-      .from("Organization")
-      .select("createdBy")
-      .eq("id", org.orgId)
-      .single()
-
-    const ownerId = orgData?.createdBy || null
+    const members = membersResult.data
+    const ownerId = orgResult.data?.createdBy || null
 
     // Look up emails for all members via auth admin API
     const memberIds = (members || []).map((m) => m.userId)
+    const memberSet = new Set(memberIds)
     const emailMap: Record<string, string> = {}
     if (memberIds.length > 0) {
       const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
       if (authData?.users) {
         for (const u of authData.users) {
-          if (memberIds.includes(u.id)) {
+          if (memberSet.has(u.id)) {
             emailMap[u.id] = u.email || u.id
           }
         }
@@ -118,10 +121,25 @@ export async function GET(request: NextRequest) {
         lastClockOut: lastClockOutMap.get(userId) || null,
       }))
 
+      // Pre-index workdays by userId (avoid O(n*m) filtering per member)
+      const todayByUser = new Map<string, typeof todayWorkDays extends (infer T)[] | null ? T[] : never>()
+      for (const wd of todayWorkDays || []) {
+        const arr = todayByUser.get(wd.userId) || []
+        arr.push(wd)
+        todayByUser.set(wd.userId, arr)
+      }
+      const weekByUser = new Map<string, typeof weekWorkDays extends (infer T)[] | null ? T[] : never>()
+      for (const wd of weekWorkDays || []) {
+        const arr = weekByUser.get(wd.userId) || []
+        arr.push(wd)
+        weekByUser.set(wd.userId, arr)
+      }
+      const statusByUser = new Map(memberStatuses.map((s) => [s.userId, s]))
+
       const enrichedMembers = (members || []).map((member) => {
-        const todayWork = (todayWorkDays || []).filter((wd: { userId: string }) => wd.userId === member.userId)
-        const weekWork = (weekWorkDays || []).filter((wd: { userId: string }) => wd.userId === member.userId)
-        const status = memberStatuses.find((s) => s.userId === member.userId)
+        const todayWork = todayByUser.get(member.userId) || []
+        const weekWork = weekByUser.get(member.userId) || []
+        const status = statusByUser.get(member.userId)
 
         // Count unique in-office days this week
         const uniqueOfficeDays = new Set(

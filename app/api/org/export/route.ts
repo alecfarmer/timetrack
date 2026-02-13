@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const from = startDate || monday.toISOString().split("T")[0]
     const to = endDate || sunday.toISOString().split("T")[0]
 
-    // Fetch members
+    // Fetch members first (needed for IDs)
     const { data: members } = await supabase
       .from("Membership")
       .select("userId, role")
@@ -38,36 +38,38 @@ export async function GET(request: NextRequest) {
     }
 
     const memberIds = members.map((m) => m.userId)
+    const memberSet = new Set(memberIds)
 
-    // Fetch emails
+    // Fetch emails, workdays, and policy in parallel
+    const [authResult, workDaysResult, policyResult] = await Promise.all([
+      supabase.auth.admin.listUsers({ perPage: 1000 }),
+      supabase
+        .from("WorkDay")
+        .select("userId, date, totalMinutes, location:Location(code, name, category)")
+        .in("userId", memberIds)
+        .gte("date", from)
+        .lte("date", to)
+        .order("date", { ascending: true }),
+      supabase
+        .from("PolicyConfig")
+        .select("requiredDaysPerWeek")
+        .eq("orgId", org.orgId)
+        .eq("isActive", true)
+        .order("effectiveDate", { ascending: false })
+        .limit(1)
+        .single(),
+    ])
+
     const emailMap: Record<string, string> = {}
-    const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
-    if (authData?.users) {
-      for (const u of authData.users) {
-        if (memberIds.includes(u.id)) {
+    if (authResult.data?.users) {
+      for (const u of authResult.data.users) {
+        if (memberSet.has(u.id)) {
           emailMap[u.id] = u.email || u.id
         }
       }
     }
-
-    // Fetch workdays in range
-    const { data: workDays } = await supabase
-      .from("WorkDay")
-      .select("userId, date, totalMinutes, location:Location(code, name, category)")
-      .in("userId", memberIds)
-      .gte("date", from)
-      .lte("date", to)
-      .order("date", { ascending: true })
-
-    // Fetch policy
-    const { data: policy } = await supabase
-      .from("PolicyConfig")
-      .select("requiredDaysPerWeek")
-      .eq("orgId", org.orgId)
-      .eq("isActive", true)
-      .order("effectiveDate", { ascending: false })
-      .limit(1)
-      .single()
+    const workDays = workDaysResult.data
+    const policy = policyResult.data
 
     const requiredDays = policy?.requiredDaysPerWeek ?? 3
 
@@ -94,9 +96,17 @@ export async function GET(request: NextRequest) {
     rows.push("")
     rows.push("Email,Role,Total Days,Office Days,Total Minutes,Total Hours,Compliant")
 
+    // Pre-index workdays by userId (avoid O(n*m) filtering)
+    const workDaysByUser = new Map<string, NonNullable<typeof workDays>>()
+    for (const wd of workDays || []) {
+      const arr = workDaysByUser.get(wd.userId) || []
+      arr.push(wd)
+      workDaysByUser.set(wd.userId, arr)
+    }
+
     for (const member of members) {
       const email = emailMap[member.userId] || member.userId
-      const memberDays = (workDays || []).filter((wd) => wd.userId === member.userId)
+      const memberDays = workDaysByUser.get(member.userId) || []
       const totalDays = new Set(memberDays.map((wd) => wd.date)).size
       const officeDays = new Set(
         memberDays

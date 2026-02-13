@@ -26,6 +26,45 @@ async function evaluateAlertRules(
 
     const now = new Date()
     const zonedNow = toZonedTime(now, timezone)
+    const weekStart = startOfWeek(zonedNow, { weekStartsOn: 1 })
+    const weekEnd = endOfWeek(zonedNow, { weekStartsOn: 1 })
+
+    // Pre-fetch all data needed by rules in parallel (avoid N+1 queries in loop)
+    const [workDaysResult, recentClockInsResult, weekNotificationsResult] = await Promise.all([
+      // Weekly workdays for overtime check
+      supabase
+        .from("WorkDay")
+        .select("totalMinutes")
+        .eq("userId", userId)
+        .gte("date", weekStart.toISOString().split("T")[0])
+        .lte("date", weekEnd.toISOString().split("T")[0]),
+
+      // Recent clock-ins for missed clock-out check
+      supabase
+        .from("Entry")
+        .select("timestampServer")
+        .eq("userId", userId)
+        .eq("type", "CLOCK_IN")
+        .order("timestampServer", { ascending: false })
+        .limit(2),
+
+      // This week's notifications to avoid duplicates
+      supabase
+        .from("AlertNotification")
+        .select("type", { count: "exact", head: false })
+        .eq("targetUserId", userId)
+        .gte("createdAt", weekStart.toISOString()),
+    ])
+
+    const weeklyMinutes = (workDaysResult.data || []).reduce(
+      (sum: number, d: { totalMinutes?: number }) => sum + (d.totalMinutes || 0),
+      0
+    )
+    const recentClockIns = recentClockInsResult.data || []
+    const existingNotifTypes = new Set(
+      (weekNotificationsResult.data || []).map((n: { type: string }) => n.type)
+    )
+
     const notifications: Array<{
       orgId: string
       ruleId: string
@@ -39,67 +78,34 @@ async function evaluateAlertRules(
       const config = rule.config as Record<string, unknown>
 
       if (rule.type === "OVERTIME_APPROACHING" && entryType === "CLOCK_IN") {
-        // Check weekly minutes approaching threshold
-        const weekStart = startOfWeek(zonedNow, { weekStartsOn: 1 })
-        const weekEnd = endOfWeek(zonedNow, { weekStartsOn: 1 })
-        const { data: workDays } = await supabase
-          .from("WorkDay")
-          .select("totalMinutes")
-          .eq("userId", userId)
-          .gte("date", weekStart.toISOString().split("T")[0])
-          .lte("date", weekEnd.toISOString().split("T")[0])
-
-        const weeklyMinutes = (workDays || []).reduce(
-          (sum: number, d: { totalMinutes?: number }) => sum + (d.totalMinutes || 0),
-          0
-        )
         const threshold = (config.thresholdMinutes as number) || 2280
-        if (weeklyMinutes >= threshold) {
-          // Check if we already notified this week
-          const { count } = await supabase
-            .from("AlertNotification")
-            .select("*", { count: "exact", head: true })
-            .eq("targetUserId", userId)
-            .eq("type", "OVERTIME_APPROACHING")
-            .gte("createdAt", weekStart.toISOString())
-
-          if (!count || count === 0) {
-            const hours = Math.floor(weeklyMinutes / 60)
-            notifications.push({
-              orgId,
-              ruleId: rule.id,
-              targetUserId: userId,
-              type: "OVERTIME_APPROACHING",
-              title: "Overtime Approaching",
-              message: `You've worked ${hours}h this week. ${config.description || ""}`,
-            })
-          }
+        if (weeklyMinutes >= threshold && !existingNotifTypes.has("OVERTIME_APPROACHING")) {
+          const hours = Math.floor(weeklyMinutes / 60)
+          notifications.push({
+            orgId,
+            ruleId: rule.id,
+            targetUserId: userId,
+            type: "OVERTIME_APPROACHING",
+            title: "Overtime Approaching",
+            message: `You've worked ${hours}h this week. ${config.description || ""}`,
+          })
         }
       }
 
       if (rule.type === "MISSED_CLOCK_OUT" && entryType === "CLOCK_IN") {
-        // Check if there's a previous clock-in without clock-out exceeding threshold
         const thresholdHours = (config.thresholdHours as number) || 12
-        const { data: lastClockIn } = await supabase
-          .from("Entry")
-          .select("timestampServer")
-          .eq("userId", userId)
-          .eq("type", "CLOCK_IN")
-          .order("timestampServer", { ascending: false })
-          .limit(2)
-
-        if (lastClockIn && lastClockIn.length > 1) {
-          const prevClockIn = new Date(lastClockIn[1].timestampServer)
+        if (recentClockIns.length > 1) {
+          const prevClockIn = new Date(recentClockIns[1].timestampServer)
           const hoursSince = (now.getTime() - prevClockIn.getTime()) / (1000 * 60 * 60)
           if (hoursSince >= thresholdHours) {
-            // Check for a clock-out between prev clock-in and now
+            // Check for a clock-out between prev clock-in and current (single query)
             const { count: clockOutCount } = await supabase
               .from("Entry")
               .select("*", { count: "exact", head: true })
               .eq("userId", userId)
               .eq("type", "CLOCK_OUT")
               .gte("timestampServer", prevClockIn.toISOString())
-              .lt("timestampServer", lastClockIn[0].timestampServer)
+              .lt("timestampServer", recentClockIns[0].timestampServer)
 
             if (!clockOutCount || clockOutCount === 0) {
               notifications.push({
