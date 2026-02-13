@@ -1,6 +1,6 @@
 "use client"
 
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
+import { motion, useScroll, useTransform, AnimatePresence, useInView } from "framer-motion"
 import Link from "next/link"
 import { useRef, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -27,7 +27,6 @@ import {
   CheckCircle2,
   ArrowUpRight,
   Briefcase,
-  FileText,
   Gamepad2,
   LayoutDashboard,
   Scale,
@@ -37,13 +36,6 @@ import { cn } from "@/lib/utils"
 // ============================================
 // DATA
 // ============================================
-
-const stats = [
-  { value: "50K+", label: "Clock Events Daily" },
-  { value: "99.9%", label: "Uptime SLA" },
-  { value: "< 200ms", label: "API Response" },
-  { value: "SOC 2", label: "Certified" },
-]
 
 const featureTabs = [
   {
@@ -288,10 +280,153 @@ const stagger = {
 }
 
 // ============================================
+// UTILITY COMPONENTS
+// ============================================
+
+function AnimatedCounter({
+  target,
+  prefix = "",
+  suffix = "",
+  decimals = 0,
+  duration = 1.5,
+  className,
+}: {
+  target: number
+  prefix?: string
+  suffix?: string
+  decimals?: number
+  duration?: number
+  className?: string
+}) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const inView = useInView(ref, { once: true })
+  const [display, setDisplay] = useState(0)
+
+  useEffect(() => {
+    if (!inView) return
+    const startTime = performance.now()
+    let raf: number
+    function update(time: number) {
+      const elapsed = time - startTime
+      const progress = Math.min(elapsed / (duration * 1000), 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplay(eased * target)
+      if (progress < 1) raf = requestAnimationFrame(update)
+    }
+    raf = requestAnimationFrame(update)
+    return () => cancelAnimationFrame(raf)
+  }, [inView, target, duration])
+
+  return (
+    <span ref={ref} className={className}>
+      {prefix}
+      {decimals > 0 ? display.toFixed(decimals) : Math.round(display)}
+      {suffix}
+    </span>
+  )
+}
+
+function AppWindow({
+  title,
+  live,
+  children,
+}: {
+  title: string
+  live?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-2xl border border-border/50 bg-card shadow-xl overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/50 bg-muted/30">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-[10px] text-muted-foreground/60 px-3 py-0.5 rounded bg-muted/50 font-mono">
+            {title}
+          </span>
+        </div>
+        {live && (
+          <div className="flex items-center gap-1.5">
+            <motion.div
+              className="w-1.5 h-1.5 rounded-full bg-emerald-500"
+              animate={{ opacity: [1, 0.4, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+            <span className="text-[10px] text-emerald-500 font-medium">Live</span>
+          </div>
+        )}
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  )
+}
+
+function FloatingShapes() {
+  const shapes = [
+    { size: 40, top: "10%", left: "5%", dur: 20, delay: 0, round: true },
+    { size: 30, top: "60%", left: "92%", dur: 25, delay: 2, round: false },
+    { size: 50, top: "80%", left: "15%", dur: 18, delay: 4, round: true },
+    { size: 35, top: "25%", left: "88%", dur: 22, delay: 1, round: false },
+    { size: 25, top: "45%", left: "50%", dur: 30, delay: 3, round: true },
+    { size: 20, top: "70%", left: "70%", dur: 28, delay: 5, round: false },
+  ]
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {shapes.map((s, i) => (
+        <motion.div
+          key={i}
+          className={cn(
+            "absolute bg-primary",
+            s.round ? "rounded-full" : "rounded-lg"
+          )}
+          style={{
+            width: s.size,
+            height: s.size,
+            top: s.top,
+            left: s.left,
+            opacity: 0.04,
+          }}
+          animate={{
+            x: [0, 30, -20, 0],
+            y: [0, -25, 15, 0],
+            rotate: [0, 90, 180, 360],
+          }}
+          transition={{
+            duration: s.dur,
+            repeat: Infinity,
+            ease: "linear",
+            delay: s.delay,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ============================================
 // SUB-COMPONENTS
 // ============================================
 
 function PhoneMockup() {
+  const [showToast, setShowToast] = useState(false)
+
+  useEffect(() => {
+    const show = () => {
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 3000)
+    }
+    const timer = setTimeout(show, 2000)
+    const interval = setInterval(show, 6000)
+    return () => {
+      clearTimeout(timer)
+      clearInterval(interval)
+    }
+  }, [])
+
   return (
     <div className="relative">
       {/* Glow behind phone */}
@@ -323,14 +458,21 @@ function PhoneMockup() {
               <p className="text-white/50 text-xs">Good morning</p>
               <p className="text-white font-semibold text-base mb-4">Ready to clock in</p>
 
-              {/* Clock button */}
+              {/* Clock button with pulsing ring */}
               <div className="flex justify-center mb-5">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                  <div className="text-center">
-                    <Clock className="h-6 w-6 text-white mx-auto mb-0.5" />
-                    <span className="text-white text-[10px] font-semibold uppercase tracking-wider">
-                      Clock In
-                    </span>
+                <div className="relative">
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-purple-400/60"
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.4, 0, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30 relative z-10">
+                    <div className="text-center">
+                      <Clock className="h-6 w-6 text-white mx-auto mb-0.5" />
+                      <span className="text-white text-[10px] font-semibold uppercase tracking-wider">
+                        Clock In
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -341,11 +483,19 @@ function PhoneMockup() {
                 <p className="text-white/40 text-xs">Today</p>
               </div>
 
-              {/* Week strip */}
+              {/* Animated week strip */}
               <div className="flex gap-1.5">
                 {["M", "T", "W", "T", "F"].map((day, i) => (
-                  <div
+                  <motion.div
                     key={`${day}-${i}`}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{
+                      delay: 0.8 + i * 0.1,
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 20,
+                    }}
                     className={cn(
                       "flex-1 rounded-lg py-1.5 text-center",
                       i < 3
@@ -362,12 +512,35 @@ function PhoneMockup() {
                     >
                       {i < 3 ? "8h" : "—"}
                     </p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Floating notification toast */}
+        <AnimatePresence>
+          {showToast && (
+            <motion.div
+              initial={{ opacity: 0, x: 40, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="absolute -right-4 top-24 z-20 bg-gray-800 border border-white/10 rounded-xl px-3 py-2 shadow-xl shadow-black/30 w-[180px]"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-white text-[10px] font-medium truncate">
+                    Sarah C. clocked in
+                  </p>
+                  <p className="text-white/40 text-[9px]">9:41 AM</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Reflection */}
         <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
@@ -378,45 +551,68 @@ function PhoneMockup() {
 
 function FeatureTabMockup({ tab }: { tab: (typeof featureTabs)[number] }) {
   if (tab.mockup.type === "phone") {
+    const feedEntries = [
+      { name: "Alex M.", time: "9:02 AM", action: "clocked in" },
+      { name: "Jordan K.", time: "9:15 AM", action: "clocked in" },
+      { name: "Sam T.", time: "9:31 AM", action: "started break" },
+    ]
     return (
-      <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Clock className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <p className="font-semibold">{tab.mockup.title}</p>
-            <p className="text-xs text-muted-foreground">{tab.mockup.status}</p>
-          </div>
+      <AppWindow title="app.onsite.io/dashboard" live>
+        <div className="space-y-2.5 mb-4">
+          {feedEntries.map((entry, i) => (
+            <motion.div
+              key={entry.name}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{
+                delay: 0.3 + i * 0.15,
+                type: "spring",
+                stiffness: 200,
+                damping: 20,
+              }}
+              className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/50"
+            >
+              <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{entry.name}</p>
+                <p className="text-xs text-muted-foreground">{entry.action}</p>
+              </div>
+              <span className="text-xs text-muted-foreground tabular-nums">{entry.time}</span>
+            </motion.div>
+          ))}
         </div>
-        <div className="flex justify-center py-6">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/25">
-            <Clock className="h-8 w-8 text-white" />
-          </div>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-primary to-primary/70"
+            initial={{ width: 0 }}
+            animate={{ width: "65%" }}
+            transition={{ delay: 0.8, duration: 1.2, ease: "easeOut" }}
+          />
         </div>
-        <div className="text-center">
-          <p className="text-3xl font-bold tabular-nums">{tab.mockup.primaryStat}</p>
-          <p className="text-sm text-muted-foreground">{tab.mockup.secondaryStat}</p>
-        </div>
-      </div>
+        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+          Today&apos;s attendance: 65%
+        </p>
+      </AppWindow>
     )
   }
 
   if (tab.mockup.type === "dashboard") {
     return (
-      <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Scale className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <p className="font-semibold">{tab.mockup.title}</p>
-            <p className="text-xs text-muted-foreground">Multi-jurisdiction coverage</p>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {tab.mockup.items?.map((item) => (
-            <div key={item.region} className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
+      <AppWindow title="app.onsite.io/compliance">
+        <div className="space-y-2.5">
+          {tab.mockup.items?.map((item, i) => (
+            <motion.div
+              key={item.region}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{
+                delay: 0.2 + i * 0.12,
+                type: "spring",
+                stiffness: 200,
+                damping: 20,
+              }}
+              className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/50"
+            >
               <div
                 className={cn(
                   "w-2 h-2 rounded-full",
@@ -429,92 +625,165 @@ function FeatureTabMockup({ tab }: { tab: (typeof featureTabs)[number] }) {
                 <p className="text-sm font-medium">{item.region}</p>
                 <p className="text-xs text-muted-foreground">{item.status}</p>
               </div>
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-            </div>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{
+                  delay: 0.5 + i * 0.12,
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 15,
+                }}
+              >
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              </motion.div>
+            </motion.div>
           ))}
         </div>
         <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Overall Compliance</span>
-          <span className="text-2xl font-bold text-emerald-500">{tab.mockup.score}</span>
+          <AnimatedCounter
+            target={100}
+            suffix="%"
+            className="text-2xl font-bold text-emerald-500"
+          />
         </div>
-      </div>
+      </AppWindow>
     )
   }
 
   if (tab.mockup.type === "export") {
     return (
-      <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <FileText className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <p className="font-semibold">{tab.mockup.title}</p>
-            <p className="text-xs text-muted-foreground">
-              Last export: {tab.mockup.lastExport}
-            </p>
-          </div>
-        </div>
+      <AppWindow title="app.onsite.io/payroll">
         <div className="grid grid-cols-2 gap-2 mb-4">
-          {tab.mockup.providers?.map((p) => (
-            <div
+          {tab.mockup.providers?.map((p, i) => (
+            <motion.div
               key={p}
-              className="p-3 rounded-xl bg-muted/50 text-center text-sm font-medium border border-border/50 hover:border-primary/30 transition-colors"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{
+                delay: 0.2 + i * 0.1,
+                type: "spring",
+                stiffness: 250,
+                damping: 20,
+              }}
+              className="p-3 rounded-xl bg-muted/50 text-center text-sm font-medium border border-border/50"
             >
               {p}
-            </div>
+            </motion.div>
           ))}
         </div>
-        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-center">
-          <p className="text-xs text-muted-foreground">Total Hours This Period</p>
-          <p className="text-xl font-bold">{tab.mockup.totalHours}</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Exporting...</span>
+            <span>Complete</span>
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500"
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{ delay: 0.8, duration: 2, ease: "easeInOut" }}
+            />
+          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 2.8 }}
+            className="flex items-center justify-center gap-2 pt-1"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{
+                delay: 2.8,
+                type: "spring",
+                stiffness: 300,
+                damping: 15,
+              }}
+            >
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            </motion.div>
+            <span className="text-sm font-medium text-emerald-500">
+              {tab.mockup.totalHours} exported
+            </span>
+          </motion.div>
         </div>
-      </div>
+      </AppWindow>
     )
   }
 
   if (tab.mockup.type === "chart") {
+    const barHeights = [60, 80, 45, 90, 70]
     return (
-      <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-primary" />
-          </div>
-          <p className="font-semibold">{tab.mockup.title}</p>
+      <AppWindow title="app.onsite.io/analytics">
+        <div className="flex items-end gap-2.5 h-32 mb-4 px-2">
+          {barHeights.map((h, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <motion.div
+                className="w-full rounded-t-md bg-gradient-to-t from-primary to-primary/60"
+                initial={{ height: 0 }}
+                animate={{ height: `${h}%` }}
+                transition={{
+                  delay: 0.3 + i * 0.1,
+                  duration: 0.8,
+                  ease: "easeOut",
+                }}
+              />
+              <span className="text-[9px] text-muted-foreground">
+                {["Mon", "Tue", "Wed", "Thu", "Fri"][i]}
+              </span>
+            </div>
+          ))}
         </div>
-        <div className="space-y-3">
-          {tab.mockup.metrics?.map((m) => (
-            <div key={m.label} className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
-              <div className="flex-1">
-                <p className="text-sm font-medium">{m.label}</p>
-                <p className="text-2xl font-bold">{m.value}</p>
-              </div>
-              <span
+        <div className="space-y-2">
+          {tab.mockup.metrics?.map((m, i) => (
+            <motion.div
+              key={m.label}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 + i * 0.1 }}
+              className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+            >
+              <span className="text-xs font-medium">{m.label}</span>
+              <motion.span
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{
+                  delay: 1 + i * 0.1,
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 20,
+                }}
                 className={cn(
-                  "text-sm font-medium px-2 py-1 rounded-full",
-                  m.trend?.startsWith("+")
+                  "text-xs font-semibold px-2 py-0.5 rounded-full",
+                  m.trend?.startsWith("-")
                     ? "text-emerald-500 bg-emerald-500/10"
                     : "text-emerald-500 bg-emerald-500/10"
                 )}
               >
                 {m.trend}
-              </span>
-            </div>
+              </motion.span>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </AppWindow>
     )
   }
 
   if (tab.mockup.type === "gamification") {
     return (
-      <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-xl overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
+      <AppWindow title="app.onsite.io/rewards">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex flex-col items-center justify-center text-white shadow-lg shadow-amber-500/25">
-            <span className="text-2xl font-bold">{tab.mockup.level}</span>
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+            className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex flex-col items-center justify-center text-white shadow-lg shadow-amber-500/25"
+          >
+            <AnimatedCounter target={7} className="text-2xl font-bold" />
             <span className="text-[8px] uppercase tracking-wider opacity-80">Level</span>
-          </div>
+          </motion.div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-bold text-lg">{tab.mockup.levelName}</span>
@@ -523,48 +792,86 @@ function FeatureTabMockup({ tab }: { tab: (typeof featureTabs)[number] }) {
               </span>
             </div>
             <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-              <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-amber-500 to-orange-500" />
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500"
+                initial={{ width: 0 }}
+                animate={{ width: "75%" }}
+                transition={{ delay: 0.5, duration: 1, ease: "easeOut" }}
+              />
             </div>
           </div>
         </div>
         <div className="flex gap-2">
-          {tab.mockup.badges?.map((b) => (
-            <div
+          {tab.mockup.badges?.map((b, i) => (
+            <motion.div
               key={b.name}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{
+                delay: 0.6 + i * 0.12,
+                type: "spring",
+                stiffness: 300,
+                damping: 15,
+              }}
               className="flex-1 flex flex-col items-center gap-1 p-2.5 rounded-xl border border-border/50 bg-muted/30"
             >
               <span className="text-xl">{b.icon}</span>
               <span className="text-[9px] font-medium text-muted-foreground">{b.name}</span>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </AppWindow>
     )
   }
 
   // admin type
+  const adminFeed = [
+    { name: "Lisa R.", action: "clocked in", time: "2m ago", color: "bg-emerald-500" },
+    { name: "Mike D.", action: "started break", time: "5m ago", color: "bg-amber-500" },
+    { name: "Anna W.", action: "clocked out", time: "8m ago", color: "bg-red-400" },
+  ]
   return (
-    <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-xl">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <LayoutDashboard className="h-5 w-5 text-primary" />
-        </div>
-        <p className="font-semibold">{tab.mockup.title}</p>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
+    <AppWindow title="app.onsite.io/admin" live>
+      <div className="grid grid-cols-2 gap-2.5 mb-4">
         {[
-          { label: "On-Site", value: tab.mockup.onSite, color: "text-emerald-500" },
-          { label: "Clock-Ins", value: tab.mockup.clockIns, color: "text-primary" },
-          { label: "Pending", value: tab.mockup.pending, color: "text-amber-500" },
-          { label: "Compliance", value: tab.mockup.compliance, color: "text-emerald-500" },
-        ].map((s) => (
-          <div key={s.label} className="p-3 rounded-xl bg-muted/50 text-center">
-            <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
-            <p className="text-xs text-muted-foreground">{s.label}</p>
-          </div>
+          { label: "On-Site", value: 24, color: "text-emerald-500" },
+          { label: "Clock-Ins", value: 31, color: "text-primary" },
+          { label: "Pending", value: 3, color: "text-amber-500" },
+          { label: "Compliance", value: 98, suffix: "%", color: "text-emerald-500" },
+        ].map((s, i) => (
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 + i * 0.08 }}
+            className="p-2.5 rounded-xl bg-muted/50 text-center"
+          >
+            <AnimatedCounter
+              target={s.value}
+              suffix={s.suffix}
+              className={cn("text-2xl font-bold", s.color)}
+            />
+            <p className="text-[10px] text-muted-foreground">{s.label}</p>
+          </motion.div>
         ))}
       </div>
-    </div>
+      <div className="space-y-2">
+        {adminFeed.map((entry, i) => (
+          <motion.div
+            key={entry.name}
+            initial={{ opacity: 0, x: -15 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 + i * 0.12 }}
+            className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30"
+          >
+            <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", entry.color)} />
+            <span className="text-xs font-medium flex-1">{entry.name}</span>
+            <span className="text-[10px] text-muted-foreground">{entry.action}</span>
+            <span className="text-[10px] text-muted-foreground/60">{entry.time}</span>
+          </motion.div>
+        ))}
+      </div>
+    </AppWindow>
   )
 }
 
@@ -803,27 +1110,39 @@ export default function LandingPage() {
             Trusted by 2,000+ teams worldwide
           </motion.p>
 
-          {/* Placeholder logos */}
-          <div className="flex items-center justify-center gap-8 sm:gap-12 mb-10 flex-wrap">
-            {["Acme Corp", "Globex", "Initech", "Umbrella", "Stark Ind.", "Wayne Ent."].map(
-              (name, i) => (
-                <motion.span
-                  key={name}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="text-muted-foreground/40 font-bold text-sm sm:text-base tracking-wider uppercase"
-                >
-                  {name}
-                </motion.span>
-              )
-            )}
+          {/* Placeholder logos with shimmer */}
+          <div className="relative overflow-hidden mb-10">
+            <div className="flex items-center justify-center gap-8 sm:gap-12 flex-wrap">
+              {["Acme Corp", "Globex", "Initech", "Umbrella", "Stark Ind.", "Wayne Ent."].map(
+                (name, i) => (
+                  <motion.span
+                    key={name}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.05 }}
+                    className="text-muted-foreground/40 font-bold text-sm sm:text-base tracking-wider uppercase"
+                  >
+                    {name}
+                  </motion.span>
+                )
+              )}
+            </div>
+            <motion.div
+              className="absolute inset-y-0 w-32 bg-gradient-to-r from-transparent via-foreground/[0.03] to-transparent"
+              animate={{ x: ["-10rem", "calc(100vw + 10rem)"] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "linear", repeatDelay: 3 }}
+            />
           </div>
 
-          {/* Stat metrics */}
+          {/* Stat metrics with animated counters */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, i) => (
+            {[
+              { target: 50, suffix: "K+", label: "Clock Events Daily" },
+              { target: 99.9, suffix: "%", label: "Uptime SLA", decimals: 1 },
+              { target: 200, prefix: "< ", suffix: "ms", label: "API Response" },
+              { target: 0, label: "Certified", display: "SOC 2" },
+            ].map((stat, i) => (
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 20 }}
@@ -833,7 +1152,16 @@ export default function LandingPage() {
                 className="text-center"
               >
                 <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  {stat.value}
+                  {stat.display ? (
+                    stat.display
+                  ) : (
+                    <AnimatedCounter
+                      target={stat.target}
+                      prefix={stat.prefix}
+                      suffix={stat.suffix}
+                      decimals={stat.decimals}
+                    />
+                  )}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
               </motion.div>
@@ -845,8 +1173,9 @@ export default function LandingPage() {
       {/* ==========================================
           4. TABBED FEATURE SHOWCASE
           ========================================== */}
-      <section id="features" className="py-24 sm:py-32 scroll-mt-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="features" className="py-24 sm:py-32 scroll-mt-20 relative">
+        <FloatingShapes />
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -949,25 +1278,35 @@ export default function LandingPage() {
 
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Text side */}
+            {/* Text side — staggered trust points */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial="initial"
+              whileInView="animate"
               viewport={{ once: true }}
+              variants={{ animate: { transition: { staggerChildren: 0.12 } } }}
             >
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-6">
+              <motion.span
+                variants={fadeUp}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-6"
+              >
                 <Lock className="h-4 w-4" />
                 Trust-First Design
-              </span>
-              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+              </motion.span>
+              <motion.h2
+                variants={fadeUp}
+                className="text-4xl sm:text-5xl font-bold tracking-tight mb-6"
+              >
                 Anti-surveillance
                 <br />
                 by design.
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8">
+              </motion.h2>
+              <motion.p
+                variants={fadeUp}
+                className="text-xl text-muted-foreground mb-8"
+              >
                 OnSite tracks outcomes, not keystrokes. We believe transparency
                 builds better teams than surveillance ever could.
-              </p>
+              </motion.p>
 
               <div className="space-y-5">
                 {[
@@ -986,8 +1325,15 @@ export default function LandingPage() {
                     title: "Outcome-Based Tracking",
                     desc: "Were they on-site? Did they meet their hours? That's what matters.",
                   },
-                ].map((item) => (
-                  <div key={item.title} className="flex gap-4">
+                ].map((item, i) => (
+                  <motion.div
+                    key={item.title}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + i * 0.12 }}
+                    className="flex gap-4"
+                  >
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
                       <item.icon className="h-5 w-5 text-emerald-500" />
                     </div>
@@ -995,17 +1341,29 @@ export default function LandingPage() {
                       <h3 className="font-semibold mb-1">{item.title}</h3>
                       <p className="text-sm text-muted-foreground">{item.desc}</p>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
 
-            {/* Data transparency card */}
+            {/* Data transparency card with floating orb */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
+              className="relative"
             >
+              {/* Floating emerald orb */}
+              <motion.div
+                className="absolute -top-16 -right-16 w-[300px] h-[300px] rounded-full pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)",
+                }}
+                animate={{ x: [0, 20, 0], y: [0, -15, 0] }}
+                transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+              />
+
               <div className="relative rounded-2xl border border-border/50 bg-card p-8 shadow-xl">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-2xl" />
 
@@ -1029,16 +1387,31 @@ export default function LandingPage() {
                     "Break and lunch records",
                     "All corrections and approvals",
                     "Photo verification images",
-                  ].map((item) => (
-                    <div
+                  ].map((item, i) => (
+                    <motion.div
                       key={item}
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.1 + i * 0.08 }}
                       className="flex items-center gap-3 p-3 rounded-xl bg-muted/50"
                     >
-                      <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        whileInView={{ scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{
+                          delay: 0.3 + i * 0.08,
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 15,
+                        }}
+                        className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0"
+                      >
                         <Check className="h-3.5 w-3.5 text-emerald-500" />
-                      </div>
+                      </motion.div>
                       <span className="text-sm">{item}</span>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
 
@@ -1074,21 +1447,36 @@ export default function LandingPage() {
                 key={platform.name}
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -4, scale: 1.02 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="glass-card rounded-2xl p-5 text-center"
+                className="glass-card rounded-2xl p-5 text-center cursor-default"
               >
                 <p className="text-lg font-bold mb-1">{platform.name}</p>
                 <div className="flex items-center justify-center gap-1 mb-2">
                   {[...Array(5)].map((_, j) => (
-                    <Star
+                    <motion.div
                       key={j}
-                      className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
-                    />
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{
+                        delay: 0.2 + i * 0.1 + j * 0.05,
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 15,
+                      }}
+                    >
+                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    </motion.div>
                   ))}
                 </div>
-                <p className="text-2xl font-bold mb-0.5">{platform.rating}</p>
-                <p className="text-xs text-muted-foreground mb-2">
+                <AnimatedCounter
+                  target={parseFloat(platform.rating)}
+                  decimals={1}
+                  className="text-2xl font-bold"
+                />
+                <p className="text-xs text-muted-foreground mb-2 mt-0.5">
                   {platform.reviews} reviews
                 </p>
                 <span className="inline-block px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wider">
@@ -1125,30 +1513,55 @@ export default function LandingPage() {
                 key={testimonial.author}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -6 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="rounded-2xl border border-border/50 bg-card p-6"
+                className="rounded-2xl border border-border/50 bg-card p-6 relative overflow-hidden hover:shadow-xl transition-shadow duration-300"
               >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star
-                      key={j}
-                      className="h-4 w-4 fill-amber-400 text-amber-400"
-                    />
-                  ))}
-                </div>
-                <p className="text-muted-foreground mb-6 leading-relaxed">
-                  &ldquo;{testimonial.quote}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground text-sm font-bold">
-                    {testimonial.avatar}
+                {/* Decorative quote mark */}
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 0.06 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 + i * 0.1 }}
+                  className="absolute -top-2 -left-1 text-8xl font-serif leading-none text-foreground pointer-events-none select-none"
+                >
+                  &ldquo;
+                </motion.span>
+
+                <div className="relative">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, j) => (
+                      <Star
+                        key={j}
+                        className="h-4 w-4 fill-amber-400 text-amber-400"
+                      />
+                    ))}
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm">{testimonial.author}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {testimonial.role}, {testimonial.company}
-                    </p>
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                    &ldquo;{testimonial.quote}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{
+                        delay: 0.2 + i * 0.1,
+                        type: "spring",
+                        stiffness: 250,
+                        damping: 15,
+                      }}
+                      className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground text-sm font-bold"
+                    >
+                      {testimonial.avatar}
+                    </motion.div>
+                    <div>
+                      <p className="font-semibold text-sm">{testimonial.author}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {testimonial.role}, {testimonial.company}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -1206,16 +1619,42 @@ export default function LandingPage() {
                 transition={{ delay: i * 0.15 }}
                 className="relative"
               >
-                {/* Connecting dashed line */}
+                {/* Animated connecting line */}
                 {i < 2 && (
-                  <div className="hidden md:block absolute top-10 left-[60%] w-[80%] border-t-2 border-dashed border-border" />
+                  <motion.div
+                    className="hidden md:block absolute top-10 left-[60%] h-0.5 border-t-2 border-dashed border-border"
+                    initial={{ width: 0 }}
+                    whileInView={{ width: "80%" }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + i * 0.2, duration: 0.8, ease: "easeOut" }}
+                  />
                 )}
                 <div className="relative rounded-2xl border border-border/50 bg-card p-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
+                  {/* Bouncy number badge */}
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{
+                      delay: i * 0.15,
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 15,
+                    }}
+                    className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg"
+                  >
                     {item.step}
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                  <p className="text-muted-foreground">{item.desc}</p>
+                  </motion.div>
+                  {/* Icon fades in after number lands */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 + i * 0.15 }}
+                  >
+                    <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
+                    <p className="text-muted-foreground">{item.desc}</p>
+                  </motion.div>
                 </div>
               </motion.div>
             ))}
@@ -1258,16 +1697,22 @@ export default function LandingPage() {
                 className={cn(
                   "rounded-2xl p-6 sm:p-8 relative",
                   tier.highlighted
-                    ? "card-highlight scale-[1.02] shadow-xl"
+                    ? "card-highlight scale-[1.02] shadow-xl animate-glow-pulse"
                     : "border border-border/50 bg-card"
                 )}
               >
                 {tier.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.3 }}
+                    className="absolute -top-3 left-1/2 -translate-x-1/2"
+                  >
                     <span className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-md">
                       Most Popular
                     </span>
-                  </div>
+                  </motion.div>
                 )}
 
                 <div className="mb-6">
@@ -1284,16 +1729,35 @@ export default function LandingPage() {
                 </div>
 
                 <ul className="space-y-3 mb-8">
-                  {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <Check
-                        className={cn(
-                          "h-4 w-4 flex-shrink-0 mt-0.5",
-                          tier.highlighted ? "text-primary" : "text-muted-foreground"
-                        )}
-                      />
+                  {tier.features.map((feature, fi) => (
+                    <motion.li
+                      key={feature}
+                      initial={{ opacity: 0, y: 8 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.15 + fi * 0.05 }}
+                      className="flex items-start gap-3"
+                    >
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{
+                          delay: 0.25 + fi * 0.05,
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 15,
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "h-4 w-4 flex-shrink-0 mt-0.5",
+                            tier.highlighted ? "text-primary" : "text-muted-foreground"
+                          )}
+                        />
+                      </motion.div>
                       <span className="text-sm">{feature}</span>
-                    </li>
+                    </motion.li>
                   ))}
                 </ul>
 
@@ -1321,33 +1785,73 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="card-gradient rounded-3xl px-8 py-16 sm:px-16 sm:py-20 text-center"
+            className="card-gradient rounded-3xl px-8 py-16 sm:px-16 sm:py-20 text-center relative overflow-hidden"
           >
-            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4 text-white">
-              Ready to know who&apos;s on-site?
-            </h2>
-            <p className="text-xl text-white/70 max-w-xl mx-auto mb-10">
-              Stop guessing. Start tracking. Your team could be clocking in
-              within minutes.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/signup">
+            {/* Floating orbs behind CTA */}
+            <motion.div
+              className="absolute -top-20 -left-20 w-[300px] h-[300px] rounded-full pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)",
+              }}
+              animate={{ x: [0, 30, 0], y: [0, 20, 0] }}
+              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="absolute -bottom-24 -right-16 w-[350px] h-[350px] rounded-full pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)",
+              }}
+              animate={{ x: [0, -25, 0], y: [0, -20, 0] }}
+              transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            <div className="relative">
+              <motion.h2
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="text-4xl sm:text-5xl font-bold tracking-tight mb-4 text-white"
+              >
+                Ready to know who&apos;s on-site?
+              </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="text-xl text-white/70 max-w-xl mx-auto mb-10"
+              >
+                Stop guessing. Start tracking. Your team could be clocking in
+                within minutes.
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="flex flex-col sm:flex-row items-center justify-center gap-4"
+              >
+                <Link href="/signup">
+                  <Button
+                    size="xl"
+                    className="bg-white text-gray-900 hover:bg-white/90 gap-2 shadow-2xl font-semibold"
+                  >
+                    Start Free Trial
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
                 <Button
                   size="xl"
-                  className="bg-white text-gray-900 hover:bg-white/90 gap-2 shadow-2xl font-semibold"
+                  variant="ghost"
+                  className="text-white/90 hover:text-white hover:bg-white/10"
                 >
-                  Start Free Trial
-                  <ArrowRight className="h-4 w-4" />
+                  Book a Demo
+                  <ArrowUpRight className="h-4 w-4 ml-1" />
                 </Button>
-              </Link>
-              <Button
-                size="xl"
-                variant="ghost"
-                className="text-white/90 hover:text-white hover:bg-white/10"
-              >
-                Book a Demo
-                <ArrowUpRight className="h-4 w-4 ml-1" />
-              </Button>
+              </motion.div>
             </div>
           </motion.div>
         </div>
