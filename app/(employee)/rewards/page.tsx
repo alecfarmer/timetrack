@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -61,30 +61,6 @@ interface ProfileData {
 
 // ─── Constants ──────────────────────────────────────────────
 
-const rarityColors: Record<string, string> = {
-  common: "bg-slate-500/20 text-slate-300 border-slate-500/30",
-  uncommon: "bg-green-500/20 text-green-400 border-green-500/30",
-  rare: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  epic: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  legendary: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-}
-
-const rarityGlow: Record<string, string> = {
-  common: "",
-  uncommon: "shadow-green-500/20 shadow-lg",
-  rare: "shadow-blue-500/30 shadow-lg",
-  epic: "shadow-purple-500/40 shadow-xl",
-  legendary: "shadow-amber-500/50 shadow-xl animate-pulse",
-}
-
-const rarityBorder: Record<string, string> = {
-  common: "border-slate-500/30",
-  uncommon: "border-green-500/50",
-  rare: "border-blue-500/50",
-  epic: "border-purple-500/50",
-  legendary: "border-amber-500/50",
-}
-
 const categoryNames: Record<string, string> = {
   streak: "Streaks", milestone: "Milestones", special: "Special",
   time: "Time-Based", consistency: "Consistency", social: "Social",
@@ -94,7 +70,7 @@ const categoryNames: Record<string, string> = {
 // ─── Page ───────────────────────────────────────────────────
 
 export default function RewardsPage() {
-  const [activeTab, setActiveTab] = useState("profile")
+  const [activeTab, setActiveTab] = useState("overview")
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [badges, setBadges] = useState<{ badges: BadgeData[]; sets: Record<string, { badges: string[]; earned: string[]; complete: boolean }> } | null>(null)
   const [loading, setLoading] = useState(true)
@@ -146,27 +122,26 @@ export default function RewardsPage() {
   useEffect(() => {
     const headers = tzHeaders()
 
-    if (activeTab === "challenges" && !challenges) {
+    if (activeTab === "overview" && !challenges) {
       fetch("/api/rewards/challenges", { headers })
         .then((r) => r.json())
         .then(setChallenges)
         .catch(console.error)
     }
 
-    if (activeTab === "leaderboard") {
+    if (activeTab === "team") {
       loadLeaderboard()
-    }
-
-    if (activeTab === "kudos" && kudosReceived.length === 0) {
-      Promise.all([
-        fetch("/api/rewards/kudos/budget", { headers }).then((r) => r.json()),
-        fetch("/api/rewards/kudos?tab=received", { headers }).then((r) => r.json()),
-      ])
-        .then(([budget, received]) => {
-          setKudosBudget(budget.remaining)
-          setKudosReceived(received.kudos || [])
-        })
-        .catch(console.error)
+      if (kudosReceived.length === 0) {
+        Promise.all([
+          fetch("/api/rewards/kudos/budget", { headers }).then((r) => r.json()),
+          fetch("/api/rewards/kudos?tab=received", { headers }).then((r) => r.json()),
+        ])
+          .then(([budget, received]) => {
+            setKudosBudget(budget.remaining)
+            setKudosReceived(received.kudos || [])
+          })
+          .catch(console.error)
+      }
     }
 
     if (activeTab === "shop" && shopItems.length === 0) {
@@ -189,7 +164,7 @@ export default function RewardsPage() {
   }, [lbPeriod, lbCategory])
 
   useEffect(() => {
-    if (activeTab === "leaderboard") loadLeaderboard()
+    if (activeTab === "team") loadLeaderboard()
   }, [lbPeriod, lbCategory, activeTab, loadLeaderboard])
 
   // ─── Handlers ───────────────────────────────────────
@@ -266,12 +241,10 @@ export default function RewardsPage() {
   // ─── Tabs ───────────────────────────────────────────
 
   const tabs = [
-    { id: "profile", label: "Profile", icon: <Star className="h-4 w-4" /> },
-    { id: "achievements", label: "Badges", icon: <Award className="h-4 w-4" /> },
-    { id: "challenges", label: "Challenges", icon: <Target className="h-4 w-4" />, badge: profile?.unclaimedCount },
-    { id: "leaderboard", label: "Ranks", icon: <Crown className="h-4 w-4" /> },
-    { id: "kudos", label: "Kudos", icon: <Heart className="h-4 w-4" /> },
-    { id: "shop", label: "Shop", icon: <ShoppingCart className="h-4 w-4" /> },
+    { id: "overview", label: "Overview", icon: <Star className="h-4 w-4" /> },
+    { id: "badges", label: "Badges", icon: <Award className="h-4 w-4" /> },
+    { id: "team", label: "Team", icon: <Users className="h-4 w-4" /> },
+    { id: "shop", label: "Shop", icon: <ShoppingCart className="h-4 w-4" />, badge: profile?.unclaimedCount },
   ]
 
   // ─── Loading ────────────────────────────────────────
@@ -279,15 +252,10 @@ export default function RewardsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32 bg-background">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-amber-500/20 animate-ping absolute inset-0" />
-            <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center">
-              <Trophy className="h-8 w-8 text-amber-500" />
-            </div>
-          </div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
           <p className="text-muted-foreground font-medium">Loading rewards...</p>
-        </motion.div>
+        </div>
       </div>
     )
   }
@@ -304,8 +272,8 @@ export default function RewardsPage() {
   const lp = profile.levelProgress
 
   return (
-    <motion.div className="flex flex-col bg-background" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <header className="hidden lg:block sticky top-0 z-40 glass border-b">
+    <div className="flex flex-col bg-background">
+      <header className="hidden lg:block sticky top-0 z-40 bg-card border-b">
         <div className="flex items-center justify-between px-8 h-16 max-w-6xl mx-auto">
           <h1 className="text-xl font-semibold">Rewards & Achievements</h1>
           <ThemeToggle />
@@ -319,8 +287,8 @@ export default function RewardsPage() {
             <RewardsTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
 
-          {/* ═══ PROFILE TAB ═══ */}
-          {activeTab === "profile" && (
+          {/* ═══ OVERVIEW TAB ═══ */}
+          {activeTab === "overview" && (
             <div className="space-y-6">
               <ProfileHero
                 level={lp.level}
@@ -338,7 +306,7 @@ export default function RewardsPage() {
                 activeTitle={p.activeTitle?.name}
               />
 
-              {/* Showcase Badges */}
+              {/* Recent Badges */}
               {profile.earnedBadges.length > 0 && (
                 <Card className="border-0 shadow-xl">
                   <CardContent className="p-6">
@@ -368,9 +336,6 @@ export default function RewardsPage() {
                         <Target className="h-5 w-5 text-green-500" />
                         <h3 className="font-semibold">Active Challenges</h3>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => setActiveTab("challenges")}>
-                        View All <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
                     </div>
                     <div className="space-y-3">
                       {profile.activeChallenges.slice(0, 3).map((c) => (
@@ -386,17 +351,35 @@ export default function RewardsPage() {
                           coinReward={c.coinReward}
                           expiresAt={c.expiresAt}
                           status={c.status}
+                          onClaim={c.status === "completed" ? () => handleClaim(c.id) : undefined}
+                          claiming={claiming === c.id}
                         />
                       ))}
                     </div>
+
+                    {/* Challenge history */}
+                    {challenges?.history && challenges.history.length > 0 && (
+                      <div className="mt-4 pt-4 border-t">
+                        <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Completed</h4>
+                        <div className="space-y-2">
+                          {challenges.history.map((c) => (
+                            <div key={c.id} className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 text-green-600">
+                              <span>{c.definition?.icon || "✓"}</span>
+                              <span className="text-xs font-medium flex-1">{c.definition?.name}</span>
+                              <Badge variant="secondary" className="text-[10px] bg-green-500/20 text-green-600">+{c.xpReward} XP</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
             </div>
           )}
 
-          {/* ═══ ACHIEVEMENTS TAB ═══ */}
-          {activeTab === "achievements" && (
+          {/* ═══ BADGES TAB ═══ */}
+          {activeTab === "badges" && (
             <Card className="border-0 shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -425,19 +408,19 @@ export default function RewardsPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       className={cn(
-                        "mb-4 p-6 rounded-2xl border-2 text-center relative",
+                        "mb-4 p-6 rounded-2xl border text-center relative",
                         selectedBadge.earned
-                          ? cn(rarityColors[selectedBadge.badge.rarity], rarityBorder[selectedBadge.badge.rarity])
+                          ? "bg-card border-border"
                           : "bg-muted/30 border-dashed border-muted-foreground/30"
                       )}
                     >
                       <button onClick={() => setSelectedBadge(null)} className="absolute top-3 left-3 text-xs text-muted-foreground hover:text-foreground">← Back</button>
-                      <motion.span initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring" }} className={cn("text-6xl block mb-3", !selectedBadge.earned && "grayscale opacity-50")}>
+                      <span className={cn("text-6xl block mb-3", !selectedBadge.earned && "grayscale opacity-50")}>
                         {selectedBadge.badge.icon}
-                      </motion.span>
+                      </span>
                       <h3 className="text-xl font-bold mb-2">{selectedBadge.badge.name}</h3>
                       <div className="flex items-center justify-center gap-2 mb-3">
-                        <Badge variant="outline" className={cn("text-xs", rarityColors[selectedBadge.badge.rarity])}>{selectedBadge.badge.rarity}</Badge>
+                        <Badge variant="outline" className="text-xs capitalize">{selectedBadge.badge.rarity}</Badge>
                         <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-500">+{selectedBadge.badge.xpReward} XP</Badge>
                         {selectedBadge.badge.coinReward > 0 && (
                           <Badge variant="secondary" className="text-xs bg-yellow-500/10 text-yellow-600">+{selectedBadge.badge.coinReward} coins</Badge>
@@ -468,11 +451,15 @@ export default function RewardsPage() {
                         <p className="text-sm font-medium text-muted-foreground mb-3">Earned ({earnedBadges.length})</p>
                         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
                           {earnedBadges.map((b) => (
-                            <motion.button key={b.badge.id} onClick={() => setSelectedBadge(b)} whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }} className={cn("flex flex-col items-center gap-1.5 p-3 rounded-xl text-center border", rarityColors[b.badge.rarity], rarityGlow[b.badge.rarity], rarityBorder[b.badge.rarity])}>
+                            <button
+                              key={b.badge.id}
+                              onClick={() => setSelectedBadge(b)}
+                              className="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center border bg-card hover:bg-accent transition-colors"
+                            >
                               <span className="text-2xl">{b.badge.icon}</span>
                               <span className="text-[10px] font-medium leading-tight line-clamp-2">{b.badge.name}</span>
-                              <Badge variant="outline" className={cn("text-[8px] px-1 py-0", rarityColors[b.badge.rarity])}>{b.badge.rarity}</Badge>
-                            </motion.button>
+                              <Badge variant="outline" className="text-[8px] px-1 py-0 capitalize">{b.badge.rarity}</Badge>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -483,7 +470,11 @@ export default function RewardsPage() {
                         <p className="text-sm font-medium text-muted-foreground mb-3"><Lock className="h-3.5 w-3.5 inline mr-1" />Locked ({lockedBadges.length})</p>
                         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
                           {lockedBadges.map((b) => (
-                            <motion.button key={b.badge.id} onClick={() => setSelectedBadge(b)} whileHover={{ scale: 1.03 }} className="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center bg-muted/30 border border-dashed border-muted-foreground/20 opacity-60 hover:opacity-80 transition-all">
+                            <button
+                              key={b.badge.id}
+                              onClick={() => setSelectedBadge(b)}
+                              className="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center bg-muted/30 border border-dashed border-muted-foreground/20 opacity-60 hover:opacity-80 transition-opacity"
+                            >
                               {b.badge.isHidden ? (
                                 <span className="text-2xl">???</span>
                               ) : (
@@ -491,7 +482,7 @@ export default function RewardsPage() {
                               )}
                               <span className="text-[10px] font-medium leading-tight line-clamp-2 text-muted-foreground">{b.badge.isHidden ? "???" : b.badge.name}</span>
                               <Progress value={b.target > 0 ? (b.progress / b.target) * 100 : 0} className="h-1 w-full mt-1" />
-                            </motion.button>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -523,106 +514,45 @@ export default function RewardsPage() {
             </Card>
           )}
 
-          {/* ═══ CHALLENGES TAB ═══ */}
-          {activeTab === "challenges" && (
-            <div className="space-y-4">
-              {challenges ? (
-                <>
-                  {challenges.active.length > 0 ? (
-                    <div className="space-y-3">
-                      {challenges.active.map((c) => (
-                        <ChallengeCard
-                          key={c.id}
-                          name={c.definition?.name || "Challenge"}
-                          description={c.definition?.description || ""}
-                          icon={c.definition?.icon || "🎯"}
-                          type={c.definition?.type || "daily"}
-                          progress={c.progress}
-                          target={c.target}
-                          xpReward={c.xpReward}
-                          coinReward={c.coinReward}
-                          expiresAt={c.expiresAt}
-                          status={c.status}
-                          onClaim={c.status === "completed" ? () => handleClaim(c.id) : undefined}
-                          claiming={claiming === c.id}
-                        />
+          {/* ═══ TEAM TAB ═══ */}
+          {activeTab === "team" && (
+            <div className="space-y-6">
+              {/* Leaderboard */}
+              <Card className="border-0 shadow-xl">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Crown className="h-5 w-5 text-amber-500" />
+                    <h2 className="text-lg font-semibold">Leaderboard</h2>
+                  </div>
+
+                  {/* Period / Category toggles */}
+                  <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b">
+                    <div className="flex gap-1">
+                      {["weekly", "monthly"].map((per) => (
+                        <Button key={per} variant={lbPeriod === per ? "default" : "outline"} size="sm" className="h-7 text-xs capitalize" onClick={() => setLbPeriod(per)}>
+                          {per}
+                        </Button>
                       ))}
                     </div>
-                  ) : (
-                    <Card className="border-0 shadow-lg">
-                      <CardContent className="p-8 text-center">
-                        <Target className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
-                        <p className="text-muted-foreground">No active challenges. Check back soon!</p>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* History */}
-                  {challenges.history && challenges.history.length > 0 && (
-                    <Card className="border-0 shadow-lg">
-                      <CardContent className="p-5">
-                        <h3 className="font-semibold mb-3">Completed Challenges</h3>
-                        <div className="space-y-2">
-                          {challenges.history.map((c) => (
-                            <div key={c.id} className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 text-green-600">
-                              <span>{c.definition?.icon || "✓"}</span>
-                              <span className="text-xs font-medium flex-1">{c.definition?.name}</span>
-                              <Badge variant="secondary" className="text-[10px] bg-green-500/20 text-green-600">+{c.xpReward} XP</Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </>
-              ) : (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted/50 animate-pulse" />)}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ═══ LEADERBOARD TAB ═══ */}
-          {activeTab === "leaderboard" && (
-            <Card className="border-0 shadow-xl">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Crown className="h-5 w-5 text-amber-500" />
-                  <h2 className="text-lg font-semibold">Leaderboard</h2>
-                </div>
-
-                {/* Period / Category toggles */}
-                <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b">
-                  <div className="flex gap-1">
-                    {["weekly", "monthly"].map((p) => (
-                      <Button key={p} variant={lbPeriod === p ? "default" : "outline"} size="sm" className="h-7 text-xs capitalize" onClick={() => setLbPeriod(p)}>
-                        {p}
-                      </Button>
-                    ))}
+                    <div className="flex gap-1">
+                      {["xp", "streak", "kudos"].map((c) => (
+                        <Button key={c} variant={lbCategory === c ? "default" : "outline"} size="sm" className="h-7 text-xs capitalize" onClick={() => setLbCategory(c)}>
+                          {c}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    {["xp", "streak", "kudos"].map((c) => (
-                      <Button key={c} variant={lbCategory === c ? "default" : "outline"} size="sm" className="h-7 text-xs capitalize" onClick={() => setLbCategory(c)}>
-                        {c}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
 
-                <LeaderboardTable
-                  rankings={leaderboard?.rankings || []}
-                  currentUserId={profile?.profile ? "" : ""}
-                  category={lbCategory}
-                  loading={lbLoading}
-                />
-              </CardContent>
-            </Card>
-          )}
+                  <LeaderboardTable
+                    rankings={leaderboard?.rankings || []}
+                    currentUserId={profile?.profile ? "" : ""}
+                    category={lbCategory}
+                    loading={lbLoading}
+                  />
+                </CardContent>
+              </Card>
 
-          {/* ═══ KUDOS TAB ═══ */}
-          {activeTab === "kudos" && (
-            <div className="space-y-4">
+              {/* Kudos */}
               <Card className="border-0 shadow-xl">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -709,6 +639,6 @@ export default function RewardsPage() {
           )}
         </div>
       </main>
-    </motion.div>
+    </div>
   )
 }

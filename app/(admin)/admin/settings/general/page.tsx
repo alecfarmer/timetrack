@@ -191,7 +191,6 @@ export default function GeneralSettingsPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-500/20 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-gray-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
 
         <div
           className="absolute inset-0 opacity-[0.02]"
@@ -206,7 +205,7 @@ export default function GeneralSettingsPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/admin/settings"
-                className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10 hover:bg-white/20 transition-colors"
+                className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/10 hover:bg-white/20 transition-colors"
               >
                 <ArrowLeft className="h-5 w-5 text-white" />
               </Link>

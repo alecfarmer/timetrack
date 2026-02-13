@@ -1,8 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useEffect, useRef } from "react"
 import {
   Home,
   Clock,
@@ -11,7 +10,6 @@ import {
   Settings,
   BarChart3,
   Palmtree,
-  Keyboard,
   LogIn,
   LogOut as LogOutIcon,
   ShieldCheck,
@@ -20,6 +18,8 @@ import {
   Bell,
   Megaphone,
   DollarSign,
+  MessageSquare,
+  CalendarClock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
@@ -28,7 +28,6 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/contexts/auth-context"
 import { useRealtime } from "@/contexts/realtime-context"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
 
 interface EmployeeNavProps {
   currentPath: string
@@ -43,19 +42,23 @@ const mobileNavItems = [
 ]
 
 const desktopNavItems = [
-  { href: "/dashboard", icon: Home, label: "Home", shortcut: "1" },
-  { href: "/schedule", icon: CalendarDays, label: "Schedule", shortcut: "2" },
-  { href: "/history", icon: Clock, label: "History", shortcut: "3" },
-  { href: "/leave", icon: Palmtree, label: "Leave", shortcut: "4" },
-  { href: "/reports", icon: BarChart3, label: "Reports", shortcut: "5" },
-  { href: "/rewards", icon: Trophy, label: "Rewards", shortcut: "6" },
-  { href: "/settings", icon: Settings, label: "Settings", shortcut: "7" },
+  { href: "/dashboard", icon: Home, label: "Home" },
+  { href: "/schedule", icon: CalendarDays, label: "Schedule" },
+  { href: "/history", icon: Clock, label: "History" },
+  { href: "/messages", icon: MessageSquare, label: "Messages" },
+  { href: "/availability", icon: CalendarClock, label: "Availability" },
+  { href: "/leave", icon: Palmtree, label: "Leave" },
+  { href: "/reports", icon: BarChart3, label: "Reports" },
+  { href: "/rewards", icon: Trophy, label: "Rewards" },
+  { href: "/settings", icon: Settings, label: "Settings" },
 ]
 
 const allMobileMenuItems = [
   { href: "/dashboard", icon: Home, label: "Home" },
   { href: "/schedule", icon: CalendarDays, label: "Schedule" },
   { href: "/history", icon: Clock, label: "History" },
+  { href: "/messages", icon: MessageSquare, label: "Messages" },
+  { href: "/availability", icon: CalendarClock, label: "Availability" },
   { href: "/rewards", icon: Trophy, label: "Rewards" },
   { href: "/leave", icon: Palmtree, label: "Leave & PTO" },
   { href: "/reports", icon: BarChart3, label: "Reports" },
@@ -70,6 +73,8 @@ function getPageTitle(pathname: string): string {
     "/dashboard": "Home",
     "/schedule": "Schedule",
     "/history": "History",
+    "/messages": "Messages",
+    "/availability": "Availability",
     "/rewards": "Rewards",
     "/leave": "Leave & PTO",
     "/reports": "Reports",
@@ -106,6 +111,7 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
   const sessionStart = clockInTime?.toISOString() ?? null
   const [menuOpen, setMenuOpen] = useState(false)
   const pageTitle = getPageTitle(currentPath)
+  const drawerRef = useRef<HTMLDivElement>(null)
 
   const handleSignOut = async () => {
     setMenuOpen(false)
@@ -120,10 +126,20 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
     return currentPath.startsWith(href)
   }
 
+  // Lock body scroll when drawer is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => { document.body.style.overflow = "" }
+  }, [menuOpen])
+
   return (
     <>
       {/* Mobile Top Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b lg:hidden safe-area-pt">
+      <header className="sticky top-0 z-50 bg-card border-b lg:hidden safe-area-pt">
         <div className="flex items-center gap-3 px-4 h-14">
           <button
             onClick={() => setMenuOpen(true)}
@@ -136,83 +152,78 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
         </div>
       </header>
 
-      {/* Mobile Slide-in Menu Drawer */}
-      <AnimatePresence>
-        {menuOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm lg:hidden"
-              onClick={() => setMenuOpen(false)}
-            />
-            <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed top-0 left-0 bottom-0 w-72 z-[61] bg-card border-r overflow-y-auto lg:hidden"
-            >
-              <div className="flex items-center justify-between p-4 border-b">
-                <Logo size="sm" />
-                <Button variant="ghost" size="icon" onClick={() => setMenuOpen(false)}>
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-
-              <nav className="p-3 space-y-0.5">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2">
-                  Navigation
-                </div>
-                {allMobileMenuItems.map((item) => {
-                  const active = isActive(item.href)
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMenuOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
-                        active
-                          ? "bg-primary/10 text-primary font-semibold"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      <Icon className="h-5 w-5" />
-                      <span className="text-sm">{item.label}</span>
-                    </Link>
-                  )
-                })}
-              </nav>
-
-              <div className="p-3 border-t mt-2 space-y-0.5">
-                {isAdmin && (
-                  <Link
-                    href="/admin"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                  >
-                    <ShieldCheck className="h-5 w-5" />
-                    <span>Admin Portal</span>
-                  </Link>
-                )}
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-colors w-full"
-                >
-                  <LogOutIcon className="h-5 w-5" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            </motion.div>
-          </>
+      {/* Mobile Slide-in Menu Drawer — CSS transitions */}
+      <div
+        className={cn(
+          "fixed inset-0 z-[60] bg-black/40 lg:hidden transition-opacity duration-200",
+          menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
-      </AnimatePresence>
+        onClick={() => setMenuOpen(false)}
+      />
+      <div
+        ref={drawerRef}
+        className={cn(
+          "fixed top-0 left-0 bottom-0 w-72 z-[61] bg-card border-r overflow-y-auto lg:hidden",
+          "transition-transform duration-200 ease-out",
+          menuOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          <Logo size="sm" />
+          <Button variant="ghost" size="icon" onClick={() => setMenuOpen(false)}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <nav className="p-3 space-y-0.5">
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2">
+            Navigation
+          </div>
+          {allMobileMenuItems.map((item) => {
+            const active = isActive(item.href)
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
+                  active
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-sm">{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className="p-3 border-t mt-2 space-y-0.5">
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              <ShieldCheck className="h-5 w-5" />
+              <span>Admin Portal</span>
+            </Link>
+          )}
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-colors w-full"
+          >
+            <LogOutIcon className="h-5 w-5" />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
 
       {/* Mobile Bottom Nav with Center FAB */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t safe-area-pb lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t safe-area-pb lg:hidden">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1 relative">
           {/* First 2 items */}
           {mobileNavItems.slice(0, 2).map((item) => {
@@ -229,11 +240,7 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
                 )}
               >
                 {active && (
-                  <motion.div
-                    layoutId="mobileActiveTab"
-                    className="absolute inset-x-4 top-0 h-[3px] bg-primary rounded-full"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
+                  <div className="absolute inset-x-4 top-0 h-[2px] bg-primary rounded-full" />
                 )}
                 <Icon className={cn("h-5 w-5", active ? "fill-primary/20" : "")} strokeWidth={active ? 2.5 : 1.8} />
                 <span className={cn("text-[10px] mt-0.5", active ? "font-bold" : "font-medium")}>{item.label}</span>
@@ -244,8 +251,7 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
           {/* Center FAB — Clock In/Out */}
           <div className="flex-1 flex items-center justify-center relative -mt-5">
             <Link href="/dashboard">
-              <motion.div
-                whileTap={{ scale: 0.9 }}
+              <div
                 className={cn(
                   "fab",
                   isClockedIn ? "fab-clocked-in" : "fab-clocked-out"
@@ -261,7 +267,7 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
                     <LogIn className="h-6 w-6" />
                   )}
                 </div>
-              </motion.div>
+              </div>
             </Link>
           </div>
 
@@ -281,11 +287,7 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
                 )}
               >
                 {active && (
-                  <motion.div
-                    layoutId="mobileActiveTab"
-                    className="absolute inset-x-4 top-0 h-[3px] bg-primary rounded-full"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
+                  <div className="absolute inset-x-4 top-0 h-[2px] bg-primary rounded-full" />
                 )}
                 <div className="relative">
                   <Icon className={cn("h-5 w-5", active ? "fill-primary/20" : "")} strokeWidth={active ? 2.5 : 1.8} />
@@ -303,7 +305,7 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
       </nav>
 
       {/* Desktop Side Nav */}
-      <nav className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 border-r bg-card/80 backdrop-blur-xl z-40 flex-col">
+      <nav className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 border-r bg-card z-40 flex-col">
         {/* Logo */}
         <div className="p-6">
           <Logo size="md" />
@@ -321,29 +323,17 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative",
                   active
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 {active && (
-                  <motion.div
-                    layoutId="desktopActiveTab"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-full"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-full" />
                 )}
                 <Icon className={cn("h-5 w-5", active && "text-primary")} />
                 <span className={cn("font-medium flex-1", active && "font-semibold text-primary")}>{item.label}</span>
-                <kbd
-                  className={cn(
-                    "hidden group-hover:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded-md border bg-muted",
-                    active && "bg-primary/10 border-primary/20 text-primary"
-                  )}
-                >
-                  {item.shortcut}
-                </kbd>
               </Link>
             )
           })}
@@ -369,10 +359,6 @@ export function EmployeeNav({ currentPath }: EmployeeNavProps) {
           </button>
           <div className="flex items-center justify-between text-xs text-muted-foreground px-3 pt-1">
             <span>v3.0</span>
-            <div className="flex items-center gap-1">
-              <Keyboard className="h-3 w-3" />
-              <span>Shortcuts</span>
-            </div>
           </div>
         </div>
       </nav>

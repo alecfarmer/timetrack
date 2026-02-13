@@ -58,21 +58,7 @@ function MobileXPCard() {
               </div>
               <span className="text-[10px] tabular-nums text-muted-foreground flex-shrink-0">{xpToNext} XP</span>
             </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <p className="text-[10px] text-muted-foreground">{totalXP.toLocaleString()} XP</p>
-              {coins > 0 && (
-                <span className="text-[10px] text-yellow-600 flex items-center gap-0.5">
-                  <Coins className="h-2.5 w-2.5" />
-                  {coins}
-                </span>
-              )}
-              {streakShields > 0 && (
-                <span className="text-[10px] text-blue-500 flex items-center gap-0.5">
-                  <Shield className="h-2.5 w-2.5" />
-                  {streakShields}
-                </span>
-              )}
-            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{totalXP.toLocaleString()} XP</p>
           </div>
         </div>
 
@@ -127,13 +113,9 @@ export function XPWidget() {
         >
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <motion.div
-                className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-amber-500/25"
-                whileHover={{ scale: 1.05, rotate: 5 }}
-                whileTap={{ scale: 0.95 }}
-              >
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-amber-500/25">
                 {level}
-              </motion.div>
+              </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold">{activeTitle || `Level ${level}`}</p>

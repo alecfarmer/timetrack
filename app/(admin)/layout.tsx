@@ -27,7 +27,7 @@ export default function AdminLayout({
     <>
       <AdminSidebar />
       <AdminMobileNav />
-      <main className="lg:ml-72 min-h-screen bg-muted/30 pb-20 lg:pb-0">
+      <main className="lg:ml-72 min-h-screen bg-background pb-20 lg:pb-0">
         {children}
       </main>
     </>

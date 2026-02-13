@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { X, Send, Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { modalOverlay, scaleUp } from "@/lib/animations"
+import { modalOverlay, modalContent } from "@/lib/animations"
 
 const KUDOS_CATEGORIES = [
   { id: "team_player", label: "Team Player", icon: "🤝" },
@@ -80,10 +80,10 @@ export function KudosSendModal({ isOpen, onClose, onSend, teammates, remaining }
           onClick={handleClose}
         >
           <motion.div
-            variants={scaleUp}
+            variants={modalContent}
             initial="hidden"
             animate="visible"
-            exit="hidden"
+            exit="exit"
             className="relative w-full max-w-md bg-card rounded-2xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >

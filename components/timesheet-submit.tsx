@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatDuration } from "@/lib/dates"
-import { startOfWeek, format, subWeeks } from "date-fns"
+import { startOfWeek, format, subWeeks, addDays } from "date-fns"
 import {
   FileText,
   Loader2,
@@ -13,6 +13,8 @@ import {
   Clock,
   XCircle,
   Send,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -27,14 +29,22 @@ interface TimesheetSubmission {
   reviewNotes?: string | null
 }
 
+interface DayBreakdown {
+  date: string
+  totalMinutes: number
+  entryCount: number
+}
+
 export function TimesheetSubmit() {
   const [submissions, setSubmissions] = useState<TimesheetSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [previewWeek, setPreviewWeek] = useState<string | null>(null)
+  const [dailyBreakdown, setDailyBreakdown] = useState<DayBreakdown[]>([])
+  const [loadingBreakdown, setLoadingBreakdown] = useState(false)
 
-  // Current week's Monday
   const currentWeekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")
   const lastWeekStart = format(startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }), "yyyy-MM-dd")
 
@@ -49,9 +59,36 @@ export function TimesheetSubmit() {
       const data = await res.json()
       setSubmissions(data || [])
     } catch {
-      // Non-critical - may not have org
+      // Non-critical
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchDailyBreakdown = async (weekStart: string) => {
+    setLoadingBreakdown(true)
+    try {
+      const weekEnd = format(addDays(new Date(weekStart + "T00:00:00"), 6), "yyyy-MM-dd")
+      const res = await fetch(`/api/timesheets/preview?weekStart=${weekStart}&weekEnd=${weekEnd}`)
+      if (res.ok) {
+        const data = await res.json()
+        setDailyBreakdown(data.days || [])
+      }
+    } catch {
+      // Fallback — just show submit without preview
+      setDailyBreakdown([])
+    } finally {
+      setLoadingBreakdown(false)
+    }
+  }
+
+  const togglePreview = async (weekStart: string) => {
+    if (previewWeek === weekStart) {
+      setPreviewWeek(null)
+      setDailyBreakdown([])
+    } else {
+      setPreviewWeek(weekStart)
+      await fetchDailyBreakdown(weekStart)
     }
   }
 
@@ -73,6 +110,8 @@ export function TimesheetSubmit() {
       }
 
       setSuccess("Timesheet submitted for approval")
+      setPreviewWeek(null)
+      setDailyBreakdown([])
       await fetchTimesheets()
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
@@ -98,7 +137,7 @@ export function TimesheetSubmit() {
 
   if (loading) {
     return (
-      <Card className="border-0 shadow-lg">
+      <Card>
         <CardContent className="p-5">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -110,7 +149,7 @@ export function TimesheetSubmit() {
   }
 
   return (
-    <Card className="border-0 shadow-lg">
+    <Card>
       <CardContent className="p-5 space-y-4">
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
@@ -125,37 +164,95 @@ export function TimesheetSubmit() {
           ].map(({ label, weekStart }) => {
             const submitted = isWeekSubmitted(weekStart)
             const submission = submissions.find((s) => s.weekStart === weekStart)
+            const isPreview = previewWeek === weekStart
 
             return (
-              <div key={weekStart} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div>
-                  <p className="text-sm font-medium">{label}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Week of {format(new Date(weekStart + "T00:00:00"), "MMM d")}
-                  </p>
-                  {submission && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatDuration(submission.totalMinutes)} · {submission.totalDays} days
+              <div key={weekStart} className="space-y-0">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Week of {format(new Date(weekStart + "T00:00:00"), "MMM d")}
                     </p>
+                    {submission && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatDuration(submission.totalMinutes)} · {submission.totalDays} days
+                      </p>
+                    )}
+                  </div>
+                  {submitted ? (
+                    getStatusBadge(submission!.status)
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1 text-xs"
+                        onClick={() => togglePreview(weekStart)}
+                      >
+                        {isPreview ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                        Review
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => handleSubmit(weekStart)}
+                        disabled={submitting}
+                      >
+                        {submitting ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Send className="h-3 w-3" />
+                        )}
+                        Submit
+                      </Button>
+                    </div>
                   )}
                 </div>
-                {submitted ? (
-                  getStatusBadge(submission!.status)
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1"
-                    onClick={() => handleSubmit(weekStart)}
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
+
+                {/* Daily Breakdown Preview */}
+                {isPreview && (
+                  <div className="border rounded-lg mx-1 mt-1 mb-2 overflow-hidden">
+                    {loadingBreakdown ? (
+                      <div className="p-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Loading breakdown...
+                      </div>
+                    ) : dailyBreakdown.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-muted-foreground">
+                        No work entries found for this week.
+                      </div>
                     ) : (
-                      <Send className="h-3 w-3" />
+                      <>
+                        <div className="divide-y">
+                          {dailyBreakdown.map((day) => (
+                            <div key={day.date} className="flex items-center justify-between px-3 py-2 text-xs">
+                              <span className="font-medium">
+                                {format(new Date(day.date + "T00:00:00"), "EEE, MMM d")}
+                              </span>
+                              <span className={cn(
+                                "tabular-nums",
+                                day.totalMinutes > 0 ? "text-foreground" : "text-muted-foreground"
+                              )}>
+                                {formatDuration(day.totalMinutes)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between px-3 py-2 bg-muted/50 text-xs font-medium border-t">
+                          <span>Total</span>
+                          <span className="tabular-nums">
+                            {formatDuration(dailyBreakdown.reduce((sum, d) => sum + d.totalMinutes, 0))}
+                          </span>
+                        </div>
+                      </>
                     )}
-                    Submit
-                  </Button>
+                  </div>
                 )}
               </div>
             )

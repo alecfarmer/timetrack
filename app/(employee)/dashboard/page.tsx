@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import dynamic from "next/dynamic"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { LogoMark } from "@/components/logo"
 import { Onboarding } from "@/components/onboarding"
 import { OfflineBanner } from "@/components/offline-banner"
 import { ErrorBoundary } from "@/components/error-boundary"
@@ -18,6 +17,7 @@ import { StatsGrid } from "@/components/dashboard/stats-grid"
 import { XPWidget } from "@/components/dashboard/xp-widget"
 import { WeeklyOverviewWidget } from "@/components/dashboard/weekly-overview-widget"
 import { TodaysActivityWidget } from "@/components/dashboard/todays-activity-widget"
+import { PulseWidget } from "@/components/dashboard/pulse-widget"
 import { Button } from "@/components/ui/button"
 import { useGeolocation } from "@/hooks/use-geolocation"
 import { useClockState } from "@/hooks/use-clock-state"
@@ -38,9 +38,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 const PhotoCapture = dynamic(() => import("@/components/photo-capture").then(m => ({ default: m.PhotoCapture })), { ssr: false })
-const LevelUpModal = dynamic(() => import("@/components/gamification/level-up-modal").then(m => ({ default: m.LevelUpModal })), { ssr: false })
-const BadgeUnlockModal = dynamic(() => import("@/components/gamification/level-up-modal").then(m => ({ default: m.BadgeUnlockModal })), { ssr: false })
-const StreakMilestoneModal = dynamic(() => import("@/components/gamification/level-up-modal").then(m => ({ default: m.StreakMilestoneModal })), { ssr: false })
+const RewardModal = dynamic(() => import("@/components/gamification/level-up-modal").then(m => ({ default: m.RewardModal })), { ssr: false })
 const XPGainToast = dynamic(() => import("@/components/gamification/level-up-modal").then(m => ({ default: m.XPGainToast })), { ssr: false })
 
 function getGreeting() {
@@ -132,19 +130,22 @@ export default function Dashboard() {
         />
       )}
 
-      <LevelUpModal
+      <RewardModal
+        type="level-up"
         isOpen={gamification.state.showLevelUp}
         onClose={gamification.closeLevelUp}
         level={gamification.state.levelUpData?.level || 1}
         totalXP={gamification.state.levelUpData?.totalXP || 0}
         unlockedRewards={gamification.state.levelUpData?.rewards}
       />
-      <BadgeUnlockModal
+      <RewardModal
+        type="badge"
         isOpen={gamification.state.showBadgeUnlock}
         onClose={gamification.closeBadgeUnlock}
         badge={gamification.state.badgeData}
       />
-      <StreakMilestoneModal
+      <RewardModal
+        type="streak"
         isOpen={gamification.state.showStreakMilestone}
         onClose={gamification.closeStreakMilestone}
         streakDays={gamification.state.streakData?.days || 0}
@@ -166,33 +167,22 @@ export default function Dashboard() {
 
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="bg-background pb-24 lg:pb-8">
-          {/* Desktop-only header (mobile uses EmployeeNav hamburger menu) */}
-          <header className="hidden lg:block sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between h-14">
+          {/* Desktop-only: slim clock bar (greeting/nav in sidebar) */}
+          <header className="hidden lg:block sticky top-0 z-40 border-b bg-card">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-10">
                 <div className="flex items-center gap-3">
-                  <LogoMark className="w-8 h-8 rounded-lg" />
-                  <div>
-                    <p className="text-sm font-medium">{getGreeting()}, {firstName}</p>
-                    <p className="text-xs text-muted-foreground">{format(new Date(), "EEEE, MMMM d")}</p>
-                  </div>
+                  <p className="text-sm font-medium">{getGreeting()}, {firstName}</p>
+                  <span className="text-xs text-muted-foreground">{format(new Date(), "EEEE, MMMM d")}</span>
+                  {clock.isOffline && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-xs font-medium">
+                      <WifiOff className="h-3 w-3" />
+                      Offline
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <AnimatePresence>
-                    {clock.isOffline && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 text-xs font-medium mr-2"
-                      >
-                        <WifiOff className="h-3 w-3" />
-                        Offline
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
                   <Button
                     variant="ghost"
                     size="icon"
@@ -218,7 +208,7 @@ export default function Dashboard() {
             />
           </header>
 
-          <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+          <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
             <OfflineBanner onSyncComplete={() => Promise.all([clock.fetchCurrentStatus(), clock.fetchWeekSummary()])} />
 
             <AnimatePresence>
@@ -265,6 +255,7 @@ export default function Dashboard() {
 
             {/* Mobile: Stacked layout */}
             <div className="space-y-4 lg:hidden">
+              <PulseWidget />
               <XPWidget />
               <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
               <TodaysActivityWidget
@@ -277,61 +268,36 @@ export default function Dashboard() {
             {/* Desktop: Grid layout */}
             <div className="hidden lg:grid lg:grid-cols-5 gap-6">
               <div className="lg:col-span-3 space-y-6">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <TodaysActivityWidget
-                    entries={entries}
-                    showAll={showAllEntries}
-                    setShowAll={setShowAllEntries}
-                  />
-                </motion.div>
+                <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
+                <TodaysActivityWidget
+                  entries={entries}
+                  showAll={showAllEntries}
+                  setShowAll={setShowAllEntries}
+                />
               </div>
 
               <div className="lg:col-span-2 space-y-6">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 }}
-                >
-                  <XPWidget />
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 }}
-                >
-                  <Widget title="Quick Links">
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { href: "/history", icon: Calendar, label: "History", color: "text-violet-500" },
-                        { href: "/reports", icon: TrendingUp, label: "Reports", color: "text-blue-500" },
-                        { href: "/leave", icon: Coffee, label: "Leave", color: "text-emerald-500" },
-                        { href: "/settings", icon: Target, label: "Settings", color: "text-amber-500" },
-                      ].map((link) => (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
-                        >
-                          <link.icon className={cn("h-4 w-4", link.color)} />
-                          <span className="text-sm font-medium">{link.label}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  </Widget>
-                </motion.div>
+                <PulseWidget />
+                <XPWidget />
+                <Widget title="Quick Links">
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { href: "/history", icon: Calendar, label: "History", color: "text-violet-500" },
+                      { href: "/reports", icon: TrendingUp, label: "Reports", color: "text-blue-500" },
+                      { href: "/leave", icon: Coffee, label: "Leave", color: "text-emerald-500" },
+                      { href: "/settings", icon: Target, label: "Settings", color: "text-amber-500" },
+                    ].map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
+                      >
+                        <link.icon className={cn("h-4 w-4", link.color)} />
+                        <span className="text-sm font-medium">{link.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </Widget>
               </div>
             </div>
           </main>

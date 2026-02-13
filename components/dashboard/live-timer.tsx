@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useTimer } from "@/hooks/use-timer"
 import { Coffee, Zap } from "lucide-react"
-import { fadeUp, scaleIn } from "@/lib/animations"
+import { fadeUp } from "@/lib/animations"
 
 interface LiveTimerProps {
   startTime: Date | null
@@ -188,9 +188,8 @@ export function LiveTimer({
       {/* XP Counter (when working) */}
       {startTime && !isOnBreak && xpEarned > 0 && (
         <motion.div
-          variants={scaleIn}
-          initial="hidden"
-          animate="visible"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
           className="mt-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-600 text-sm font-medium"
         >
           <Zap className="h-3.5 w-3.5" />

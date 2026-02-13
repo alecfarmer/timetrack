@@ -1,11 +1,10 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { motion } from "framer-motion"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
   {
     variants: {
       variant: {
@@ -19,18 +18,13 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        success:
-          "bg-success text-success-foreground shadow hover:bg-success/90",
-        gradient:
-          "bg-gradient-primary text-white shadow-lg hover:shadow-xl hover:brightness-110",
       },
       size: {
         default: "h-10 px-5 py-2",
-        sm: "h-8 rounded-lg px-3 text-xs",
-        lg: "h-11 rounded-xl px-8",
-        xl: "h-14 rounded-2xl px-8 text-base",
+        sm: "h-8 rounded-md px-3 text-xs",
+        lg: "h-11 rounded-lg px-8",
+        xl: "h-14 rounded-xl px-8 text-base",
         icon: "h-10 w-10",
-        fab: "h-14 w-14 rounded-full shadow-lg",
       },
     },
     defaultVariants: {
@@ -60,26 +54,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 )
 Button.displayName = "Button"
 
-const AnimatedButton = React.forwardRef<
-  HTMLButtonElement,
-  Omit<ButtonProps, "asChild">
->(({ className, variant, size, ...props }, ref) => {
-  const { onClick, disabled, type, children } = props
-  return (
-    <motion.button
-      ref={ref}
-      onClick={onClick}
-      disabled={disabled}
-      type={type}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.97 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={cn(buttonVariants({ variant, size, className }))}
-    >
-      {children}
-    </motion.button>
-  )
-})
-AnimatedButton.displayName = "AnimatedButton"
-
-export { Button, AnimatedButton, buttonVariants }
+export { Button, buttonVariants }

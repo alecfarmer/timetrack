@@ -142,7 +142,7 @@ export function DesktopMonitor({
           zIndex: 9999,
         }}
         className={`
-          glass-strong border rounded-2xl overflow-hidden
+          bg-card border rounded-xl overflow-hidden
           ${isDragging ? "cursor-grabbing" : ""}
           ${size === "minimized" ? "rounded-full" : ""}
         `}

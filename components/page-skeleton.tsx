@@ -7,8 +7,8 @@ function Bone({ className }: { className?: string }) {
 export function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
-      <header className="sticky top-0 z-50 glass border-b lg:ml-64">
+      <div className="fixed inset-0 bg-gradient-radial pointer-events-none" />
+      <header className="sticky top-0 z-50 bg-card border-b lg:ml-64">
         <div className="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto lg:px-8">
           <Bone className="h-8 w-24 lg:hidden" />
           <div className="hidden lg:flex items-center gap-4">
@@ -53,8 +53,8 @@ export function DashboardSkeleton() {
 export function PageWithHeaderSkeleton({ title }: { title?: string }) {
   return (
     <div className="min-h-screen bg-background">
-      <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
-      <header className="sticky top-0 z-50 glass border-b">
+      <div className="fixed inset-0 bg-gradient-radial pointer-events-none" />
+      <header className="sticky top-0 z-50 bg-card border-b">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <Bone className="h-8 w-8 rounded-lg" />
@@ -85,8 +85,8 @@ export function PageWithHeaderSkeleton({ title }: { title?: string }) {
 export function ListPageSkeleton({ title }: { title?: string }) {
   return (
     <div className="min-h-screen bg-background">
-      <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
-      <header className="sticky top-0 z-50 glass border-b">
+      <div className="fixed inset-0 bg-gradient-radial pointer-events-none" />
+      <header className="sticky top-0 z-50 bg-card border-b">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <Bone className="h-8 w-8 rounded-lg" />

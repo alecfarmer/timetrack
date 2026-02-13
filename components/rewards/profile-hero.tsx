@@ -1,11 +1,9 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Flame, Shield, Sparkles, Star, Zap, Coins, TrendingUp } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Flame, Shield, Sparkles, Zap, Coins, TrendingUp } from "lucide-react"
 
 interface ProfileHeroProps {
   level: number
@@ -39,31 +37,16 @@ export function ProfileHero({
   activeTitle,
 }: ProfileHeroProps) {
   return (
-    <Card className="border-0 shadow-xl overflow-hidden">
-      <div className="h-2 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
+    <Card className="overflow-hidden">
+      <div className="h-1.5 bg-gradient-to-r from-primary to-primary/60" />
       <CardContent className="p-6">
         <div className="flex flex-col md:flex-row md:items-center gap-6">
           {/* Level Badge */}
           <div className="flex items-center gap-4">
-            <motion.div
-              className="relative"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", delay: 0.2 }}
-            >
-              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 flex flex-col items-center justify-center text-white shadow-2xl shadow-orange-500/30">
-                <span className="text-4xl font-bold">{level}</span>
-                <span className="text-[10px] uppercase tracking-wider opacity-80">Level</span>
-              </div>
-              <motion.div
-                className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", delay: 0.4 }}
-              >
-                <Star className="h-4 w-4 text-primary-foreground fill-current" />
-              </motion.div>
-            </motion.div>
+            <div className="w-20 h-20 rounded-2xl bg-primary flex flex-col items-center justify-center text-primary-foreground">
+              <span className="text-3xl font-bold">{level}</span>
+              <span className="text-[10px] uppercase tracking-wider opacity-80">Level</span>
+            </div>
 
             <div>
               <h2 className="text-2xl font-bold">{activeTitle || title}</h2>

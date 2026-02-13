@@ -1,12 +1,10 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { NotificationCenter } from "@/components/notification-center"
+import { PageHeader } from "@/components/page-header"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
@@ -21,8 +19,12 @@ import {
   CheckCircle2,
   XCircle,
   HourglassIcon,
+  Users,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import { format } from "date-fns"
+import { cn } from "@/lib/utils"
 
 interface Timesheet {
   id: string
@@ -39,47 +41,41 @@ interface Timesheet {
   reviewNotes?: string
 }
 
-interface TimesheetStats {
-  pending: number
-  approved: number
-  rejected: number
-}
+type FilterStatus = "PENDING" | "APPROVED" | "REJECTED"
 
 export default function TimesheetsPage() {
   const { org, isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
   const [timesheets, setTimesheets] = useState<Timesheet[]>([])
-  const [stats, setStats] = useState<TimesheetStats>({ pending: 0, approved: 0, rejected: 0 })
+  const [allTimesheets, setAllTimesheets] = useState<Timesheet[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState("PENDING")
-  const [processing, setProcessing] = useState<string | null>(null)
+  const [filter, setFilter] = useState<FilterStatus>("PENDING")
+  const [processing, setProcessing] = useState<Set<string>>(new Set())
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set())
 
   const fetchTimesheets = useCallback(async () => {
     try {
-      const [timesheetsRes, pendingRes, approvedRes, rejectedRes] = await Promise.all([
-        fetch(`/api/timesheets?status=${filter}`),
-        fetch(`/api/timesheets?status=PENDING&countOnly=true`),
-        fetch(`/api/timesheets?status=APPROVED&countOnly=true`),
-        fetch(`/api/timesheets?status=REJECTED&countOnly=true`),
-      ])
-
-      if (timesheetsRes.ok) {
-        setTimesheets(await timesheetsRes.json())
+      // Fetch all timesheets in a single call, filter client-side
+      const res = await fetch("/api/timesheets")
+      if (res.ok) {
+        const data: Timesheet[] = await res.json()
+        setAllTimesheets(data)
       }
-
-      // Update stats
-      const pendingCount = pendingRes.ok ? (await pendingRes.json()).count ?? 0 : 0
-      const approvedCount = approvedRes.ok ? (await approvedRes.json()).count ?? 0 : 0
-      const rejectedCount = rejectedRes.ok ? (await rejectedRes.json()).count ?? 0 : 0
-      setStats({ pending: pendingCount, approved: approvedCount, rejected: rejectedCount })
     } catch {
       setError("Failed to load timesheets")
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [])
+
+  // Filter client-side
+  useEffect(() => {
+    setTimesheets(allTimesheets.filter((ts) => ts.status === filter))
+    setSelected(new Set())
+  }, [allTimesheets, filter])
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -98,7 +94,7 @@ export default function TimesheetsPage() {
   }
 
   const handleReview = async (submissionId: string, action: "APPROVED" | "REJECTED") => {
-    setProcessing(submissionId)
+    setProcessing((prev) => new Set(prev).add(submissionId))
     try {
       const res = await fetch("/api/timesheets", {
         method: "PATCH",
@@ -110,8 +106,68 @@ export default function TimesheetsPage() {
     } catch {
       setError("Failed to process review")
     } finally {
-      setProcessing(null)
+      setProcessing((prev) => {
+        const next = new Set(prev)
+        next.delete(submissionId)
+        return next
+      })
     }
+  }
+
+  const handleBatchReview = async (action: "APPROVED" | "REJECTED") => {
+    const ids = Array.from(selected)
+    if (ids.length === 0) return
+
+    // Mark all as processing
+    setProcessing(new Set(ids))
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          fetch("/api/timesheets", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ submissionId: id, action }),
+          })
+        )
+      )
+      const failures = results.filter((r) => r.status === "rejected").length
+      if (failures > 0) {
+        setError(`${failures} of ${ids.length} reviews failed`)
+      }
+      await fetchTimesheets()
+    } catch {
+      setError("Batch review failed")
+    } finally {
+      setProcessing(new Set())
+      setSelected(new Set())
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    const pendingIds = timesheets.filter((ts) => ts.status === "PENDING").map((ts) => ts.id)
+    if (selected.size === pendingIds.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(pendingIds))
+    }
+  }
+
+  const toggleUserExpanded = (userId: string) => {
+    setExpandedUsers((prev) => {
+      const next = new Set(prev)
+      if (next.has(userId)) next.delete(userId)
+      else next.add(userId)
+      return next
+    })
   }
 
   const formatHours = (minutes: number) => {
@@ -120,217 +176,280 @@ export default function TimesheetsPage() {
     return `${h}h ${m}m`
   }
 
-  const statusColor = (status: string) => {
-    switch (status) {
-      case "PENDING": return "secondary"
-      case "APPROVED": return "default"
-      case "REJECTED": return "destructive"
-      default: return "secondary"
-    }
+  // Compute stats from all timesheets
+  const stats = {
+    pending: allTimesheets.filter((ts) => ts.status === "PENDING").length,
+    approved: allTimesheets.filter((ts) => ts.status === "APPROVED").length,
+    rejected: allTimesheets.filter((ts) => ts.status === "REJECTED").length,
   }
+
+  // Group timesheets by user
+  const groupedByUser = timesheets.reduce((acc, ts) => {
+    const key = ts.email || ts.userId.slice(0, 8)
+    if (!acc[key]) acc[key] = { userId: ts.userId, email: key, timesheets: [] }
+    acc[key].timesheets.push(ts)
+    return acc
+  }, {} as Record<string, { userId: string; email: string; timesheets: Timesheet[] }>)
+
+  const userGroups = Object.values(groupedByUser).sort((a, b) =>
+    b.timesheets.length - a.timesheets.length
+  )
 
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center gap-4"
-        >
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-primary/20 animate-ping absolute inset-0" />
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <ClipboardCheck className="h-8 w-8 text-primary" />
-            </div>
-          </div>
-          <p className="text-muted-foreground font-medium">Loading timesheets...</p>
-        </motion.div>
+      <div className="flex items-center justify-center py-32 bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <p className="text-sm text-muted-foreground">Loading timesheets...</p>
+        </div>
       </div>
     )
   }
 
+  const pendingIds = timesheets.filter((ts) => ts.status === "PENDING").map((ts) => ts.id)
+  const allSelected = pendingIds.length > 0 && selected.size === pendingIds.length
+
   return (
-    <motion.div
-      className="flex flex-col min-h-screen bg-background"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      {/* Premium Dark Hero Header */}
-      <div className="hidden lg:block relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-teal-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
+    <div className="flex flex-col bg-background">
+      <PageHeader
+        title="Timesheets"
+        subtitle={org ? org.orgName : "Timesheet approvals"}
+        actions={
+          <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} />
+        }
+      />
 
-        {/* Grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
-
-        <header className="relative z-10 safe-area-pt">
-          <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                <ClipboardCheck className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-white">Timesheets</h1>
-                {org && (
-                  <p className="text-xs text-white/60">{org.orgName}</p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <RefreshButton onRefresh={handleRefresh} refreshing={refreshing} className="text-white/70 hover:text-white hover:bg-white/10" />
-              <ThemeToggle />
-              <NotificationCenter />
-            </div>
-          </div>
-        </header>
-
-        {/* Stats Cards in Hero */}
-        <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
-          <div className="grid grid-cols-3 gap-3">
+      <div className="max-w-4xl mx-auto w-full px-4 lg:px-8 pt-4 pb-24 lg:pb-8 space-y-4">
+        {/* Status Filter Tabs */}
+        <div className="flex gap-2">
+          {([
+            { key: "PENDING" as FilterStatus, label: "Pending", count: stats.pending, icon: HourglassIcon, color: "text-amber-500" },
+            { key: "APPROVED" as FilterStatus, label: "Approved", count: stats.approved, icon: CheckCircle2, color: "text-emerald-500" },
+            { key: "REJECTED" as FilterStatus, label: "Rejected", count: stats.rejected, icon: XCircle, color: "text-rose-500" },
+          ]).map(({ key, label, count, icon: Icon, color }) => (
             <button
-              onClick={() => setFilter("PENDING")}
-              className={`bg-white/5 backdrop-blur-sm rounded-2xl p-4 border text-center transition-all ${
-                filter === "PENDING" ? "border-amber-400/50 ring-1 ring-amber-400/30" : "border-white/10 hover:border-white/20"
-              }`}
-            >
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
-                <HourglassIcon className="h-5 w-5 text-amber-400" />
-              </div>
-              <p className="text-2xl font-bold text-amber-400">{stats.pending}</p>
-              <p className="text-xs text-white/60">Pending</p>
-              {stats.pending > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              key={key}
+              onClick={() => setFilter(key)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                filter === key
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
               )}
-            </button>
-            <button
-              onClick={() => setFilter("APPROVED")}
-              className={`bg-white/5 backdrop-blur-sm rounded-2xl p-4 border text-center transition-all ${
-                filter === "APPROVED" ? "border-emerald-400/50 ring-1 ring-emerald-400/30" : "border-white/10 hover:border-white/20"
-              }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
-                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-              </div>
-              <p className="text-2xl font-bold text-emerald-400">{stats.approved}</p>
-              <p className="text-xs text-white/60">Approved</p>
+              <Icon className={cn("h-4 w-4", filter === key ? "text-primary" : color)} />
+              <span>{label}</span>
+              <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
+                {count}
+              </Badge>
             </button>
-            <button
-              onClick={() => setFilter("REJECTED")}
-              className={`bg-white/5 backdrop-blur-sm rounded-2xl p-4 border text-center transition-all ${
-                filter === "REJECTED" ? "border-rose-400/50 ring-1 ring-rose-400/30" : "border-white/10 hover:border-white/20"
-              }`}
-            >
-              <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center mx-auto mb-2">
-                <XCircle className="h-5 w-5 text-rose-400" />
-              </div>
-              <p className="text-2xl font-bold text-rose-400">{stats.rejected}</p>
-              <p className="text-xs text-white/60">Rejected</p>
-            </button>
-          </div>
+          ))}
         </div>
-      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-8 pt-6">
-        <div className="max-w-3xl mx-auto px-4 lg:px-8 space-y-4">
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
-            >
-              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
-              <p className="text-sm text-destructive flex-1">{error}</p>
-              <Button variant="ghost" size="sm" onClick={() => setError(null)}>Dismiss</Button>
-            </motion.div>
-          )}
+        {/* Batch Action Bar */}
+        {filter === "PENDING" && pendingIds.length > 0 && (
+          <Card>
+            <CardContent className="p-3 flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  className="rounded border-muted-foreground/30"
+                />
+                <span className="text-muted-foreground">
+                  {selected.size > 0
+                    ? `${selected.size} of ${pendingIds.length} selected`
+                    : "Select all"}
+                </span>
+              </label>
+              {selected.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                    onClick={() => handleBatchReview("APPROVED")}
+                    disabled={processing.size > 0}
+                  >
+                    {processing.size > 0 ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
+                    Approve ({selected.size})
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 text-rose-600 border-rose-200 hover:bg-rose-50"
+                    onClick={() => handleBatchReview("REJECTED")}
+                    disabled={processing.size > 0}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Reject ({selected.size})
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-          {timesheets.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-12"
-            >
-              <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                <ClipboardCheck className="h-8 w-8 text-muted-foreground/30" />
-              </div>
-              <p className="text-muted-foreground font-medium">No {filter.toLowerCase()} timesheets</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
-                {filter === "PENDING" ? "All caught up! No timesheets waiting for review." : `No timesheets have been ${filter.toLowerCase()} yet.`}
-              </p>
-            </motion.div>
-          )}
+        {/* Error */}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+            <p className="text-sm text-destructive flex-1">{error}</p>
+            <Button variant="ghost" size="sm" onClick={() => setError(null)}>Dismiss</Button>
+          </div>
+        )}
 
-          {timesheets.map((ts, index) => (
-            <motion.div
-              key={ts.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * index }}
-            >
-              <Card className="border-0 shadow-lg rounded-2xl">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <p className="font-medium text-sm">{ts.email || ts.userId.slice(0, 8)}</p>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(ts.weekStart), "MMM d")} - {format(new Date(ts.weekEnd), "MMM d")}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {formatHours(ts.totalMinutes)}
-                        </span>
-                        <span>{ts.totalDays} days</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        Submitted {format(new Date(ts.submittedAt), "MMM d, h:mm a")}
-                      </p>
-                      {ts.reviewNotes && (
-                        <p className="text-xs text-muted-foreground italic mt-1">{ts.reviewNotes}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={statusColor(ts.status) as "default" | "secondary" | "destructive"}>{ts.status}</Badge>
+        {/* Empty State */}
+        {timesheets.length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+              <ClipboardCheck className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+            <p className="text-muted-foreground font-medium">No {filter.toLowerCase()} timesheets</p>
+            <p className="text-sm text-muted-foreground/70 mt-1">
+              {filter === "PENDING"
+                ? "All caught up! No timesheets waiting for review."
+                : `No timesheets have been ${filter.toLowerCase()} yet.`}
+            </p>
+          </div>
+        )}
+
+        {/* Grouped Timesheet List */}
+        {userGroups.map((group) => {
+          const isExpanded = expandedUsers.has(group.userId)
+          const totalMinutes = group.timesheets.reduce((sum, ts) => sum + ts.totalMinutes, 0)
+          const showTimesheets = group.timesheets.length === 1 ? group.timesheets : (isExpanded ? group.timesheets : group.timesheets.slice(0, 1))
+
+          return (
+            <div key={group.userId} className="space-y-2">
+              {/* User Header */}
+              {group.timesheets.length > 1 && (
+                <button
+                  onClick={() => toggleUserExpanded(group.userId)}
+                  className="flex items-center gap-2 w-full text-left px-1"
+                >
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium flex-1">{group.email}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {formatHours(totalMinutes)} total
+                  </span>
+                  <Badge variant="secondary" className="text-xs">
+                    {group.timesheets.length} sheets
+                  </Badge>
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+              )}
+
+              {showTimesheets.map((ts) => (
+                <Card key={ts.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      {/* Checkbox for pending */}
                       {ts.status === "PENDING" && (
-                        <>
+                        <input
+                          type="checkbox"
+                          checked={selected.has(ts.id)}
+                          onChange={() => toggleSelect(ts.id)}
+                          className="mt-1 rounded border-muted-foreground/30"
+                        />
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-sm truncate">
+                            {group.timesheets.length === 1 ? group.email : (
+                              <span className="flex items-center gap-2">
+                                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                                {format(new Date(ts.weekStart), "MMM d")} – {format(new Date(ts.weekEnd), "MMM d")}
+                              </span>
+                            )}
+                          </p>
+                          <Badge
+                            variant={
+                              ts.status === "APPROVED" ? "default" :
+                              ts.status === "REJECTED" ? "destructive" : "secondary"
+                            }
+                          >
+                            {ts.status}
+                          </Badge>
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                          {group.timesheets.length === 1 && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {format(new Date(ts.weekStart), "MMM d")} – {format(new Date(ts.weekEnd), "MMM d")}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatHours(ts.totalMinutes)}
+                          </span>
+                          <span>{ts.totalDays} days</span>
+                        </div>
+
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          Submitted {format(new Date(ts.submittedAt), "MMM d, h:mm a")}
+                        </p>
+
+                        {ts.reviewNotes && (
+                          <p className="text-xs text-muted-foreground italic mt-1">{ts.reviewNotes}</p>
+                        )}
+                      </div>
+
+                      {/* Individual action buttons */}
+                      {ts.status === "PENDING" && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-8 w-8 text-success hover:text-success hover:bg-success/10"
+                            className="h-8 w-8 text-emerald-600 hover:text-emerald-600 hover:bg-emerald-500/10"
                             onClick={() => handleReview(ts.id, "APPROVED")}
-                            disabled={processing === ts.id}
+                            disabled={processing.has(ts.id)}
                           >
-                            {processing === ts.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                            {processing.has(ts.id) ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Check className="h-4 w-4" />
+                            )}
                           </Button>
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="h-8 w-8 text-rose-600 hover:text-rose-600 hover:bg-rose-500/10"
                             onClick={() => handleReview(ts.id, "REJECTED")}
-                            disabled={processing === ts.id}
+                            disabled={processing.has(ts.id)}
                           >
                             <X className="h-4 w-4" />
                           </Button>
-                        </>
+                        </div>
                       )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </main>
-    </motion.div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {!isExpanded && group.timesheets.length > 1 && (
+                <button
+                  onClick={() => toggleUserExpanded(group.userId)}
+                  className="text-xs text-primary hover:underline pl-6"
+                >
+                  Show {group.timesheets.length - 1} more...
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }

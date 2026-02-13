@@ -461,7 +461,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   return (
     <div className="fixed inset-0 z-[100] bg-background flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-gradient-mesh pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-radial pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

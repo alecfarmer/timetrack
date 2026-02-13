@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { GripVertical, X, Settings, Plus, ChevronRight } from "lucide-react"
-import { widgetEnter, widgetReorder, staggerContainer, staggerChild } from "@/lib/animations"
+import { staggerContainer, staggerChild } from "@/lib/animations"
 
 // Widget configuration type
 export interface WidgetConfig {
@@ -161,16 +161,9 @@ function ReorderableWidget({
       value={widget}
       dragListener={false}
       dragControls={dragControls}
-      transition={widgetReorder}
       className="relative"
     >
-      <motion.div
-        variants={widgetEnter}
-        initial="hidden"
-        animate="visible"
-        exit="hidden"
-        className="relative"
-      >
+      <div className="relative">
         <Card className="border-2 border-dashed border-primary/20 bg-card/50">
           <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center cursor-grab active:cursor-grabbing z-10"
             onPointerDown={(e) => dragControls.start(e)}
@@ -202,7 +195,7 @@ function ReorderableWidget({
             </CardContent>
           </div>
         </Card>
-      </motion.div>
+      </div>
     </Reorder.Item>
   )
 }
@@ -230,7 +223,7 @@ export function Widget({
   noPadding = false,
 }: WidgetWrapperProps) {
   return (
-    <motion.div variants={widgetEnter} initial="hidden" animate="visible">
+    <div>
       <Card className={cn("border shadow-sm overflow-hidden", className)}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -263,7 +256,7 @@ export function Widget({
           {children}
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   )
 }
 
@@ -295,7 +288,7 @@ export function StatWidget({
   trend,
 }: StatWidgetProps) {
   return (
-    <motion.div variants={widgetEnter} initial="hidden" animate="visible">
+    <div>
       <Card className="border shadow-sm">
         <CardContent className="p-4">
           <div className="flex items-start justify-between mb-3">
@@ -333,7 +326,7 @@ export function StatWidget({
           )}
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   )
 }
 

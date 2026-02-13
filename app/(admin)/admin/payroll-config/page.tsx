@@ -197,10 +197,7 @@ export default function PayrollConfigPage() {
           className="flex flex-col items-center gap-4"
         >
           <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-primary/20 animate-ping absolute inset-0" />
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <Settings className="h-8 w-8 text-primary" />
-            </div>
+            <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
           </div>
           <p className="text-muted-foreground font-medium">Loading payroll configuration...</p>
         </motion.div>
@@ -219,7 +216,6 @@ export default function PayrollConfigPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-green-500/20 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
 
         {/* Grid pattern overlay */}
         <div
@@ -233,7 +229,7 @@ export default function PayrollConfigPage() {
         <header className="relative z-10 safe-area-pt">
           <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
                 <DollarSign className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -254,21 +250,21 @@ export default function PayrollConfigPage() {
         {/* Stats Cards in Hero */}
         <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+            <div className="bg-white/10 rounded-xl p-4 border border-white/10 text-center">
               <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center mx-auto mb-2">
                 <DollarSign className="h-5 w-5 text-green-400" />
               </div>
               <p className="text-lg font-bold text-green-400">{mapping.provider}</p>
               <p className="text-xs text-white/60">Provider</p>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+            <div className="bg-white/10 rounded-xl p-4 border border-white/10 text-center">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
                 <Clock className="h-5 w-5 text-emerald-400" />
               </div>
               <p className="text-lg font-bold text-emerald-400">{mapping.roundingIncrement}m</p>
               <p className="text-xs text-white/60">Rounding</p>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+            <div className="bg-white/10 rounded-xl p-4 border border-white/10 text-center">
               <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center mx-auto mb-2">
                 <Calculator className="h-5 w-5 text-teal-400" />
               </div>

@@ -119,10 +119,7 @@ export default function WellbeingPage() {
           className="flex flex-col items-center gap-4"
         >
           <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-rose-500/20 animate-ping absolute inset-0" />
-            <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center">
-              <HeartPulse className="h-8 w-8 text-rose-500" />
-            </div>
+            <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
           </div>
           <p className="text-muted-foreground font-medium">Loading well-being data...</p>
         </motion.div>
@@ -141,7 +138,6 @@ export default function WellbeingPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-rose-500/20 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-pink-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
 
         {/* Grid pattern overlay */}
         <div
@@ -155,7 +151,7 @@ export default function WellbeingPage() {
         <header className="relative z-10 safe-area-pt">
           <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
                 <HeartPulse className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -186,7 +182,7 @@ export default function WellbeingPage() {
         {/* Stats Cards in Hero */}
         <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+            <div className="bg-white/10 rounded-xl p-4 border border-white/10 text-center">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mx-auto mb-2">
                 <HeartPulse className="h-5 w-5 text-white" />
               </div>
@@ -202,7 +198,7 @@ export default function WellbeingPage() {
                 </>
               )}
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center relative">
+            <div className="bg-white/10 rounded-xl p-4 border border-white/10 text-center relative">
               <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center mx-auto mb-2">
                 <AlertTriangle className="h-5 w-5 text-rose-400" />
               </div>
@@ -223,7 +219,7 @@ export default function WellbeingPage() {
                 </>
               )}
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+            <div className="bg-white/10 rounded-xl p-4 border border-white/10 text-center">
               <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
                 <Clock className="h-5 w-5 text-blue-400" />
               </div>
@@ -239,7 +235,7 @@ export default function WellbeingPage() {
                 </>
               )}
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+            <div className="bg-white/10 rounded-xl p-4 border border-white/10 text-center">
               <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
                 <Coffee className="h-5 w-5 text-amber-400" />
               </div>

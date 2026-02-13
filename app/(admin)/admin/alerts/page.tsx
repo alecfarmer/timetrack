@@ -149,10 +149,7 @@ export default function AlertsPage() {
           className="flex flex-col items-center gap-4"
         >
           <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-orange-500/20 animate-ping absolute inset-0" />
-            <div className="w-16 h-16 rounded-full bg-orange-500/10 flex items-center justify-center">
-              <Bell className="h-8 w-8 text-orange-500" />
-            </div>
+            <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
           </div>
           <p className="text-muted-foreground font-medium">Loading alerts...</p>
         </motion.div>
@@ -173,7 +170,6 @@ export default function AlertsPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-orange-500/20 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
 
         {/* Grid pattern overlay */}
         <div
@@ -187,7 +183,7 @@ export default function AlertsPage() {
         <header className="relative z-10 safe-area-pt">
           <div className="flex items-center justify-between px-4 h-14 max-w-6xl mx-auto lg:px-8">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
                 <BellRing className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -229,14 +225,14 @@ export default function AlertsPage() {
         {/* Stats Cards in Hero */}
         <div className="relative z-10 px-4 pt-4 pb-6 max-w-6xl mx-auto lg:px-8">
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+            <div className="bg-white/10 rounded-xl p-4 border border-white/10 text-center">
               <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center mx-auto mb-2">
                 <Bell className="h-5 w-5 text-orange-400" />
               </div>
               <p className="text-2xl font-bold text-white">{total}</p>
               <p className="text-xs text-white/60">Total Alerts</p>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center relative">
+            <div className="bg-white/10 rounded-xl p-4 border border-white/10 text-center relative">
               <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
                 <BellRing className="h-5 w-5 text-amber-400" />
               </div>
@@ -246,7 +242,7 @@ export default function AlertsPage() {
                 <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
               )}
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 text-center">
+            <div className="bg-white/10 rounded-xl p-4 border border-white/10 text-center">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
                 <CheckCheck className="h-5 w-5 text-emerald-400" />
               </div>

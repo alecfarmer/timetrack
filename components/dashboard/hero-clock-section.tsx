@@ -1,11 +1,10 @@
 "use client"
 
-import { motion, AnimatePresence } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
 import { LocationPicker } from "@/components/location-picker"
 import { MobileClockTimer } from "@/components/dashboard/mobile-clock-timer"
 import { BreakActions, QuickActionsBar, getDefaultQuickActions } from "@/components/dashboard/quick-actions"
 import { GeoPosition } from "@/lib/geo"
-import { fadeUp } from "@/lib/animations"
 import { MapPin, ChevronRight, PartyPopper, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -65,14 +64,9 @@ export function HeroClockSection({
         )}
       </AnimatePresence>
 
-      <motion.section
-        variants={fadeUp}
-        initial="hidden"
-        animate="visible"
-        className="space-y-6"
-      >
-        {/* Mobile: Interactive Timer (tap to clock in, hold to clock out) */}
-        <div className="flex justify-center py-4 lg:hidden">
+      <section className="space-y-4">
+        {/* Mobile: Interactive Timer with Clock In/Out button below */}
+        <div className="flex justify-center py-2 lg:hidden">
           <MobileClockTimer
             startTime={sessionStart}
             isOnBreak={clock.isOnBreak}
@@ -83,8 +77,6 @@ export function HeroClockSection({
             disabled={clockDisabled}
           />
         </div>
-
-        {/* Desktop: Live Timer moved to DesktopClockBar */}
 
         {/* Location Selection (mobile only — desktop uses DesktopClockBar) */}
         <div className="lg:hidden">
@@ -114,8 +106,6 @@ export function HeroClockSection({
           ) : null}
         </div>
 
-        {/* Desktop: Giant Clock Button moved to DesktopClockBar */}
-
         {/* Break Actions (mobile only — desktop uses DesktopClockBar) */}
         {isClockedIn && (
           <BreakActions
@@ -139,7 +129,7 @@ export function HeroClockSection({
             size="md"
           />
         </div>
-      </motion.section>
+      </section>
     </>
   )
 }

@@ -168,7 +168,6 @@ export default function SettingsPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-500/20 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-gray-500/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
 
         {/* Grid pattern overlay */}
         <div
@@ -182,7 +181,7 @@ export default function SettingsPage() {
         <header className="relative z-10 safe-area-pt">
           <div className="flex items-center justify-between px-4 h-14 max-w-4xl mx-auto lg:px-8">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
                 <Settings className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -205,7 +204,7 @@ export default function SettingsPage() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-white/10"
+            className="bg-white/10 rounded-xl p-5 border border-white/10"
           >
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">

@@ -1,38 +1,31 @@
 "use client"
 
-import { motion, useScroll, useTransform, AnimatePresence, useInView } from "framer-motion"
 import Link from "next/link"
-import { useRef, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { IPhoneFrame } from "@/components/landing/iphone-frame"
-import { BrowserFrame } from "@/components/landing/browser-frame"
-import { DashboardMockup, AdminMockup, RewardsMockup } from "@/components/landing/mockup-screens"
 import {
-  MapPin,
   Clock,
   Shield,
-  Users,
   BarChart3,
   ArrowRight,
   Check,
-  Zap,
   Trophy,
   Star,
   Eye,
   Brain,
   Lock,
-  Play,
   CheckCircle2,
   ArrowUpRight,
   Briefcase,
-  Gamepad2,
-  LayoutDashboard,
   Scale,
+  ChevronDown,
+  MessageSquare,
+  Sparkles,
+  Zap,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -40,175 +33,56 @@ import { cn } from "@/lib/utils"
 // DATA
 // ============================================
 
-const featureTabs = [
+const features = [
   {
-    id: "tracking",
-    label: "Time Tracking",
     icon: Clock,
-    headline: "One-tap clock-in, GPS verified.",
-    description:
-      "Employees clock in from their phone. GPS confirms they're on-site. No badge swipes, no buddy punching, no hardware.",
-    bullets: [
-      "GPS geofencing with configurable radius",
-      "Offline-first — syncs when connection returns",
-      "Optional photo verification for high-security sites",
-      "Break tracking with policy enforcement",
-    ],
-    mockup: {
-      type: "phone" as const,
-      title: "Clock In",
-      status: "Ready to clock in",
-      primaryStat: "0h 0m",
-      secondaryStat: "Today",
-      buttonLabel: "Clock In",
-      buttonColor: "bg-primary",
-    },
+    title: "GPS Clock-In",
+    description: "One-tap clock-in verified by GPS. No badge swipes, no buddy punching, no hardware.",
   },
   {
-    id: "compliance",
-    label: "Compliance",
     icon: Scale,
-    headline: "Multi-jurisdiction, zero headaches.",
-    description:
-      "California meal breaks, Oregon predictive scheduling, NYC Fair Workweek — automatically enforced based on employee location.",
-    bullets: [
-      "State and city-level labor law rules",
-      "Auto-enforced meal and rest breaks",
-      "Overtime threshold monitoring",
-      "Audit-ready compliance reporting",
-    ],
-    mockup: {
-      type: "dashboard" as const,
-      title: "Compliance Engine",
-      items: [
-        { region: "California", status: "Meal breaks enforced", color: "emerald" },
-        { region: "Oregon", status: "Predictive scheduling", color: "blue" },
-        { region: "New York City", status: "Fair Workweek compliant", color: "cyan" },
-      ],
-      score: "100%",
-    },
+    title: "Auto-Compliance",
+    description: "California meal breaks, Oregon predictive scheduling — automatically enforced by location.",
   },
   {
-    id: "payroll",
-    label: "Payroll",
     icon: Briefcase,
-    headline: "One-click payroll export.",
-    description:
-      "Map time entries to pay codes, apply rounding rules, and export directly to Gusto, ADP, Paychex, or QuickBooks.",
-    bullets: [
-      "Pre-built integrations with major providers",
-      "Custom pay code mapping",
-      "Configurable rounding rules",
-      "Timesheet approval workflow",
-    ],
-    mockup: {
-      type: "export" as const,
-      title: "Payroll Export",
-      providers: ["Gusto", "ADP", "Paychex", "QuickBooks"],
-      lastExport: "Feb 7, 2026",
-      totalHours: "1,247.5h",
-    },
+    title: "Payroll Export",
+    description: "Map time to pay codes and export to Gusto, ADP, Paychex, or QuickBooks in one click.",
   },
   {
-    id: "analytics",
-    label: "Analytics",
     icon: BarChart3,
-    headline: "Insights that drive decisions.",
-    description:
-      "Punctuality trends, attendance patterns, overtime analysis, and team comparisons — all in real-time dashboards.",
-    bullets: [
-      "Punctuality scoring per employee",
-      "Period-over-period trend analysis",
-      "Overtime and burnout monitoring",
-      "Exportable reports and charts",
-    ],
-    mockup: {
-      type: "chart" as const,
-      title: "Team Analytics",
-      metrics: [
-        { label: "Avg Punctuality", value: "94%", trend: "+3%" },
-        { label: "Attendance Rate", value: "97%", trend: "+1%" },
-        { label: "Overtime Hours", value: "12h", trend: "-8%" },
-      ],
-    },
+    title: "Team Analytics",
+    description: "Punctuality trends, attendance patterns, overtime analysis — all in real-time dashboards.",
   },
   {
-    id: "engagement",
-    label: "Engagement",
-    icon: Gamepad2,
-    headline: "Turn attendance into achievement.",
-    description:
-      "Badges, XP levels, streaks, and weekly challenges keep your team engaged. Gamification that actually works.",
-    bullets: [
-      "67 unique badges across 8 categories",
-      "10 XP levels with milestone rewards",
-      "Streak tracking with bonus multipliers",
-      "Weekly and monthly team challenges",
-    ],
-    mockup: {
-      type: "gamification" as const,
-      title: "Rewards",
-      level: 7,
-      levelName: "Star",
-      xp: "4,250",
-      badges: [
-        { icon: "\uD83D\uDD25", name: "On Fire" },
-        { icon: "\uD83D\uDC26", name: "Early Bird" },
-        { icon: "\uD83D\uDCAF", name: "Century" },
-      ],
-    },
+    icon: Sparkles,
+    title: "AI Scheduling",
+    description: "Auto-generate fair schedules based on employee availability, skills, and labor rules.",
   },
   {
-    id: "admin",
-    label: "Admin Portal",
-    icon: LayoutDashboard,
-    headline: "Full control, zero complexity.",
-    description:
-      "Live activity feed, team management, timesheet approvals, and org-wide settings — all from a single dashboard.",
-    bullets: [
-      "Real-time who's on-site view",
-      "Bulk entry corrections with audit trail",
-      "Feature flags per organization",
-      "Role-based access control",
-    ],
-    mockup: {
-      type: "admin" as const,
-      title: "Admin Dashboard",
-      onSite: 24,
-      clockIns: 31,
-      pending: 3,
-      compliance: "98%",
-    },
+    icon: MessageSquare,
+    title: "Team Messaging",
+    description: "Built-in channels for shift updates, announcements, and team communication.",
   },
-]
-
-const reviewPlatforms = [
-  { name: "G2", rating: "4.8", reviews: "120+", badge: "High Performer" },
-  { name: "Capterra", rating: "4.9", reviews: "85+", badge: "Best Value" },
-  { name: "App Store", rating: "4.7", reviews: "200+", badge: "Editor's Choice" },
-  { name: "Google Play", rating: "4.6", reviews: "150+", badge: "Top Rated" },
 ]
 
 const testimonials = [
   {
-    quote:
-      "23% improvement in attendance within the first quarter. The gamification aspect was the game-changer our team needed.",
+    quote: "23% improvement in attendance within the first quarter. The gamification was the game-changer.",
     author: "Sarah Chen",
     role: "VP of Operations",
     company: "TechForward Inc.",
     avatar: "SC",
   },
   {
-    quote:
-      "The compliance engine flagged 3 potential violations in our first month. Saved us an estimated $45K in penalties.",
+    quote: "The compliance engine flagged 3 potential violations in our first month. Saved us an estimated $45K.",
     author: "Marcus Johnson",
     role: "HR Director",
     company: "National Retail Co.",
     avatar: "MJ",
   },
   {
-    quote:
-      "Setup took 10 minutes. Our 200-person team was clocking in by lunch. Zero training needed — it just works.",
+    quote: "Setup took 10 minutes. Our 200-person team was clocking in by lunch. Zero training needed.",
     author: "Emily Rodriguez",
     role: "COO",
     company: "FastGrow Logistics",
@@ -242,7 +116,7 @@ const pricingTiers = [
       "Geofencing & photo verification",
       "Compliance engine",
       "Payroll integrations",
-      "Gamification & badges",
+      "AI scheduling & messaging",
       "Advanced analytics",
       "Timesheet approvals",
       "Priority support",
@@ -262,295 +136,61 @@ const pricingTiers = [
       "Dedicated account manager",
       "Custom integrations",
       "SLA guarantee",
-      "On-premise option",
     ],
     cta: "Book a Demo",
     highlighted: false,
   },
 ]
 
+const faqs = [
+  {
+    q: "How does GPS verification work?",
+    a: "When an employee clocks in, KPR checks their GPS coordinates against configured geofence zones. You set the radius per location (default 200m). Works even with limited signal — entries queue offline and sync when reconnected.",
+  },
+  {
+    q: "What payroll systems do you integrate with?",
+    a: "We export to Gusto, ADP, Paychex, QuickBooks, and generic CSV. You configure pay code mapping, rounding rules, and overtime thresholds per your organization's policies.",
+  },
+  {
+    q: "Is there a contract or commitment?",
+    a: "No contracts. The Free plan is free forever. Pro is month-to-month — cancel anytime. Enterprise agreements are typically annual with custom terms.",
+  },
+  {
+    q: "How does the compliance engine work?",
+    a: "You configure jurisdiction-specific rules (e.g., CA meal breaks after 5 hours, OR predictive scheduling). KPR automatically monitors and flags violations in real-time, and can block non-compliant clock-outs.",
+  },
+  {
+    q: "Can employees use it on shared tablets?",
+    a: "Yes — Kiosk Mode lets you set up a shared tablet at your location. Employees identify themselves by email to clock in/out. No individual app install needed.",
+  },
+]
+
 // ============================================
-// ANIMATION VARIANTS
+// COMPONENTS
 // ============================================
 
-const fadeUp = {
-  initial: { opacity: 0, y: 30 },
-  animate: { opacity: 1, y: 0 },
-}
-
-const stagger = {
-  animate: { transition: { staggerChildren: 0.1 } },
-}
-
-// ============================================
-// UTILITY COMPONENTS
-// ============================================
-
-function AnimatedCounter({
-  target,
-  prefix = "",
-  suffix = "",
-  decimals = 0,
-  duration = 1.5,
-  className,
-}: {
-  target: number
-  prefix?: string
-  suffix?: string
-  decimals?: number
-  duration?: number
-  className?: string
-}) {
-  const ref = useRef<HTMLSpanElement>(null)
-  const inView = useInView(ref, { once: true })
-  const [display, setDisplay] = useState(0)
-
-  useEffect(() => {
-    if (!inView) return
-    const startTime = performance.now()
-    let raf: number
-    function update(time: number) {
-      const elapsed = time - startTime
-      const progress = Math.min(elapsed / (duration * 1000), 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setDisplay(eased * target)
-      if (progress < 1) raf = requestAnimationFrame(update)
-    }
-    raf = requestAnimationFrame(update)
-    return () => cancelAnimationFrame(raf)
-  }, [inView, target, duration])
-
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false)
   return (
-    <span ref={ref} className={className}>
-      {prefix}
-      {decimals > 0 ? display.toFixed(decimals) : Math.round(display)}
-      {suffix}
-    </span>
-  )
-}
-
-function FloatingShapes() {
-  const shapes = [
-    { size: 40, top: "10%", left: "5%", dur: 20, delay: 0, round: true },
-    { size: 30, top: "60%", left: "92%", dur: 25, delay: 2, round: false },
-    { size: 50, top: "80%", left: "15%", dur: 18, delay: 4, round: true },
-    { size: 35, top: "25%", left: "88%", dur: 22, delay: 1, round: false },
-    { size: 25, top: "45%", left: "50%", dur: 30, delay: 3, round: true },
-    { size: 20, top: "70%", left: "70%", dur: 28, delay: 5, round: false },
-  ]
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {shapes.map((s, i) => (
-        <motion.div
-          key={i}
-          className={cn(
-            "absolute bg-primary",
-            s.round ? "rounded-full" : "rounded-lg"
-          )}
-          style={{
-            width: s.size,
-            height: s.size,
-            top: s.top,
-            left: s.left,
-            opacity: 0.04,
-          }}
-          animate={{
-            x: [0, 30, -20, 0],
-            y: [0, -25, 15, 0],
-            rotate: [0, 90, 180, 360],
-          }}
-          transition={{
-            duration: s.dur,
-            repeat: Infinity,
-            ease: "linear",
-            delay: s.delay,
-          }}
+    <div className="border-b border-border/50">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-5 text-left"
+      >
+        <span className="font-medium pr-4">{q}</span>
+        <ChevronDown
+          className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
         />
-      ))}
+      </button>
+      <div
+        className={cn(
+          "overflow-hidden transition-all duration-200",
+          open ? "max-h-60 pb-5" : "max-h-0"
+        )}
+      >
+        <p className="text-muted-foreground leading-relaxed">{a}</p>
+      </div>
     </div>
-  )
-}
-
-// ============================================
-// FEATURE TAB MOCKUPS
-// ============================================
-
-function FeatureTabMockup({ tab }: { tab: (typeof featureTabs)[number] }) {
-  if (tab.mockup.type === "phone") {
-    return (
-      <IPhoneFrame className="w-[240px] mx-auto">
-        <DashboardMockup />
-      </IPhoneFrame>
-    )
-  }
-
-  if (tab.mockup.type === "dashboard") {
-    return (
-      <BrowserFrame url="app.kpr.com/compliance">
-        <div className="p-5 space-y-2.5">
-          {tab.mockup.items?.map((item, i) => (
-            <motion.div
-              key={item.region}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{
-                delay: 0.2 + i * 0.12,
-                type: "spring",
-                stiffness: 200,
-                damping: 20,
-              }}
-              className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5"
-            >
-              <div
-                className={cn(
-                  "w-2 h-2 rounded-full",
-                  item.color === "emerald" && "bg-emerald-500",
-                  item.color === "blue" && "bg-blue-500",
-                  item.color === "cyan" && "bg-cyan-500"
-                )}
-              />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-white/90">{item.region}</p>
-                <p className="text-xs text-white/50">{item.status}</p>
-              </div>
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  delay: 0.5 + i * 0.12,
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 15,
-                }}
-              >
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-              </motion.div>
-            </motion.div>
-          ))}
-          <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
-            <span className="text-sm text-white/50">Overall Compliance</span>
-            <AnimatedCounter
-              target={100}
-              suffix="%"
-              className="text-2xl font-bold text-emerald-400"
-            />
-          </div>
-        </div>
-      </BrowserFrame>
-    )
-  }
-
-  if (tab.mockup.type === "export") {
-    return (
-      <BrowserFrame url="app.kpr.com/payroll">
-        <div className="p-5">
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {tab.mockup.providers?.map((p, i) => (
-              <motion.div
-                key={p}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{
-                  delay: 0.2 + i * 0.1,
-                  type: "spring",
-                  stiffness: 250,
-                  damping: 20,
-                }}
-                className="p-3 rounded-xl bg-white/5 text-center text-sm font-medium text-white/80 border border-white/10"
-              >
-                {p}
-              </motion.div>
-            ))}
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-white/50">
-              <span>Exporting...</span>
-              <span>Complete</span>
-            </div>
-            <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-emerald-500"
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ delay: 0.8, duration: 2, ease: "easeInOut" }}
-              />
-            </div>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 2.8 }}
-              className="flex items-center justify-center gap-2 pt-1"
-            >
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm font-medium text-emerald-400">
-                {tab.mockup.totalHours} exported
-              </span>
-            </motion.div>
-          </div>
-        </div>
-      </BrowserFrame>
-    )
-  }
-
-  if (tab.mockup.type === "chart") {
-    const barHeights = [60, 80, 45, 90, 70]
-    return (
-      <BrowserFrame url="app.kpr.com/analytics">
-        <div className="p-5">
-          <div className="flex items-end gap-2.5 h-32 mb-4 px-2">
-            {barHeights.map((h, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <motion.div
-                  className="w-full rounded-t-md bg-gradient-to-t from-blue-600 to-blue-400"
-                  initial={{ height: 0 }}
-                  animate={{ height: `${h}%` }}
-                  transition={{
-                    delay: 0.3 + i * 0.1,
-                    duration: 0.8,
-                    ease: "easeOut",
-                  }}
-                />
-                <span className="text-[9px] text-white/40">
-                  {["Mon", "Tue", "Wed", "Thu", "Fri"][i]}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="space-y-2">
-            {tab.mockup.metrics?.map((m, i) => (
-              <motion.div
-                key={m.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 + i * 0.1 }}
-                className="flex items-center justify-between p-2 rounded-lg bg-white/5"
-              >
-                <span className="text-xs font-medium text-white/80">{m.label}</span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-emerald-400 bg-emerald-500/10">
-                  {m.trend}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </BrowserFrame>
-    )
-  }
-
-  if (tab.mockup.type === "gamification") {
-    return (
-      <IPhoneFrame className="w-[240px] mx-auto">
-        <RewardsMockup />
-      </IPhoneFrame>
-    )
-  }
-
-  // admin type
-  return (
-    <BrowserFrame url="app.kpr.com/admin" live>
-      <AdminMockup />
-    </BrowserFrame>
   )
 }
 
@@ -561,24 +201,14 @@ function FeatureTabMockup({ tab }: { tab: (typeof featureTabs)[number] }) {
 export default function LandingPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
-  const heroRef = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
-  const [activeTab, setActiveTab] = useState("tracking")
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  })
-  const heroOpacity = useTransform(scrollYProgress, [0, 1], [1, 0])
-  const heroY = useTransform(scrollYProgress, [0, 1], [0, 100])
 
-  // Scroll detection for nav background
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 100)
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Redirect authenticated users to dashboard
   useEffect(() => {
     if (!loading && user) {
       router.push("/dashboard")
@@ -596,968 +226,340 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       {/* ==========================================
-          1. STICKY NAVIGATION
+          1. NAVIGATION
           ========================================== */}
-      <nav className="fixed top-0 left-0 right-0 z-50">
-        <div className="mx-4 sm:mx-6 lg:mx-8 mt-4">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              className={cn(
-                "backdrop-blur-xl border border-border/50 rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between shadow-lg shadow-black/5 transition-colors duration-300",
-                scrolled ? "bg-background/90" : "bg-background/70"
-              )}
-            >
-              <Logo size="sm" />
+      <nav
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 transition-colors duration-300",
+          scrolled ? "bg-background/95 backdrop-blur-sm border-b" : "bg-transparent"
+        )}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Logo size="sm" />
 
-              {/* Center nav links (desktop) */}
-              <div className="hidden md:flex items-center gap-6">
-                {[
-                  { label: "Features", href: "#features" },
-                  { label: "How It Works", href: "#how-it-works" },
-                  { label: "Pricing", href: "#pricing" },
-                ].map((link) => (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                ))}
-              </div>
+            <div className="hidden md:flex items-center gap-6">
+              {[
+                { label: "Features", href: "#features" },
+                { label: "Pricing", href: "#pricing" },
+                { label: "FAQ", href: "#faq" },
+              ].map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
 
-              <div className="flex items-center gap-2 sm:gap-3">
-                <ThemeToggle />
-                <Link href="/login" className="hidden sm:block">
-                  <Button variant="ghost" size="sm" className="rounded-xl text-sm">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button
-                    variant="gradient"
-                    size="sm"
-                    className="rounded-xl gap-1.5 text-sm"
-                  >
-                    Start Free
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <ThemeToggle />
+              <Link href="/login" className="hidden sm:block">
+                <Button variant="ghost" size="sm">Sign In</Button>
+              </Link>
+              <Link href="/signup">
+                <Button size="sm" className="gap-1.5">
+                  Start Free
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
 
       {/* ==========================================
-          2. HERO (DARK SLATE GRADIENT, FULL VIEWPORT)
+          2. HERO
           ========================================== */}
-      <section
-        ref={heroRef}
-        className="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden"
-      >
-        {/* Dark slate background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0f1e] via-[#0f172a] to-[#0c1425]" />
-
-        {/* Floating gradient orbs — electric blue */}
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="absolute top-1/4 -left-32 w-[500px] h-[500px] rounded-full"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(37,99,235,0.15) 0%, transparent 70%)",
-            }}
-            animate={{ x: [0, 50, 0], y: [0, 30, 0] }}
-            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] rounded-full"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)",
-            }}
-            animate={{ x: [0, -40, 0], y: [0, -40, 0] }}
-            transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 60%)",
-            }}
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </div>
-
-        <motion.div
-          style={{ opacity: heroOpacity, y: heroY }}
-          className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full"
-        >
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left: Text content */}
-            <motion.div
-              initial="initial"
-              animate="animate"
-              variants={stagger}
-            >
-              <motion.h1
-                variants={fadeUp}
-                className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-6 text-white"
-              >
-                Know who&apos;s on-site,{" "}
-                <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-300 bg-clip-text text-transparent">
-                  in real time.
-                </span>
-              </motion.h1>
-
-              <motion.p
-                variants={fadeUp}
-                className="text-lg sm:text-xl text-white/60 leading-relaxed max-w-xl mb-8"
-              >
-                Replace badge swipes with GPS verification. Track attendance,
-                ensure compliance, and run payroll — all from one platform.
-              </motion.p>
-
-              {/* Dual CTAs */}
-              <motion.div
-                variants={fadeUp}
-                className="flex flex-col sm:flex-row items-start gap-4 mb-8"
-              >
-                <Link href="/signup">
-                  <Button
-                    size="xl"
-                    className="bg-white text-gray-900 hover:bg-white/90 gap-2 shadow-2xl shadow-white/10 font-semibold"
-                  >
-                    Start Free Trial
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Button
-                  size="xl"
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10 hover:text-white gap-2"
-                >
-                  <Play className="h-4 w-4" />
-                  Book a Demo
-                </Button>
-              </motion.div>
-
-              {/* Trust pills */}
-              <motion.div
-                variants={fadeUp}
-                className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/40"
-              >
-                {[
-                  "No credit card required",
-                  "Setup in 5 minutes",
-                  "Free for small teams",
-                ].map((text) => (
-                  <div key={text} className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-400" />
-                    <span>{text}</span>
-                  </div>
-                ))}
-              </motion.div>
-            </motion.div>
-
-            {/* Right: Device mockups with perspective */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              className="hidden lg:flex justify-center items-center relative"
-            >
-              {/* Glow behind devices */}
-              <div className="absolute -inset-8 bg-gradient-to-r from-blue-500/20 via-cyan-500/10 to-blue-500/20 blur-3xl rounded-full" />
-
-              {/* Browser frame behind (admin) */}
-              <motion.div
-                animate={{ y: [0, -6, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                className="absolute -top-4 -right-4 w-[320px] origin-center"
-                style={{ transform: "perspective(1200px) rotateY(-8deg) rotateX(2deg)" }}
-              >
-                <BrowserFrame url="app.kpr.com/admin" live>
-                  <AdminMockup />
-                </BrowserFrame>
-              </motion.div>
-
-              {/* iPhone frame in front (employee) */}
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="relative z-10"
-                style={{ transform: "perspective(1200px) rotateY(5deg) rotateX(2deg)" }}
-              >
-                <IPhoneFrame className="w-[240px]">
-                  <DashboardMockup />
-                </IPhoneFrame>
-              </motion.div>
-            </motion.div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ==========================================
-          3. TRUST BAR
-          ========================================== */}
-      <section className="py-12 border-y border-border/50 bg-muted/30">
+      <section className="pt-32 pb-20 sm:pt-40 sm:pb-28">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Trusted by text */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center text-sm text-muted-foreground mb-8"
-          >
-            Trusted by 2,000+ teams worldwide
-          </motion.p>
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
+              Know who&apos;s on-site,{" "}
+              <span className="text-primary">in real time.</span>
+            </h1>
+            <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto mb-8">
+              Replace badge swipes with GPS verification. Track attendance, ensure compliance,
+              and run payroll — all from one platform.
+            </p>
 
-          {/* Placeholder logos with shimmer */}
-          <div className="relative overflow-hidden mb-10">
-            <div className="flex items-center justify-center gap-8 sm:gap-12 flex-wrap">
-              {["Acme Corp", "Globex", "Initech", "Umbrella", "Stark Ind.", "Wayne Ent."].map(
-                (name, i) => (
-                  <motion.span
-                    key={name}
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.05 }}
-                    className="text-muted-foreground/40 font-bold text-sm sm:text-base tracking-wider uppercase"
-                  >
-                    {name}
-                  </motion.span>
-                )
-              )}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+              <Link href="/signup">
+                <Button size="lg" className="gap-2 font-semibold">
+                  Start Free Trial
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Button size="lg" variant="outline" className="gap-2">
+                Book a Demo
+                <ArrowUpRight className="h-4 w-4" />
+              </Button>
             </div>
-            <motion.div
-              className="absolute inset-y-0 w-32 bg-gradient-to-r from-transparent via-foreground/[0.03] to-transparent"
-              animate={{ x: ["-10rem", "calc(100vw + 10rem)"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "linear", repeatDelay: 3 }}
-            />
+
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-muted-foreground">
+              {["No credit card required", "Setup in 5 minutes", "Free for small teams"].map((text) => (
+                <div key={text} className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                  <span>{text}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Stat metrics with animated counters */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { target: 50, suffix: "K+", label: "Clock Events Daily" },
-              { target: 99.9, suffix: "%", label: "Uptime SLA", decimals: 1 },
-              { target: 200, prefix: "< ", suffix: "ms", label: "API Response" },
-              { target: 0, label: "Certified", display: "SOC 2" },
-            ].map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="text-center"
-              >
-                <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  {stat.display ? (
-                    stat.display
-                  ) : (
-                    <AnimatedCounter
-                      target={stat.target}
-                      prefix={stat.prefix}
-                      suffix={stat.suffix}
-                      decimals={stat.decimals}
-                    />
-                  )}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-              </motion.div>
-            ))}
+          {/* Trust bar */}
+          <div className="mt-16 pt-10 border-t border-border/50">
+            <p className="text-center text-sm text-muted-foreground mb-6">
+              Trusted by 2,000+ teams worldwide
+            </p>
+            <div className="flex items-center justify-center gap-8 sm:gap-12 flex-wrap">
+              {["Acme Corp", "Globex", "Initech", "Umbrella", "Stark Ind.", "Wayne Ent."].map((name) => (
+                <span
+                  key={name}
+                  className="text-muted-foreground/30 font-bold text-sm tracking-wider uppercase"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          4. TABBED FEATURE SHOWCASE
+          3. FEATURES GRID
           ========================================== */}
-      <section id="features" className="py-24 sm:py-32 scroll-mt-20 relative">
-        <FloatingShapes />
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-muted/50 text-sm font-medium mb-6">
+      <section id="features" className="py-20 sm:py-28 bg-muted/30 scroll-mt-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-background text-sm font-medium mb-6">
               <Zap className="h-4 w-4 text-primary" />
               Core Platform
             </span>
-            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
-              Everything you need,
-              <br />
-              nothing you don&apos;t.
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+              Everything you need, nothing you don&apos;t.
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              A complete time and attendance platform that scales from 5 employees
-              to 5,000.
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              A complete time and attendance platform that scales from 5 employees to 5,000.
             </p>
-          </motion.div>
+          </div>
 
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            {/* Tab pills */}
-            <TabsList className="flex flex-wrap justify-center gap-2 bg-transparent h-auto p-0 mb-12">
-              {featureTabs.map((tab) => (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className={cn(
-                    "rounded-full px-5 py-2.5 text-sm font-medium transition-all border",
-                    "data-[state=inactive]:bg-muted/50 data-[state=inactive]:border-border/50 data-[state=inactive]:text-muted-foreground data-[state=inactive]:shadow-none",
-                    "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-md data-[state=active]:shadow-primary/25"
-                  )}
-                >
-                  <tab.icon className="h-4 w-4 mr-2" />
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {/* Tab content */}
-            {featureTabs.map((tab) => (
-              <TabsContent key={tab.id} value={tab.id} className="mt-0">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={tab.id}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -15 }}
-                    transition={{ duration: 0.3 }}
-                    className="grid lg:grid-cols-2 gap-12 items-center"
-                  >
-                    {/* Text side */}
-                    <div>
-                      <h3 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-                        {tab.headline}
-                      </h3>
-                      <p className="text-lg text-muted-foreground mb-6">
-                        {tab.description}
-                      </p>
-                      <ul className="space-y-3">
-                        {tab.bullets.map((bullet) => (
-                          <li key={bullet} className="flex items-start gap-3">
-                            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <Check className="h-3 w-3 text-primary" />
-                            </div>
-                            <span className="text-muted-foreground">{bullet}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Mockup side */}
-                    <div className="flex justify-center">
-                      <div className="w-full max-w-sm relative">
-                        <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 blur-3xl opacity-50" />
-                        <div className="relative">
-                          <FeatureTabMockup tab={tab} />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </div>
-      </section>
-
-      {/* ==========================================
-          5. ANTI-SURVEILLANCE / TRUST SECTION
-          ========================================== */}
-      <section className="py-24 sm:py-32 relative overflow-hidden">
-        {/* Emerald-tinted background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-background to-teal-500/5" />
-
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Text side — staggered trust points */}
-            <motion.div
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true }}
-              variants={{ animate: { transition: { staggerChildren: 0.12 } } }}
-            >
-              <motion.span
-                variants={fadeUp}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-6"
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="rounded-xl border border-border/50 bg-card p-6 hover:shadow-md transition-shadow"
               >
-                <Lock className="h-4 w-4" />
-                Trust-First Design
-              </motion.span>
-              <motion.h2
-                variants={fadeUp}
-                className="text-4xl sm:text-5xl font-bold tracking-tight mb-6"
-              >
-                Anti-surveillance
-                <br />
-                by design.
-              </motion.h2>
-              <motion.p
-                variants={fadeUp}
-                className="text-xl text-muted-foreground mb-8"
-              >
-                KPR tracks outcomes, not keystrokes. We believe transparency
-                builds better teams than surveillance ever could.
-              </motion.p>
-
-              <div className="space-y-5">
-                {[
-                  {
-                    icon: Eye,
-                    title: "Full Data Transparency",
-                    desc: "Employees see exactly what's collected about them — every data point, every log.",
-                  },
-                  {
-                    icon: Shield,
-                    title: "No Screenshots or Keylogging",
-                    desc: "Never built. Never will be. Not a feature we turned off — it was never a feature.",
-                  },
-                  {
-                    icon: Brain,
-                    title: "Outcome-Based Tracking",
-                    desc: "Were they on-site? Did they meet their hours? That's what matters.",
-                  },
-                ].map((item, i) => (
-                  <motion.div
-                    key={item.title}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.3 + i * 0.12 }}
-                    className="flex gap-4"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="h-5 w-5 text-emerald-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                  <feature.icon className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
               </div>
-            </motion.div>
+            ))}
+          </div>
 
-            {/* Data transparency card with floating orb */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
-              {/* Floating emerald orb */}
-              <motion.div
-                className="absolute -top-16 -right-16 w-[300px] h-[300px] rounded-full pointer-events-none"
-                style={{
-                  background:
-                    "radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)",
-                }}
-                animate={{ x: [0, 20, 0], y: [0, -15, 0] }}
-                transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-              />
-
-              <div className="relative rounded-2xl border border-border/50 bg-card p-8 shadow-xl">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-2xl" />
-
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                    <Eye className="h-6 w-6 text-emerald-500" />
-                  </div>
+          {/* Trust points */}
+          <div className="mt-16 rounded-xl border border-border/50 bg-card p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <Lock className="h-5 w-5 text-emerald-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Anti-Surveillance by Design</h3>
+                <p className="text-sm text-muted-foreground">We track outcomes, not keystrokes.</p>
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                { icon: Eye, title: "Full Transparency", desc: "Employees see every data point collected about them." },
+                { icon: Shield, title: "No Keylogging", desc: "Never built. Never will be. Not a feature we turned off." },
+                { icon: Brain, title: "Outcome-Based", desc: "Were they on-site? Did they meet hours? That's what matters." },
+              ].map((item) => (
+                <div key={item.title} className="flex gap-3">
+                  <item.icon className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold">Data Transparency Portal</p>
-                    <p className="text-xs text-muted-foreground">
-                      What employees see about themselves
-                    </p>
+                    <p className="font-medium text-sm">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
                   </div>
                 </div>
-
-                <div className="space-y-3">
-                  {[
-                    "Clock-in/out times and locations",
-                    "GPS coordinates at clock events",
-                    "Compliance status and history",
-                    "Break and lunch records",
-                    "All corrections and approvals",
-                    "Photo verification images",
-                  ].map((item, i) => (
-                    <motion.div
-                      key={item}
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.1 + i * 0.08 }}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-muted/50"
-                    >
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        whileInView={{ scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{
-                          delay: 0.3 + i * 0.08,
-                          type: "spring",
-                          stiffness: 300,
-                          damping: 15,
-                        }}
-                        className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0"
-                      >
-                        <Check className="h-3.5 w-3.5 text-emerald-500" />
-                      </motion.div>
-                      <span className="text-sm">{item}</span>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <p className="text-xs text-muted-foreground text-center mt-6">
-                  Every piece of data collected is visible to the employee it
-                  belongs to.
-                </p>
-              </div>
-            </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          6. REVIEW PLATFORM BADGES
+          4. SOCIAL PROOF
           ========================================== */}
-      <section className="py-16 border-y border-border/50">
+      <section className="py-20 sm:py-28">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-10"
-          >
-            <h3 className="text-2xl font-bold tracking-tight">
-              Rated highly across every platform
-            </h3>
-          </motion.div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {reviewPlatforms.map((platform, i) => (
-              <motion.div
-                key={platform.name}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -4, scale: 1.02 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="glass-card rounded-2xl p-5 text-center cursor-default"
-              >
-                <p className="text-lg font-bold mb-1">{platform.name}</p>
-                <div className="flex items-center justify-center gap-1 mb-2">
-                  {[...Array(5)].map((_, j) => (
-                    <motion.div
-                      key={j}
-                      initial={{ scale: 0 }}
-                      whileInView={{ scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{
-                        delay: 0.2 + i * 0.1 + j * 0.05,
-                        type: "spring",
-                        stiffness: 300,
-                        damping: 15,
-                      }}
-                    >
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                    </motion.div>
-                  ))}
-                </div>
-                <AnimatedCounter
-                  target={parseFloat(platform.rating)}
-                  decimals={1}
-                  className="text-2xl font-bold"
-                />
-                <p className="text-xs text-muted-foreground mb-2 mt-0.5">
-                  {platform.reviews} reviews
-                </p>
-                <span className="inline-block px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wider">
-                  {platform.badge}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          7. TESTIMONIALS
-          ========================================== */}
-      <section className="py-24 sm:py-32 bg-muted/30">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Trusted by teams everywhere.
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-lg text-muted-foreground">
               See what operations leaders are saying about KPR.
             </p>
-          </motion.div>
+          </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, i) => (
-              <motion.div
-                key={testimonial.author}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -6 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="rounded-2xl border border-border/50 bg-card p-6 relative overflow-hidden hover:shadow-xl transition-shadow duration-300"
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            {testimonials.map((t) => (
+              <div
+                key={t.author}
+                className="rounded-xl border border-border/50 bg-card p-6"
               >
-                {/* Decorative quote mark */}
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 0.06 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
-                  className="absolute -top-2 -left-1 text-8xl font-serif leading-none text-foreground pointer-events-none select-none"
-                >
-                  &ldquo;
-                </motion.span>
-
-                <div className="relative">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, j) => (
-                      <Star
-                        key={j}
-                        className="h-4 w-4 fill-amber-400 text-amber-400"
-                      />
-                    ))}
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  &ldquo;{t.quote}&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
+                    {t.avatar}
                   </div>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
-                    &ldquo;{testimonial.quote}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      whileInView={{ scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{
-                        delay: 0.2 + i * 0.1,
-                        type: "spring",
-                        stiffness: 250,
-                        damping: 15,
-                      }}
-                      className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground text-sm font-bold"
-                    >
-                      {testimonial.avatar}
-                    </motion.div>
-                    <div>
-                      <p className="font-semibold text-sm">{testimonial.author}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {testimonial.role}, {testimonial.company}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="font-semibold text-sm">{t.author}</p>
+                    <p className="text-xs text-muted-foreground">{t.role}, {t.company}</p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ==========================================
-          8. HOW IT WORKS (3 STEPS)
-          ========================================== */}
-      <section id="how-it-works" className="py-24 sm:py-32 scroll-mt-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
-              Up and running in minutes.
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              No hardware. No IT department. No contracts. Just create, invite,
-              and track.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-8 border-t border-border/50">
             {[
-              {
-                step: "1",
-                title: "Create your org",
-                desc: "Sign up and name your team. Default work locations are added automatically.",
-                icon: Users,
-              },
-              {
-                step: "2",
-                title: "Invite your team",
-                desc: "Share an 8-character code. New members join instantly — no admin approval needed.",
-                icon: MapPin,
-              },
-              {
-                step: "3",
-                title: "Start tracking",
-                desc: "Configure required days and let KPR handle compliance monitoring automatically.",
-                icon: Clock,
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.step}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-                className="relative"
-              >
-                {/* Animated connecting line */}
-                {i < 2 && (
-                  <motion.div
-                    className="hidden md:block absolute top-10 left-[60%] h-0.5 border-t-2 border-dashed border-border"
-                    initial={{ width: 0 }}
-                    whileInView={{ width: "80%" }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.3 + i * 0.2, duration: 0.8, ease: "easeOut" }}
-                  />
-                )}
-                <div className="relative rounded-2xl border border-border/50 bg-card p-6">
-                  {/* Bouncy number badge */}
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{
-                      delay: i * 0.15,
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 15,
-                    }}
-                    className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg"
-                  >
-                    {item.step}
-                  </motion.div>
-                  {/* Icon fades in after number lands */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.2 + i * 0.15 }}
-                  >
-                    <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                    <p className="text-muted-foreground">{item.desc}</p>
-                  </motion.div>
-                </div>
-              </motion.div>
+              { value: "50K+", label: "Clock Events Daily" },
+              { value: "99.9%", label: "Uptime SLA" },
+              { value: "<200ms", label: "API Response" },
+              { value: "SOC 2", label: "Certified" },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center">
+                <p className="text-3xl font-bold">{stat.value}</p>
+                <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          9. PRICING PREVIEW
+          5. PRICING
           ========================================== */}
-      <section id="pricing" className="py-24 sm:py-32 bg-muted/30 scroll-mt-20">
+      <section id="pricing" className="py-20 sm:py-28 bg-muted/30 scroll-mt-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-14">
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-background text-sm font-medium mb-6">
               <Trophy className="h-4 w-4 text-primary" />
               Simple Pricing
             </span>
-            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Start free, scale as you grow.
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              No hidden fees. No per-location charges. Just straightforward
-              pricing.
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              No hidden fees. No per-location charges. Just straightforward pricing.
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {pricingTiers.map((tier, i) => (
-              <motion.div
+            {pricingTiers.map((tier) => (
+              <div
                 key={tier.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
                 className={cn(
-                  "rounded-2xl p-6 sm:p-8 relative",
+                  "rounded-xl p-6 sm:p-8 relative",
                   tier.highlighted
-                    ? "card-highlight scale-[1.02] shadow-xl animate-glow-pulse"
+                    ? "border-2 border-primary/30 bg-card shadow-lg"
                     : "border border-border/50 bg-card"
                 )}
               >
                 {tier.highlighted && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.3 }}
-                    className="absolute -top-3 left-1/2 -translate-x-1/2"
-                  >
-                    <span className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-md">
-                      Most Popular
-                    </span>
-                  </motion.div>
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                    Most Popular
+                  </span>
                 )}
 
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-2">{tier.name}</h3>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-bold">{tier.price}</span>
-                    {tier.period && (
-                      <span className="text-muted-foreground">{tier.period}</span>
-                    )}
+                    {tier.period && <span className="text-muted-foreground">{tier.period}</span>}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {tier.description}
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">{tier.description}</p>
                 </div>
 
                 <ul className="space-y-3 mb-8">
-                  {tier.features.map((feature, fi) => (
-                    <motion.li
-                      key={feature}
-                      initial={{ opacity: 0, y: 8 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.15 + fi * 0.05 }}
-                      className="flex items-start gap-3"
-                    >
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{
-                          delay: 0.25 + fi * 0.05,
-                          type: "spring",
-                          stiffness: 300,
-                          damping: 15,
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "h-4 w-4 flex-shrink-0 mt-0.5",
-                            tier.highlighted ? "text-primary" : "text-muted-foreground"
-                          )}
-                        />
-                      </motion.div>
+                  {tier.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3">
+                      <Check className={cn("h-4 w-4 shrink-0 mt-0.5", tier.highlighted ? "text-primary" : "text-muted-foreground")} />
                       <span className="text-sm">{feature}</span>
-                    </motion.li>
+                    </li>
                   ))}
                 </ul>
 
                 <Link href="/signup" className="block">
-                  <Button
-                    variant={tier.highlighted ? "gradient" : "outline"}
-                    className="w-full rounded-xl"
-                  >
+                  <Button variant={tier.highlighted ? "default" : "outline"} className="w-full">
                     {tier.cta}
                     <ArrowRight className="h-4 w-4 ml-1.5" />
                   </Button>
                 </Link>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          10. FINAL CTA + FOOTER
+          6. FAQ
           ========================================== */}
-      <section className="py-24 sm:py-32">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="card-gradient rounded-3xl px-8 py-16 sm:px-16 sm:py-20 text-center relative overflow-hidden"
-          >
-            {/* Floating orbs behind CTA — blue */}
-            <motion.div
-              className="absolute -top-20 -left-20 w-[300px] h-[300px] rounded-full pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 70%)",
-              }}
-              animate={{ x: [0, 30, 0], y: [0, 20, 0] }}
-              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.div
-              className="absolute -bottom-24 -right-16 w-[350px] h-[350px] rounded-full pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%)",
-              }}
-              animate={{ x: [0, -25, 0], y: [0, -20, 0] }}
-              transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-            />
+      <section id="faq" className="py-20 sm:py-28 scroll-mt-20">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+              Frequently asked questions
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Everything you need to know about KPR.
+            </p>
+          </div>
 
-            <div className="relative">
-              <motion.h2
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="text-4xl sm:text-5xl font-bold tracking-tight mb-4 text-white"
-              >
-                Ready to know who&apos;s on-site?
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="text-xl text-white/70 max-w-xl mx-auto mb-10"
-              >
-                Stop guessing. Start tracking. Your team could be clocking in
-                within minutes.
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
-                className="flex flex-col sm:flex-row items-center justify-center gap-4"
-              >
-                <Link href="/signup">
-                  <Button
-                    size="xl"
-                    className="bg-white text-gray-900 hover:bg-white/90 gap-2 shadow-2xl font-semibold"
-                  >
-                    Start Free Trial
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Button
-                  size="xl"
-                  variant="ghost"
-                  className="text-white/90 hover:text-white hover:bg-white/10"
-                >
-                  Book a Demo
-                  <ArrowUpRight className="h-4 w-4 ml-1" />
+          <div>
+            {faqs.map((faq) => (
+              <FAQItem key={faq.q} q={faq.q} a={faq.a} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          7. CTA + FOOTER
+          ========================================== */}
+      <section className="py-20 sm:py-28 bg-muted/30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="rounded-xl bg-primary px-8 py-16 sm:px-16 sm:py-20 text-center text-white">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4 text-white">
+              Ready to know who&apos;s on-site?
+            </h2>
+            <p className="text-lg text-white/70 max-w-xl mx-auto mb-10">
+              Stop guessing. Start tracking. Your team could be clocking in within minutes.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/signup">
+                <Button size="lg" className="bg-white text-gray-900 hover:bg-white/90 gap-2 font-semibold">
+                  Start Free Trial
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
-              </motion.div>
+              </Link>
+              <Button size="lg" variant="ghost" className="text-white/90 hover:text-white hover:bg-white/10">
+                Book a Demo
+                <ArrowUpRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -1565,82 +567,48 @@ export default function LandingPage() {
       <footer className="border-t border-border/50 py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-            {/* Product */}
             <div>
               <h4 className="font-semibold text-sm mb-4">Product</h4>
               <ul className="space-y-2.5">
-                {["Time Tracking", "Compliance", "Payroll", "Analytics", "Gamification"].map(
-                  (item) => (
-                    <li key={item}>
-                      <a
-                        href="#features"
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  )
-                )}
+                {["Time Tracking", "Compliance", "Payroll", "Analytics", "Scheduling"].map((item) => (
+                  <li key={item}>
+                    <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a>
+                  </li>
+                ))}
               </ul>
             </div>
-
-            {/* Company */}
             <div>
               <h4 className="font-semibold text-sm mb-4">Company</h4>
               <ul className="space-y-2.5">
                 {["About", "Blog", "Careers", "Contact"].map((item) => (
                   <li key={item}>
-                    <a
-                      href="#"
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {item}
-                    </a>
+                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a>
                   </li>
                 ))}
               </ul>
             </div>
-
-            {/* Resources */}
             <div>
               <h4 className="font-semibold text-sm mb-4">Resources</h4>
               <ul className="space-y-2.5">
-                {["Documentation", "API Reference", "Help Center", "Status"].map(
-                  (item) => (
-                    <li key={item}>
-                      <a
-                        href="#"
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  )
-                )}
+                {["Documentation", "API Reference", "Help Center", "Status"].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a>
+                  </li>
+                ))}
               </ul>
             </div>
-
-            {/* Legal */}
             <div>
               <h4 className="font-semibold text-sm mb-4">Legal</h4>
               <ul className="space-y-2.5">
-                {["Privacy Policy", "Terms of Service", "Security", "GDPR"].map(
-                  (item) => (
-                    <li key={item}>
-                      <a
-                        href="#"
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  )
-                )}
+                {["Privacy Policy", "Terms of Service", "Security", "GDPR"].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
 
-          {/* Bottom bar */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-border/50">
             <Logo size="sm" />
             <p className="text-sm text-muted-foreground">
