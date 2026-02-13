@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
             .map((wd) => wd.date)
         ).size
 
-        const todayMinutes = todayWork.reduce((sum, wd) => sum + (wd.totalMinutes || 0), 0)
+        let todayMinutes = todayWork.reduce((sum, wd) => sum + (wd.totalMinutes || 0), 0)
         const todayLocation = todayWork[0]?.location
         const todayLocName = todayLocation
           ? (Array.isArray(todayLocation) ? todayLocation[0] : todayLocation)?.code || "On-site"
@@ -131,6 +131,14 @@ export async function GET(request: NextRequest) {
 
         const latestEntry = status?.latestEntry
         const isClockedIn = latestEntry?.type === "CLOCK_IN"
+
+        // Add elapsed time for active sessions (totalMinutes only updates on clock-out)
+        if (isClockedIn && latestEntry?.timestampServer) {
+          const clockInTime = new Date(latestEntry.timestampServer).getTime()
+          const now = Date.now()
+          const activeMinutes = Math.floor((now - clockInTime) / 60000)
+          todayMinutes += Math.max(0, activeMinutes)
+        }
 
         const displayName = [member.firstName, member.lastName].filter(Boolean).join(" ") || null
 
