@@ -79,6 +79,8 @@ interface UseClockStateReturn {
   isWithinGeofence: boolean
   pendingPhotoUrl: string | null
   setPendingPhotoUrl: (url: string | null) => void
+  isClockedIn: boolean
+  statusFetchedAt: number
   isOnBreak: boolean
   handleClockIn: () => Promise<void>
   handleClockOut: () => Promise<void>
@@ -510,6 +512,8 @@ export function useClockState(position: GeoPosition | null, enabled: boolean = t
     isWithinGeofence,
     pendingPhotoUrl,
     setPendingPhotoUrl,
+    isClockedIn: currentStatus?.isClockedIn ?? false,
+    statusFetchedAt: statusFetchedAt.current,
     isOnBreak,
     handleClockIn,
     handleClockOut,

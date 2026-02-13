@@ -57,7 +57,7 @@ export default function Dashboard() {
 
   const clock = useClockState(position, !authLoading && !!user)
   const { refresh: refreshRealtime } = useRealtime()
-  const { daysWorked, requiredDays, isCompliant, compliancePercent, weeklyHours } = useLiveCompliance()
+  const { daysWorked, requiredDays, isCompliant, compliancePercent, weeklyMinutes } = useLiveCompliance()
 
   const gamification = useGamificationModals()
 
@@ -97,6 +97,14 @@ export default function Dashboard() {
     ])
   }, [clock, refreshGps, refreshRealtime])
 
+  // Live stats: store current time in state, tick every 60s while clocked in
+  const [liveNow, setLiveNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!clock.isClockedIn) return
+    const id = setInterval(() => setLiveNow(Date.now()), 60000)
+    return () => clearInterval(id)
+  }, [clock.isClockedIn])
+
   if (clock.needsOnboarding) {
     return <Onboarding onComplete={clock.handleOnboardingComplete} />
   }
@@ -114,8 +122,22 @@ export default function Dashboard() {
     )
   }
 
-  const todayHours = Math.floor((clock.currentStatus?.totalMinutesToday || 0) / 60)
-  const todayMinutes = (clock.currentStatus?.totalMinutesToday || 0) % 60
+  // Compute live today minutes (API value + elapsed since fetch)
+  const baseTodayMinutes = clock.currentStatus?.totalMinutesToday || 0
+  const minutesSinceFetch = clock.isClockedIn
+    ? Math.max(0, Math.floor((liveNow - clock.statusFetchedAt) / 60000))
+    : 0
+  const liveTodayMinutes = baseTodayMinutes + minutesSinceFetch
+
+  // Compute live weekly hours (WorkDay totals + active session from sessionStart)
+  const sessionStartStr = clock.currentStatus?.currentSessionStart
+  const activeSessionMinutes = clock.isClockedIn && sessionStartStr
+    ? Math.max(0, Math.floor((liveNow - new Date(sessionStartStr).getTime()) / 60000))
+    : 0
+  const liveWeeklyHours = Math.floor((weeklyMinutes + activeSessionMinutes) / 60)
+
+  const todayHours = Math.floor(liveTodayMinutes / 60)
+  const todayMinutes = liveTodayMinutes % 60
   const todayProgress = Math.min(100, (todayHours / 8) * 100)
   const entries = clock.currentStatus?.todayEntries || []
   const firstName = org?.firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "there"
@@ -245,7 +267,7 @@ export default function Dashboard() {
               todayHours={todayHours}
               todayMinutes={todayMinutes}
               todayProgress={todayProgress}
-              weeklyHours={weeklyHours}
+              weeklyHours={liveWeeklyHours}
               daysWorked={daysWorked}
               requiredDays={requiredDays}
               compliancePercent={compliancePercent}
