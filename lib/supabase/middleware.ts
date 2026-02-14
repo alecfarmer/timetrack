@@ -23,10 +23,26 @@ function isBareRoute(pathname: string): boolean {
   )
 }
 
-function isMarketingHost(hostname: string): boolean {
-  const marketingDomain = process.env.NEXT_PUBLIC_MARKETING_DOMAIN
-  if (!marketingDomain) return false
-  return hostname === marketingDomain || hostname === `www.${marketingDomain}`
+// Routes served on app.usekpr.com (auth + API + app)
+const APP_ROUTES = [
+  "/login",
+  "/signup",
+  "/auth",
+  "/select-org",
+  "/forgot-password",
+  "/api",
+]
+
+function isAppRoute(pathname: string): boolean {
+  return APP_ROUTES.some(
+    (r) => pathname === r || pathname.startsWith(`${r}/`)
+  )
+}
+
+function isAppHost(hostname: string): boolean {
+  const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN
+  if (!appDomain) return false
+  return hostname === appDomain
 }
 
 export async function updateSession(request: NextRequest) {
@@ -68,12 +84,86 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
   const hostname = request.headers.get("host") || ""
 
-  // --- Marketing domain handling ---
-  // If on marketing domain, serve "/" only; redirect everything else to app domain
-  if (isMarketingHost(hostname)) {
-    if (pathname === "/") {
+  // --- app.usekpr.com ---
+  // Serves: login, signup, auth, select-org, forgot-password, API, and /{slug}/* app routes
+  // Anything else (marketing pages) → redirect to usekpr.com
+  if (isAppHost(hostname)) {
+    // App routes and slug routes are served here
+    if (isAppRoute(pathname)) {
+      // Redirect unauthenticated users on protected routes
+      if (!user && pathname === "/select-org") {
+        const url = request.nextUrl.clone()
+        url.pathname = "/login"
+        return NextResponse.redirect(url)
+      }
+
+      // Redirect authenticated users away from auth pages to /select-org
+      if (
+        user &&
+        (pathname.startsWith("/login") ||
+          pathname.startsWith("/signup") ||
+          pathname.startsWith("/auth/callback"))
+      ) {
+        const url = request.nextUrl.clone()
+        url.pathname = "/select-org"
+        return NextResponse.redirect(url)
+      }
+
       return supabaseResponse
     }
+
+    // Root "/" on app domain → dashboard if authed, login if not
+    if (pathname === "/") {
+      const url = request.nextUrl.clone()
+      url.pathname = user ? "/select-org" : "/login"
+      return NextResponse.redirect(url)
+    }
+
+    // Non-app routes on app domain that aren't slug routes → redirect to usekpr.com
+    if (isBareRoute(pathname)) {
+      const mainDomain = process.env.NEXT_PUBLIC_MARKETING_DOMAIN || "usekpr.com"
+      const url = new URL(request.url)
+      url.hostname = mainDomain
+      url.port = ""
+      return NextResponse.redirect(url)
+    }
+
+    // Fall through to slug extraction below
+  }
+
+  // --- usekpr.com (marketing + public pages) ---
+  if (!isAppHost(hostname)) {
+    if (pathname === "/" || isBareRoute(pathname)) {
+      // Root "/" when authenticated → redirect to app domain /select-org
+      if (user && pathname === "/") {
+        const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN
+        if (appDomain) {
+          const url = new URL(request.url)
+          url.hostname = appDomain
+          url.port = ""
+          url.pathname = "/select-org"
+          return NextResponse.redirect(url)
+        }
+        const url = request.nextUrl.clone()
+        url.pathname = "/select-org"
+        return NextResponse.redirect(url)
+      }
+
+      // Auth pages on marketing domain → redirect to app domain
+      if (isAppRoute(pathname)) {
+        const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN
+        if (appDomain) {
+          const url = new URL(request.url)
+          url.hostname = appDomain
+          url.port = ""
+          return NextResponse.redirect(url)
+        }
+      }
+
+      return supabaseResponse
+    }
+
+    // Slug routes on marketing domain → redirect to app domain
     const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN
     if (appDomain) {
       const url = new URL(request.url)
@@ -81,51 +171,6 @@ export async function updateSession(request: NextRequest) {
       url.port = ""
       return NextResponse.redirect(url)
     }
-  }
-
-  // --- App domain (or localhost dev) ---
-
-  // Bare routes: login, signup, auth, select-org, api — no slug needed
-  if (pathname === "/" || isBareRoute(pathname)) {
-    // Redirect unauthenticated users on protected bare routes
-    if (!user && pathname === "/select-org") {
-      const url = request.nextUrl.clone()
-      url.pathname = "/login"
-      return NextResponse.redirect(url)
-    }
-
-    // Redirect authenticated users away from auth pages to /select-org
-    if (
-      user &&
-      (pathname.startsWith("/login") ||
-        pathname.startsWith("/signup") ||
-        pathname.startsWith("/auth/callback"))
-    ) {
-      const url = request.nextUrl.clone()
-      url.pathname = "/select-org"
-      return NextResponse.redirect(url)
-    }
-
-    // Root "/" on app domain when authenticated → /select-org
-    if (user && pathname === "/") {
-      const url = request.nextUrl.clone()
-      url.pathname = "/select-org"
-      return NextResponse.redirect(url)
-    }
-
-    // Root "/" when not authenticated → landing or /login
-    if (!user && pathname === "/") {
-      // In dev mode (no separate marketing domain), serve landing
-      if (!process.env.NEXT_PUBLIC_MARKETING_DOMAIN) {
-        return supabaseResponse
-      }
-      // On app domain in production, redirect to login
-      const url = request.nextUrl.clone()
-      url.pathname = "/login"
-      return NextResponse.redirect(url)
-    }
-
-    return supabaseResponse
   }
 
   // --- Slug extraction ---
