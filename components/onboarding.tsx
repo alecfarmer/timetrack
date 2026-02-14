@@ -1,40 +1,25 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Logo } from "@/components/logo"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Clock,
-  MapPin,
   Home,
-  Building2,
-  ChevronRight,
-  ChevronLeft,
   Check,
-  BarChart3,
-  Shield,
   Navigation,
   Loader2,
   Search,
-  Users,
-  Link as LinkIcon,
 } from "lucide-react"
 
 interface OnboardingProps {
   onComplete: () => void
 }
 
-type OrgMode = "create" | "join" | null
-
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(0)
-  const [orgMode, setOrgMode] = useState<OrgMode>(null)
-  const [orgName, setOrgName] = useState("")
-  const [inviteCode, setInviteCode] = useState("")
   const [wfhAddress, setWfhAddress] = useState("")
   const [wfhLat, setWfhLat] = useState("")
   const [wfhLng, setWfhLng] = useState("")
@@ -43,26 +28,6 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [geocoding, setGeocoding] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [pendingInvites, setPendingInvites] = useState<Array<{ code: string; org: { name: string } | null }>>([])
-
-  useEffect(() => {
-    async function checkPendingInvites() {
-      try {
-        const res = await fetch("/api/onboarding")
-        if (res.ok) {
-          const data = await res.json()
-          if (data.pendingInvites?.length > 0) {
-            setPendingInvites(data.pendingInvites)
-            setOrgMode("join")
-            setInviteCode(data.pendingInvites[0].code)
-          }
-        }
-      } catch {
-        // ignore
-      }
-    }
-    checkPendingInvites()
-  }, [])
 
   const detectHomeLocation = () => {
     setDetectingLocation(true)
@@ -105,42 +70,29 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   }
 
   const handleFinish = async () => {
-    if (orgMode === "create" && !orgName.trim()) {
-      setError("Organization name is required")
-      return
-    }
-    if (orgMode === "join" && !inviteCode.trim()) {
-      setError("Invite code is required")
-      return
-    }
-
     setSubmitting(true)
     setError(null)
 
     try {
-      const body: Record<string, unknown> = {}
-
-      if (orgMode === "create") {
-        body.orgName = orgName.trim()
-      } else if (orgMode === "join") {
-        body.inviteCode = inviteCode.trim().toUpperCase()
-      }
-
       if (!skipWfh && wfhLat && wfhLng) {
-        body.wfhAddress = wfhAddress
-        body.wfhLatitude = parseFloat(wfhLat)
-        body.wfhLongitude = parseFloat(wfhLng)
-      }
+        const res = await fetch("/api/locations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "WFH",
+            code: "WFH",
+            category: "HOME",
+            address: wfhAddress,
+            latitude: parseFloat(wfhLat),
+            longitude: parseFloat(wfhLng),
+            geofenceRadius: 200,
+          }),
+        })
 
-      const res = await fetch("/api/onboarding", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Failed to complete setup")
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || "Failed to save WFH location")
+        }
       }
 
       onComplete()
@@ -151,133 +103,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   }
 
   const steps = [
-    // Step 0: Welcome
-    {
-      title: "Welcome to KPR",
-      content: (
-        <div className="text-center space-y-6">
-          <div className="flex justify-center">
-            <Logo size="lg" />
-          </div>
-          <div className="space-y-2">
-            <p className="text-muted-foreground">
-              Your team&apos;s time and attendance tracker. Let&apos;s get you set up in a few quick steps.
-            </p>
-          </div>
-          <div className="grid grid-cols-3 gap-3 pt-2">
-            <div className="p-3 rounded-xl bg-muted/50 space-y-2 text-center">
-              <Clock className="h-6 w-6 text-primary mx-auto" />
-              <p className="text-xs font-medium">Track Time</p>
-            </div>
-            <div className="p-3 rounded-xl bg-muted/50 space-y-2 text-center">
-              <MapPin className="h-6 w-6 text-primary mx-auto" />
-              <p className="text-xs font-medium">GPS Verified</p>
-            </div>
-            <div className="p-3 rounded-xl bg-muted/50 space-y-2 text-center">
-              <Users className="h-6 w-6 text-primary mx-auto" />
-              <p className="text-xs font-medium">Team View</p>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    // Step 1: Create or join org
-    {
-      title: "Your Organization",
-      content: (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground text-center">
-            Create a new organization or join an existing one with an invite code.
-          </p>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => { setOrgMode("create"); setError(null) }}
-              className={`p-4 rounded-xl border-2 text-left transition-all ${
-                orgMode === "create"
-                  ? "border-primary bg-primary/5"
-                  : "border-muted hover:border-muted-foreground/30"
-              }`}
-            >
-              <Building2 className={`h-6 w-6 mb-2 ${orgMode === "create" ? "text-primary" : "text-muted-foreground"}`} />
-              <p className="font-medium text-sm">Create New</p>
-              <p className="text-xs text-muted-foreground">Start a new organization</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => { setOrgMode("join"); setError(null) }}
-              className={`p-4 rounded-xl border-2 text-left transition-all ${
-                orgMode === "join"
-                  ? "border-primary bg-primary/5"
-                  : "border-muted hover:border-muted-foreground/30"
-              }`}
-            >
-              <LinkIcon className={`h-6 w-6 mb-2 ${orgMode === "join" ? "text-primary" : "text-muted-foreground"}`} />
-              <p className="font-medium text-sm">Join Existing</p>
-              <p className="text-xs text-muted-foreground">Use an invite code</p>
-            </button>
-          </div>
-
-          {pendingInvites.length > 0 && (
-            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
-              <p className="text-sm font-medium text-primary">You have a pending invite!</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {pendingInvites[0].org
-                  ? `${(Array.isArray(pendingInvites[0].org) ? pendingInvites[0].org[0] : pendingInvites[0].org).name} has invited you to join.`
-                  : "An organization has invited you to join."}
-              </p>
-            </div>
-          )}
-
-          <AnimatePresence mode="wait">
-            {orgMode === "create" && (
-              <motion.div
-                key="create"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-2"
-              >
-                <Label htmlFor="orgName">Organization Name</Label>
-                <Input
-                  id="orgName"
-                  placeholder="e.g., Acme Corp"
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  You&apos;ll be the admin. Default work sites will be added automatically.
-                </p>
-              </motion.div>
-            )}
-            {orgMode === "join" && (
-              <motion.div
-                key="join"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-2"
-              >
-                <Label htmlFor="inviteCode">Invite Code</Label>
-                <Input
-                  id="inviteCode"
-                  placeholder="e.g., AB3K7NXQ"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  className="font-mono tracking-wider text-center text-lg"
-                  maxLength={8}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Ask your admin for the 8-character invite code.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      ),
-    },
-    // Step 2: WFH Setup
+    // Step 0: WFH Setup
     {
       title: "Set Up Work From Home",
       content: (
@@ -287,7 +113,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             <div>
               <p className="text-sm font-medium">Home Office Location</p>
               <p className="text-xs text-muted-foreground">
-                Set your home address so you can clock in when working from home. WFH days don&apos;t count toward in-office compliance but are tracked for total hours.
+                Set your home address so you can clock in when working from home.
               </p>
             </div>
           </div>
@@ -394,7 +220,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         </div>
       ),
     },
-    // Step 3: Ready
+    // Step 1: Ready
     {
       title: "You're All Set!",
       content: (
@@ -404,58 +230,16 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           </div>
           <div className="space-y-2">
             <p className="text-muted-foreground">
-              {orgMode === "create"
-                ? `"${orgName}" has been created. Default company locations have been added.`
-                : "You've joined the organization. All shared locations are ready."}
+              {skipWfh || (!wfhLat && !wfhLng)
+                ? "You can set up your home location anytime in Settings."
+                : "Your home office location is configured and ready to use."}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 text-left">
-            <div className="p-3 rounded-xl bg-muted/50">
-              <Building2 className="h-5 w-5 text-primary mb-1" />
-              <p className="text-xs font-medium">
-                {orgMode === "create" ? "7 Office Sites" : "Org Locations"}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                {orgMode === "create" ? "US0, HNA, US2, SPA, LXT, MCC, MARC" : "Shared by your team"}
-              </p>
-            </div>
-            <div className="p-3 rounded-xl bg-muted/50">
-              <Home className="h-5 w-5 text-primary mb-1" />
-              <p className="text-xs font-medium">{skipWfh || (!wfhLat && !wfhLng) ? "No WFH Set" : "WFH Ready"}</p>
-              <p className="text-[11px] text-muted-foreground">
-                {skipWfh || (!wfhLat && !wfhLng) ? "Set up in Settings" : "Home office configured"}
-              </p>
-            </div>
-          </div>
-
-          {orgMode === "create" && (
-            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
-              <div className="flex items-center gap-2 mb-1">
-                <Shield className="h-4 w-4 text-primary" />
-                <p className="text-xs font-medium text-primary">Admin Access</p>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                You&apos;re the admin. Invite team members from Settings &gt; Team.
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
       ),
     },
   ]
-
-  const canProceed = () => {
-    if (step === 1) {
-      if (!orgMode) return false
-      if (orgMode === "create" && !orgName.trim()) return false
-      if (orgMode === "join" && !inviteCode.trim()) return false
-    }
-    return true
-  }
 
   const isLastStep = step === steps.length - 1
 
@@ -490,21 +274,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <h2 className="text-xl font-bold mb-4 text-center">{steps[step].title}</h2>
-                {steps[step].content}
+                <h2 className="text-xl font-bold mb-4 text-center">{steps[step]?.title}</h2>
+                {steps[step]?.content}
               </motion.div>
             </AnimatePresence>
 
             {/* Navigation */}
             <div className="flex items-center justify-between mt-6 pt-4 border-t">
               {step > 0 ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setStep(step - 1)}
-                  className="gap-1"
-                >
-                  <ChevronLeft className="h-4 w-4" />
+                <Button variant="ghost" size="sm" onClick={() => setStep(step - 1)} className="gap-1">
                   Back
                 </Button>
               ) : (
@@ -512,11 +290,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               )}
 
               {isLastStep ? (
-                <Button
-                  onClick={handleFinish}
-                  disabled={submitting}
-                  className="gap-2"
-                >
+                <Button onClick={handleFinish} disabled={submitting} className="gap-2">
                   {submitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
@@ -525,13 +299,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   {submitting ? "Setting up..." : "Get Started"}
                 </Button>
               ) : (
-                <Button
-                  onClick={() => { setError(null); setStep(step + 1) }}
-                  disabled={!canProceed()}
-                  className="gap-1"
-                >
+                <Button onClick={() => { setError(null); setStep(step + 1) }} className="gap-1">
                   Next
-                  <ChevronRight className="h-4 w-4" />
                 </Button>
               )}
             </div>

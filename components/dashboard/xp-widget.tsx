@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { useLiveXP, useRealtime } from "@/contexts/realtime-context"
 import { Award, Flame, Sparkles, ChevronRight, Coins, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { OrgLink as Link } from "@/components/org-link"
 
 function MobileXPCard() {
   const { totalXP, sessionXP, level, xpToNext, xpProgress, coins, streakShields, xpMultiplier, activeTitle } = useLiveXP()
@@ -68,7 +68,7 @@ function MobileXPCard() {
             <div className="flex gap-1.5 flex-1">
               {recentBadges.slice(0, 4).map((badge, i) => (
                 <motion.div
-                  key={badge.id}
+                  key={`${badge.id}-${i}`}
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.08 }}
@@ -176,7 +176,7 @@ export function XPWidget() {
                 <div className="flex gap-2">
                   {recentBadges.slice(0, 4).map((badge, i) => (
                     <motion.div
-                      key={badge.id}
+                      key={`${badge.id}-${i}`}
                       initial={{ opacity: 0, scale: 0 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: i * 0.1 }}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion } from "framer-motion"
-import { useRouter } from "next/navigation"
+import { useOrgRouter } from "@/components/org-link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -32,7 +32,7 @@ interface Member {
 
 export default function EntriesIndexPage() {
   const { org, isAdmin, loading: authLoading } = useAuth()
-  const router = useRouter()
+  const router = useOrgRouter()
 
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)

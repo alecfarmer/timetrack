@@ -1,8 +1,8 @@
 "use client"
 
-import Link from "next/link"
+import { OrgLink as Link, useAppPathname } from "@/components/org-link"
 import { useState } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   LayoutDashboard,
@@ -83,7 +83,7 @@ function getPageTitle(pathname: string): string {
 }
 
 export function AdminMobileNav() {
-  const pathname = usePathname()
+  const pathname = useAppPathname()
   const router = useRouter()
   const { signOut } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)

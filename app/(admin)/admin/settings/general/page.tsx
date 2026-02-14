@@ -17,7 +17,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { NotificationCenter } from "@/components/notification-center"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
-import { useRouter } from "next/navigation"
+import { useOrgRouter } from "@/components/org-link"
 import {
   Building2,
   Save,
@@ -31,7 +31,7 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react"
-import Link from "next/link"
+import { OrgLink as Link } from "@/components/org-link"
 
 const TIMEZONES = [
   "America/New_York",
@@ -79,7 +79,7 @@ const staggerItem = {
 
 export default function GeneralSettingsPage() {
   const { org, isAdmin, loading: authLoading, refreshOrg } = useAuth()
-  const router = useRouter()
+  const router = useOrgRouter()
   const [orgData, setOrgData] = useState<OrgData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

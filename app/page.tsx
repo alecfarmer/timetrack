@@ -1,19 +1,21 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import { Logo } from "@/components/logo"
+import { SiteHeader } from "@/components/marketing/site-header"
+import { SiteFooter } from "@/components/marketing/site-footer"
+import { BrowserFrame } from "@/components/landing/browser-frame"
+import { DashboardMockup, AdminMockup, RewardsMockup } from "@/components/landing/mockup-screens"
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { motion, useInView } from "framer-motion"
 import {
   Clock,
   Shield,
   BarChart3,
   ArrowRight,
   Check,
-  Trophy,
   Star,
   Eye,
   Brain,
@@ -22,16 +24,41 @@ import {
   ArrowUpRight,
   Briefcase,
   Scale,
-  ChevronDown,
-  MessageSquare,
   Sparkles,
   Zap,
+  Smartphone,
+  LayoutDashboard,
+  Gift,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // ============================================
 // DATA
 // ============================================
+
+const pillars = [
+  {
+    icon: Clock,
+    title: "Time Tracking",
+    description:
+      "One-tap GPS-verified clock-in. No badge swipes, no buddy punching, no hardware. Works offline and syncs automatically.",
+    href: "/features/time-tracking",
+  },
+  {
+    icon: Scale,
+    title: "Compliance Engine",
+    description:
+      "Multi-jurisdiction labor law compliance. California meal breaks, Oregon predictive scheduling — automatically enforced by location.",
+    href: "/features/compliance",
+  },
+  {
+    icon: Briefcase,
+    title: "Payroll Integration",
+    description:
+      "Map time entries to pay codes and export to Gusto, ADP, Paychex, or QuickBooks. One click, zero manual entry.",
+    href: "/features/payroll",
+  },
+]
 
 const features = [
   {
@@ -60,9 +87,9 @@ const features = [
     description: "Auto-generate fair schedules based on employee availability, skills, and labor rules.",
   },
   {
-    icon: MessageSquare,
-    title: "Team Messaging",
-    description: "Built-in channels for shift updates, announcements, and team communication.",
+    icon: Zap,
+    title: "Gamification",
+    description: "XP, badges, streaks, and challenges turn punctuality into engagement. 23% attendance lift on average.",
   },
 ]
 
@@ -90,128 +117,145 @@ const testimonials = [
   },
 ]
 
-const pricingTiers = [
+const showcaseBlocks = [
   {
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    description: "For small teams getting started",
-    features: [
-      "Up to 5 employees",
-      "GPS clock-in/out",
-      "Basic reporting",
-      "Mobile app access",
-      "7-day history",
-    ],
-    cta: "Get Started",
-    highlighted: false,
+    icon: Smartphone,
+    label: "Employee App",
+    title: "Clock in with one tap.",
+    description:
+      "GPS-verified attendance from any device. Employees see their hours, streaks, and rewards — all in a beautifully simple interface.",
+    bullets: ["One-tap GPS clock-in", "Offline-first — syncs automatically", "Personal stats & history"],
+    Mockup: DashboardMockup,
+    url: "app.usekpr.com/dashboard",
   },
   {
-    name: "Pro",
-    price: "$4",
-    period: "/user/mo",
-    description: "For growing teams that need more",
-    features: [
-      "Unlimited employees",
-      "Geofencing & photo verification",
-      "Compliance engine",
-      "Payroll integrations",
-      "AI scheduling & messaging",
-      "Advanced analytics",
-      "Timesheet approvals",
-      "Priority support",
-    ],
-    cta: "Start Free Trial",
-    highlighted: true,
+    icon: LayoutDashboard,
+    label: "Admin Dashboard",
+    title: "See your entire team, live.",
+    description:
+      "Real-time visibility into who's on-site, who's late, and who's approaching overtime. Make decisions with live data, not stale spreadsheets.",
+    bullets: ["Live activity feed", "Compliance monitoring", "One-click payroll export"],
+    Mockup: AdminMockup,
+    url: "app.usekpr.com/admin",
   },
   {
-    name: "Enterprise",
-    price: "Custom",
-    period: "",
-    description: "For organizations with complex needs",
-    features: [
-      "Everything in Pro",
-      "Multi-jurisdiction policies",
-      "SSO & SCIM provisioning",
-      "Dedicated account manager",
-      "Custom integrations",
-      "SLA guarantee",
-    ],
-    cta: "Book a Demo",
-    highlighted: false,
+    icon: Gift,
+    label: "Rewards & Gamification",
+    title: "Make attendance engaging.",
+    description:
+      "XP, badges, streaks, and challenges turn punctuality into a game. Teams using KPR rewards see 23% higher attendance rates on average.",
+    bullets: ["XP & leveling system", "Streak tracking with milestones", "Team challenges & leaderboards"],
+    Mockup: RewardsMockup,
+    url: "app.usekpr.com/rewards",
   },
 ]
 
-const faqs = [
-  {
-    q: "How does GPS verification work?",
-    a: "When an employee clocks in, KPR checks their GPS coordinates against configured geofence zones. You set the radius per location (default 200m). Works even with limited signal — entries queue offline and sync when reconnected.",
-  },
-  {
-    q: "What payroll systems do you integrate with?",
-    a: "We export to Gusto, ADP, Paychex, QuickBooks, and generic CSV. You configure pay code mapping, rounding rules, and overtime thresholds per your organization's policies.",
-  },
-  {
-    q: "Is there a contract or commitment?",
-    a: "No contracts. The Free plan is free forever. Pro is month-to-month — cancel anytime. Enterprise agreements are typically annual with custom terms.",
-  },
-  {
-    q: "How does the compliance engine work?",
-    a: "You configure jurisdiction-specific rules (e.g., CA meal breaks after 5 hours, OR predictive scheduling). KPR automatically monitors and flags violations in real-time, and can block non-compliant clock-outs.",
-  },
-  {
-    q: "Can employees use it on shared tablets?",
-    a: "Yes — Kiosk Mode lets you set up a shared tablet at your location. Employees identify themselves by email to clock in/out. No individual app install needed.",
-  },
+const logoCloudNames = [
+  "Acme Corp",
+  "Globex",
+  "Initech",
+  "Umbrella",
+  "Stark Industries",
+  "Wayne Enterprises",
+  "Hooli",
+  "Pied Piper",
+  "Prestige Worldwide",
+  "Sterling Cooper",
+]
+
+const metrics = [
+  { value: "50K+", label: "Clock Events Daily" },
+  { value: "99.9%", label: "Uptime SLA" },
+  { value: "<200ms", label: "API Response" },
+  { value: "2,000+", label: "Teams Worldwide" },
 ]
 
 // ============================================
-// COMPONENTS
+// UTILITIES
 // ============================================
 
-function FAQItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false)
+function Reveal({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: React.ReactNode
+  className?: string
+  delay?: number
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: true, margin: "-60px" })
+
   return (
-    <div className="border-b border-border/50">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-5 text-left"
-      >
-        <span className="font-medium pr-4">{q}</span>
-        <ChevronDown
-          className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
-        />
-      </button>
-      <div
-        className={cn(
-          "overflow-hidden transition-all duration-200",
-          open ? "max-h-60 pb-5" : "max-h-0"
-        )}
-      >
-        <p className="text-muted-foreground leading-relaxed">{a}</p>
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+function ShowcaseBlock({ block, index }: { block: (typeof showcaseBlocks)[number]; index: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: true, margin: "-80px" })
+  const reversed = index % 2 === 1
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 28 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className={cn(
+        "flex flex-col items-center gap-12 lg:gap-16",
+        reversed ? "lg:flex-row-reverse" : "lg:flex-row"
+      )}
+    >
+      <div className="flex-1 text-center lg:text-left lg:max-w-md">
+        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-xs font-medium text-muted-foreground mb-4">
+          <block.icon className="h-3.5 w-3.5" />
+          {block.label}
+        </span>
+        <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4">
+          {block.title}
+        </h3>
+        <p className="text-muted-foreground leading-relaxed mb-6 max-w-lg mx-auto lg:mx-0">
+          {block.description}
+        </p>
+        <ul className="space-y-3">
+          {block.bullets.map((bullet) => (
+            <li key={bullet} className="flex items-center gap-3 justify-center lg:justify-start">
+              <Check className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-sm">{bullet}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-    </div>
+
+      <div className="flex-1 w-full max-w-xl">
+        <BrowserFrame url={block.url}>
+          <block.Mockup />
+        </BrowserFrame>
+      </div>
+    </motion.div>
   )
 }
 
 // ============================================
-// MAIN COMPONENT
+// MAIN
 // ============================================
 
 export default function LandingPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
-  const [scrolled, setScrolled] = useState(false)
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 100)
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
 
   useEffect(() => {
     if (!loading && user) {
-      router.push("/dashboard")
+      router.push("/select-org")
     }
   }, [user, loading, router])
 
@@ -224,399 +268,358 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+
       {/* ==========================================
-          1. NAVIGATION
+          HERO
           ========================================== */}
-      <nav
-        className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-colors duration-300",
-          scrolled ? "bg-background/95 backdrop-blur-sm border-b" : "bg-transparent"
-        )}
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Logo size="sm" />
+      <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-28 overflow-hidden">
+        {/* Grid background */}
+        <div className="absolute inset-0 bg-grid-lines mask-radial-faded opacity-50 dark:opacity-20" />
 
-            <div className="hidden md:flex items-center gap-6">
-              {[
-                { label: "Features", href: "#features" },
-                { label: "Pricing", href: "#pricing" },
-                { label: "FAQ", href: "#faq" },
-              ].map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggle />
-              <Link href="/login" className="hidden sm:block">
-                <Button variant="ghost" size="sm">Sign In</Button>
-              </Link>
-              <Link href="/signup">
-                <Button size="sm" className="gap-1.5">
-                  Start Free
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </div>
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 text-center relative z-10">
+          {/* Announcement */}
+          <div
+            className="animate-slide-up-fade"
+            style={{ animationDelay: "0ms" }}
+          >
+            <Link
+              href="/roadmap"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-card text-sm text-muted-foreground hover:text-foreground hover:border-border transition-colors mb-8"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span>AI Scheduling is here</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
-        </div>
-      </nav>
 
-      {/* ==========================================
-          2. HERO
-          ========================================== */}
-      <section className="pt-32 pb-20 sm:pt-40 sm:pb-28">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-              Know who&apos;s on-site,{" "}
-              <span className="text-primary">in real time.</span>
-            </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto mb-8">
-              Replace badge swipes with GPS verification. Track attendance, ensure compliance,
-              and run payroll — all from one platform.
-            </p>
+          {/* Headline */}
+          <h1
+            className="animate-slide-up-fade text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.1] tracking-tight mb-6"
+            style={{ animationDelay: "100ms" }}
+          >
+            Know who&apos;s on-site,{" "}
+            <span className="text-gradient">in real time.</span>
+          </h1>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <Link href="/signup">
-                <Button size="lg" className="gap-2 font-semibold">
-                  Start Free Trial
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Button size="lg" variant="outline" className="gap-2">
-                Book a Demo
-                <ArrowUpRight className="h-4 w-4" />
+          {/* Subtitle */}
+          <p
+            className="animate-slide-up-fade text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto mb-10"
+            style={{ animationDelay: "200ms" }}
+          >
+            GPS-verified attendance, automated compliance, and payroll integration.
+            One platform for modern workforce management.
+          </p>
+
+          {/* CTAs */}
+          <div
+            className="animate-slide-up-fade flex flex-col sm:flex-row items-center justify-center gap-4 mb-10"
+            style={{ animationDelay: "300ms" }}
+          >
+            <Link href="/signup">
+              <Button size="lg" className="gap-2 h-12 px-8 text-base">
+                Start for free
+                <ArrowRight className="h-4 w-4" />
               </Button>
-            </div>
+            </Link>
+            <Button size="lg" variant="outline" className="gap-2 h-12 px-8 text-base">
+              Get a demo
+              <ArrowUpRight className="h-4 w-4" />
+            </Button>
+          </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-muted-foreground">
-              {["No credit card required", "Setup in 5 minutes", "Free for small teams"].map((text) => (
+          {/* Trust markers */}
+          <div
+            className="animate-slide-up-fade flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
+            style={{ animationDelay: "400ms" }}
+          >
+            {["No credit card required", "Free for up to 5 people", "Setup in 5 minutes"].map(
+              (text) => (
                 <div key={text} className="flex items-center gap-2">
                   <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                   <span>{text}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Trust bar */}
-          <div className="mt-16 pt-10 border-t border-border/50">
-            <p className="text-center text-sm text-muted-foreground mb-6">
-              Trusted by 2,000+ teams worldwide
-            </p>
-            <div className="flex items-center justify-center gap-8 sm:gap-12 flex-wrap">
-              {["Acme Corp", "Globex", "Initech", "Umbrella", "Stark Ind.", "Wayne Ent."].map((name) => (
-                <span
-                  key={name}
-                  className="text-muted-foreground/30 font-bold text-sm tracking-wider uppercase"
-                >
-                  {name}
-                </span>
-              ))}
-            </div>
+              )
+            )}
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          3. FEATURES GRID
+          LOGO CLOUD
           ========================================== */}
-      <section id="features" className="py-20 sm:py-28 bg-muted/30 scroll-mt-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-background text-sm font-medium mb-6">
-              <Zap className="h-4 w-4 text-primary" />
-              Core Platform
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Everything you need, nothing you don&apos;t.
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A complete time and attendance platform that scales from 5 employees to 5,000.
-            </p>
+      <section className="py-12 border-y border-border overflow-hidden">
+        <p className="text-center text-sm text-muted-foreground mb-8">
+          Trusted by 2,000+ teams worldwide
+        </p>
+        <div className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background to-transparent z-10" />
+          <div className="flex animate-marquee w-max">
+            {[...logoCloudNames, ...logoCloudNames].map((name, i) => (
+              <span
+                key={`${name}-${i}`}
+                className="text-muted-foreground/25 font-bold text-sm tracking-wider uppercase mx-8 sm:mx-12 whitespace-nowrap select-none"
+              >
+                {name}
+              </span>
+            ))}
           </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          PRODUCT PILLARS
+          ========================================== */}
+      <section className="py-24 sm:py-32">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <Reveal>
+            <div className="text-center mb-16">
+              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
+                The modern time &amp; attendance platform.
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Everything you need to track attendance, stay compliant, and run payroll —
+                nothing you don&apos;t.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid md:grid-cols-3 gap-px bg-border rounded-xl overflow-hidden border border-border">
+            {pillars.map((pillar, i) => (
+              <Reveal key={pillar.title} delay={i * 0.08}>
+                <div className="bg-card p-8 sm:p-10 h-full group hover:bg-muted/30 transition-colors">
+                  <pillar.icon className="h-6 w-6 text-foreground mb-5" />
+                  <h3 className="text-lg font-semibold mb-3 tracking-tight">{pillar.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+                    {pillar.description}
+                  </p>
+                  <Link
+                    href={pillar.href}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground group-hover:underline underline-offset-4"
+                  >
+                    Learn more
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          FEATURES GRID
+          ========================================== */}
+      <section id="features" className="py-24 sm:py-32 border-t border-border scroll-mt-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <Reveal>
+            <div className="text-center mb-16">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-xs font-medium text-muted-foreground mb-6">
+                <Zap className="h-3.5 w-3.5" />
+                Core Platform
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
+                Built for scale.
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                From 5 employees to 5,000 — a complete platform that grows with you.
+              </p>
+            </div>
+          </Reveal>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="rounded-xl border border-border/50 bg-card p-6 hover:shadow-md transition-shadow"
-              >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <feature.icon className="h-5 w-5 text-primary" />
+            {features.map((feature, i) => (
+              <Reveal key={feature.title} delay={i * 0.05}>
+                <div className="rounded-xl border border-border bg-card p-6 h-full hover:bg-muted/20 transition-colors">
+                  <feature.icon className="h-5 w-5 text-foreground mb-4" />
+                  <h3 className="font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="font-semibold mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
 
-          {/* Trust points */}
-          <div className="mt-16 rounded-xl border border-border/50 bg-card p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <Lock className="h-5 w-5 text-emerald-500" />
+          {/* Privacy card */}
+          <Reveal delay={0.15}>
+            <div className="mt-8 rounded-xl border border-border bg-card p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <Lock className="h-5 w-5 text-foreground" />
+                <div>
+                  <h3 className="font-semibold">Anti-Surveillance by Design</h3>
+                  <p className="text-sm text-muted-foreground">
+                    We track outcomes, not keystrokes.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold">Anti-Surveillance by Design</h3>
-                <p className="text-sm text-muted-foreground">We track outcomes, not keystrokes.</p>
+              <div className="grid sm:grid-cols-3 gap-6">
+                {[
+                  {
+                    icon: Eye,
+                    title: "Full Transparency",
+                    desc: "Employees see every data point collected about them.",
+                  },
+                  {
+                    icon: Shield,
+                    title: "No Keylogging",
+                    desc: "Never built. Never will be. Not a feature we turned off.",
+                  },
+                  {
+                    icon: Brain,
+                    title: "Outcome-Based",
+                    desc: "Were they on-site? Did they meet hours? That's what matters.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-3">
+                    <item.icon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm">{item.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="grid sm:grid-cols-3 gap-4">
-              {[
-                { icon: Eye, title: "Full Transparency", desc: "Employees see every data point collected about them." },
-                { icon: Shield, title: "No Keylogging", desc: "Never built. Never will be. Not a feature we turned off." },
-                { icon: Brain, title: "Outcome-Based", desc: "Were they on-site? Did they meet hours? That's what matters." },
-              ].map((item) => (
-                <div key={item.title} className="flex gap-3">
-                  <item.icon className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-sm">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                  </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ==========================================
+          PRODUCT SHOWCASE
+          ========================================== */}
+      <section className="py-24 sm:py-32 border-t border-border">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 space-y-28 sm:space-y-36">
+          <Reveal>
+            <div className="text-center">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-xs font-medium text-muted-foreground mb-6">
+                <Smartphone className="h-3.5 w-3.5" />
+                Product Tour
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
+                See KPR in action.
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                From the factory floor to the front office.
+              </p>
+            </div>
+          </Reveal>
+
+          {showcaseBlocks.map((block, i) => (
+            <ShowcaseBlock key={block.label} block={block} index={i} />
+          ))}
+        </div>
+      </section>
+
+      {/* ==========================================
+          METRICS
+          ========================================== */}
+      <section className="py-20 sm:py-24 border-y border-border">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <Reveal>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12">
+              {metrics.map((m) => (
+                <div key={m.label} className="text-center">
+                  <p className="text-3xl sm:text-4xl font-semibold tabular-nums">{m.value}</p>
+                  <p className="text-sm text-muted-foreground mt-2">{m.label}</p>
                 </div>
               ))}
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ==========================================
-          4. SOCIAL PROOF
+          TESTIMONIALS
           ========================================== */}
-      <section className="py-20 sm:py-28">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Trusted by teams everywhere.
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              See what operations leaders are saying about KPR.
-            </p>
-          </div>
+      <section className="py-24 sm:py-32">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <Reveal>
+            <div className="text-center mb-16">
+              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
+                Trusted by teams everywhere.
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                See what operations leaders are saying about KPR.
+              </p>
+            </div>
+          </Reveal>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            {testimonials.map((t) => (
-              <div
-                key={t.author}
-                className="rounded-xl border border-border/50 bg-card p-6"
-              >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-muted-foreground mb-6 leading-relaxed">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
-                    {t.avatar}
+          <div className="grid md:grid-cols-3 gap-6">
+            {testimonials.map((t, i) => (
+              <Reveal key={t.author} delay={i * 0.08}>
+                <div className="rounded-xl border border-border bg-card p-6 h-full">
+                  <div className="flex gap-0.5 mb-4">
+                    {[...Array(5)].map((_, j) => (
+                      <Star
+                        key={j}
+                        className="h-4 w-4 fill-amber-400 text-amber-400"
+                      />
+                    ))}
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm">{t.author}</p>
-                    <p className="text-xs text-muted-foreground">{t.role}, {t.company}</p>
+                  <p className="text-muted-foreground leading-relaxed mb-6">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                      {t.avatar}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{t.author}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t.role}, {t.company}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-8 border-t border-border/50">
-            {[
-              { value: "50K+", label: "Clock Events Daily" },
-              { value: "99.9%", label: "Uptime SLA" },
-              { value: "<200ms", label: "API Response" },
-              { value: "SOC 2", label: "Certified" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className="text-3xl font-bold">{stat.value}</p>
-                <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          5. PRICING
+          CTA
           ========================================== */}
-      <section id="pricing" className="py-20 sm:py-28 bg-muted/30 scroll-mt-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-background text-sm font-medium mb-6">
-              <Trophy className="h-4 w-4 text-primary" />
-              Simple Pricing
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Start free, scale as you grow.
+      <section className="py-24 sm:py-32 border-t border-border">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 text-center">
+          <Reveal>
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
+              Ready to modernize attendance?
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              No hidden fees. No per-location charges. Just straightforward pricing.
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10">
+              Join 2,000+ teams who switched from spreadsheets and badge swipes to KPR.
+              Start free, no credit card required.
             </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {pricingTiers.map((tier) => (
-              <div
-                key={tier.name}
-                className={cn(
-                  "rounded-xl p-6 sm:p-8 relative",
-                  tier.highlighted
-                    ? "border-2 border-primary/30 bg-card shadow-lg"
-                    : "border border-border/50 bg-card"
-                )}
-              >
-                {tier.highlighted && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                    Most Popular
-                  </span>
-                )}
-
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">{tier.name}</h3>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold">{tier.price}</span>
-                    {tier.period && <span className="text-muted-foreground">{tier.period}</span>}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">{tier.description}</p>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                  {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <Check className={cn("h-4 w-4 shrink-0 mt-0.5", tier.highlighted ? "text-primary" : "text-muted-foreground")} />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link href="/signup" className="block">
-                  <Button variant={tier.highlighted ? "default" : "outline"} className="w-full">
-                    {tier.cta}
-                    <ArrowRight className="h-4 w-4 ml-1.5" />
-                  </Button>
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          6. FAQ
-          ========================================== */}
-      <section id="faq" className="py-20 sm:py-28 scroll-mt-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Frequently asked questions
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Everything you need to know about KPR.
-            </p>
-          </div>
-
-          <div>
-            {faqs.map((faq) => (
-              <FAQItem key={faq.q} q={faq.q} a={faq.a} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          7. CTA + FOOTER
-          ========================================== */}
-      <section className="py-20 sm:py-28 bg-muted/30">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-xl bg-primary px-8 py-16 sm:px-16 sm:py-20 text-center text-white">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4 text-white">
-              Ready to know who&apos;s on-site?
-            </h2>
-            <p className="text-lg text-white/70 max-w-xl mx-auto mb-10">
-              Stop guessing. Start tracking. Your team could be clocking in within minutes.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
               <Link href="/signup">
-                <Button size="lg" className="bg-white text-gray-900 hover:bg-white/90 gap-2 font-semibold">
-                  Start Free Trial
+                <Button size="lg" className="gap-2 h-12 px-8 text-base">
+                  Start for free
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Button size="lg" variant="ghost" className="text-white/90 hover:text-white hover:bg-white/10">
-                Book a Demo
-                <ArrowUpRight className="h-4 w-4 ml-1" />
+              <Button size="lg" variant="outline" className="gap-2 h-12 px-8 text-base">
+                Get a demo
+                <ArrowUpRight className="h-4 w-4" />
               </Button>
             </div>
-          </div>
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
+              {["G2 Leader 2025", "4.9/5 Stars", "AES-256 Encrypted", "GDPR Compliant"].map(
+                (badge) => (
+                  <div key={badge} className="flex items-center gap-1.5">
+                    <Shield className="h-3.5 w-3.5" />
+                    <span>{badge}</span>
+                  </div>
+                )
+              )}
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-            <div>
-              <h4 className="font-semibold text-sm mb-4">Product</h4>
-              <ul className="space-y-2.5">
-                {["Time Tracking", "Compliance", "Payroll", "Analytics", "Scheduling"].map((item) => (
-                  <li key={item}>
-                    <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm mb-4">Company</h4>
-              <ul className="space-y-2.5">
-                {["About", "Blog", "Careers", "Contact"].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm mb-4">Resources</h4>
-              <ul className="space-y-2.5">
-                {["Documentation", "API Reference", "Help Center", "Status"].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm mb-4">Legal</h4>
-              <ul className="space-y-2.5">
-                {["Privacy Policy", "Terms of Service", "Security", "GDPR"].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-border/50">
-            <Logo size="sm" />
-            <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} KPR. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

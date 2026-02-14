@@ -33,7 +33,7 @@ import {
   ChevronRight,
   Sparkles,
 } from "lucide-react"
-import Link from "next/link"
+import { OrgLink as Link } from "@/components/org-link"
 
 // Notification type icons
 const NOTIFICATION_ICONS: Record<string, typeof Bell> = {

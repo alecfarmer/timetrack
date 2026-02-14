@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Flame, Trophy, Target, Zap, Award, Star, ChevronRight, Shield } from "lucide-react"
 import { cn, tzHeaders } from "@/lib/utils"
-import Link from "next/link"
+import { OrgLink as Link } from "@/components/org-link"
 
 interface BadgeData {
   id: string

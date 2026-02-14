@@ -1,0 +1,52 @@
+# KPR — Modern Time & Attendance Platform
+
+> KPR is a cloud-based workforce management platform for GPS-verified time tracking, automated labor law compliance, payroll integration, and employee engagement.
+
+## Product Overview
+
+KPR replaces legacy time and attendance systems (badge swipes, biometric scanners, manual timesheets) with a modern, mobile-first platform. Employees clock in with one tap using GPS verification. Admins get real-time visibility, compliance monitoring, and one-click payroll export.
+
+## Core Features
+
+- **GPS Clock-In/Out**: One-tap attendance verified by GPS coordinates against configured geofence zones. Works offline and syncs automatically.
+- **Compliance Engine**: Multi-jurisdiction labor law compliance including California meal/rest breaks, Oregon predictive scheduling, and federal overtime rules. Automatically enforced by location.
+- **Payroll Integration**: Export time entries to Gusto, ADP, Paychex, QuickBooks, or CSV. Configurable pay code mapping, rounding rules, and overtime thresholds.
+- **Team Analytics**: Real-time dashboards for punctuality trends, attendance patterns, overtime analysis, and burnout monitoring.
+- **AI Scheduling**: Auto-generate fair schedules based on employee availability, skills, and labor rules.
+- **Gamification**: XP, badges, streaks, and challenges that turn punctuality into engagement. Teams see 23% average attendance improvement.
+- **Timesheet Approval**: Weekly submission and approval workflow with audit trail.
+- **Entry Corrections**: Employee-initiated corrections with smart auto-approval and full audit log.
+
+## Plans
+
+- **Free**: Up to 5 employees, 1 location, GPS clock-in, basic reporting, 7-day history.
+- **Pro** ($4-5/user/month): Unlimited employees and locations, geofencing, photo verification, compliance engine, payroll integrations, AI scheduling, gamification, advanced analytics.
+- **Enterprise** (custom pricing): Everything in Pro plus multi-jurisdiction policies, SSO/SCIM, dedicated account manager, custom integrations, API access, SLA guarantee.
+
+## Security & Compliance
+
+- GDPR compliant
+- AES-256 encryption at rest, TLS 1.3 in transit
+- SSO (SAML 2.0) and SCIM provisioning (Enterprise)
+
+## Company
+
+KPR Technologies, Inc. is based in San Francisco, CA. The team includes alumni from Google, Stripe, Square, Gusto, Rippling, and ADP.
+
+## Links
+
+- Website: https://usekpr.com
+- Pricing: https://usekpr.com/pricing
+- About: https://usekpr.com/about
+- FAQ: https://usekpr.com/faq
+- Changelog: https://usekpr.com/roadmap
+- Privacy Policy: https://usekpr.com/legal/privacy
+- Terms of Service: https://usekpr.com/legal/terms
+- Sign Up: https://usekpr.com/signup
+- Log In: https://usekpr.com/login
+
+## Contact
+
+- General: hello@kpr.app
+- Privacy: privacy@kpr.app
+- Legal: legal@kpr.app

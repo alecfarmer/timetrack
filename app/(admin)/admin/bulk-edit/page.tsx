@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { NotificationCenter } from "@/components/notification-center"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
-import { useRouter } from "next/navigation"
+import { useOrgRouter } from "@/components/org-link"
 import { tzHeaders } from "@/lib/utils"
 import { format, subDays } from "date-fns"
 import {
@@ -40,7 +40,7 @@ interface Correction {
 
 export default function BulkEditPage() {
   const { isAdmin, loading: authLoading } = useAuth()
-  const router = useRouter()
+  const router = useOrgRouter()
 
   const [corrections, setCorrections] = useState<Correction[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())

@@ -1,7 +1,6 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { OrgLink as Link, useAppPathname } from "@/components/org-link"
 import { motion } from "framer-motion"
 import {
   LayoutDashboard,
@@ -102,7 +101,7 @@ const navSections: NavSection[] = [
 ]
 
 export function AdminSidebar() {
-  const pathname = usePathname()
+  const pathname = useAppPathname()
   const { org, signOut } = useAuth()
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
 

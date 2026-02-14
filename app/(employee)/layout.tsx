@@ -1,6 +1,6 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { useAppPathname } from "@/components/org-link"
 import { EmployeeNav } from "@/components/employee-nav"
 import { RealtimeProvider } from "@/contexts/realtime-context"
 import { useAuth } from "@/contexts/auth-context"
@@ -10,7 +10,7 @@ export default function EmployeeLayout({
 }: {
   children: React.ReactNode
 }) {
-  const pathname = usePathname()
+  const pathname = useAppPathname()
   const { user, loading } = useAuth()
 
   if (loading) {

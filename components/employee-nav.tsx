@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { OrgLink as Link } from "@/components/org-link"
 import { useState, useEffect, useRef } from "react"
 import {
   Home,

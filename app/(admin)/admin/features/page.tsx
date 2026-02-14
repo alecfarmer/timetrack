@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { NotificationCenter } from "@/components/notification-center"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
-import { useRouter } from "next/navigation"
+import { useOrgRouter } from "@/components/org-link"
 import {
   Camera,
   Coffee,
@@ -84,7 +84,7 @@ const FEATURE_META: Record<keyof Features, { icon: typeof Camera; label: string;
 
 export default function FeaturesPage() {
   const { org, isAdmin, loading: authLoading } = useAuth()
-  const router = useRouter()
+  const router = useOrgRouter()
   const [features, setFeatures] = useState<Features | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)

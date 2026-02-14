@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
+import { useOrgRouter } from "@/components/org-link"
 import { motion } from "framer-motion"
 import { formatDateTime, formatDateInZone } from "@/lib/dates"
 import {
@@ -106,7 +107,7 @@ interface UserInfo {
 
 export default function EmployeeEntriesPage() {
   const params = useParams()
-  const router = useRouter()
+  const router = useOrgRouter()
   const userId = params.userId as string
 
   const [entries, setEntries] = useState<Entry[]>([])

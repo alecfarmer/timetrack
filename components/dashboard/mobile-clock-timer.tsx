@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useTimer } from "@/hooks/use-timer"
-import { Coffee, Check, Loader2, Play, Square, AlertTriangle } from "lucide-react"
+import { Coffee, Check, Loader2, AlertTriangle } from "lucide-react"
+
+const HOLD_DURATION = 3000 // 3 seconds
 
 type ActionState = "idle" | "loading" | "success" | "error"
 
@@ -31,6 +33,10 @@ export function MobileClockTimer({
 }: MobileClockTimerProps) {
   const { formatted, seconds: totalSeconds } = useTimer(startTime)
   const [actionState, setActionState] = useState<ActionState>("idle")
+  const [holdProgress, setHoldProgress] = useState(0)
+  const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const holdStartRef = useRef<number>(0)
+  const holdTriggeredRef = useRef(false)
 
   const targetSeconds = targetHours * 60 * 60
   const progress = useMemo(() => {
@@ -65,15 +71,60 @@ export function MobileClockTimer({
     }
   }, [actionState, isClockedIn, onClockOut])
 
+  const clearHold = useCallback(() => {
+    if (holdTimerRef.current) {
+      clearInterval(holdTimerRef.current)
+      holdTimerRef.current = null
+    }
+    holdStartRef.current = 0
+    holdTriggeredRef.current = false
+    setHoldProgress(0)
+  }, [])
+
+  const startHold = useCallback(() => {
+    if (actionState !== "idle" || disabled) return
+    const action = isClockedIn ? handleClockOut : handleClockIn
+    holdStartRef.current = Date.now()
+    holdTriggeredRef.current = false
+    setHoldProgress(0)
+
+    if (navigator.vibrate) navigator.vibrate(10)
+
+    holdTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - holdStartRef.current
+      const pct = Math.min(100, (elapsed / HOLD_DURATION) * 100)
+      setHoldProgress(pct)
+
+      if (pct >= 100 && !holdTriggeredRef.current) {
+        holdTriggeredRef.current = true
+        if (navigator.vibrate) navigator.vibrate([30, 30, 60])
+        clearHold()
+        action()
+      }
+    }, 16)
+  }, [actionState, disabled, isClockedIn, handleClockIn, handleClockOut, clearHold])
+
+  useEffect(() => {
+    return () => {
+      if (holdTimerRef.current) clearInterval(holdTimerRef.current)
+    }
+  }, [])
+
   // Ring sizing
   const ringSize = 120
   const strokeWidth = 8
+  const holdStrokeWidth = 6
   const radius = (ringSize - strokeWidth) / 2
+  const holdRadius = radius - (strokeWidth / 2 + holdStrokeWidth / 2 + 2)
   const circumference = 2 * Math.PI * radius
+  const holdCircumference = 2 * Math.PI * holdRadius
   const viewBox = ringSize
   const center = viewBox / 2
 
   const workStrokeDashoffset = circumference - (progress / 100) * circumference
+  const holdStrokeDashoffset = holdCircumference - (holdProgress / 100) * holdCircumference
+
+  const isHolding = holdProgress > 0
 
   const getProgressColor = () => {
     if (isOnBreak) return "stroke-amber-500"
@@ -83,16 +134,29 @@ export function MobileClockTimer({
   }
 
   const getTextColor = () => {
+    if (isHolding) return isClockedIn ? "text-rose-500" : "text-primary"
     if (!startTime) return "text-muted-foreground/40"
     if (isOnBreak) return "text-amber-500"
     if (progress >= 100) return "text-emerald-500"
     return "text-foreground"
   }
 
+  const canInteract = actionState === "idle" && !disabled
+
   return (
     <div className={cn("flex flex-col items-center", className)}>
-      {/* Timer Ring */}
-      <div className="relative w-64 h-64 sm:w-72 sm:h-72">
+      {/* Timer Ring — hold to clock in/out */}
+      <div
+        className={cn(
+          "relative w-64 h-64 sm:w-72 sm:h-72 select-none touch-none",
+          canInteract && "cursor-pointer"
+        )}
+        onPointerDown={canInteract ? startHold : undefined}
+        onPointerUp={clearHold}
+        onPointerLeave={clearHold}
+        onPointerCancel={clearHold}
+        onContextMenu={(e) => e.preventDefault()}
+      >
         <svg
           className="absolute inset-0 w-full h-full -rotate-90"
           viewBox={`0 0 ${viewBox} ${viewBox}`}
@@ -120,6 +184,21 @@ export function MobileClockTimer({
             animate={{ strokeDashoffset: workStrokeDashoffset }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           />
+          {/* Hold progress ring (inner) */}
+          {isHolding && (
+            <circle
+              cx={center}
+              cy={center}
+              r={holdRadius}
+              fill="none"
+              className={isClockedIn ? "stroke-rose-500" : "stroke-primary"}
+              strokeWidth={holdStrokeWidth}
+              strokeLinecap="round"
+              strokeDasharray={holdCircumference}
+              strokeDashoffset={holdStrokeDashoffset}
+              opacity={0.8}
+            />
+          )}
         </svg>
 
         {/* Center content */}
@@ -170,7 +249,7 @@ export function MobileClockTimer({
                 exit={{ opacity: 0 }}
                 className="flex flex-col items-center"
               >
-                {/* Time display — large */}
+                {/* Time display */}
                 <span
                   className={cn(
                     "font-bold tabular-nums tracking-tight text-5xl sm:text-6xl transition-colors duration-300",
@@ -181,9 +260,13 @@ export function MobileClockTimer({
                 </span>
 
                 {/* Status text */}
-                <p className={cn("text-sm text-muted-foreground mt-1 flex items-center gap-1.5")}>
-                  {!startTime ? (
-                    "Ready to start"
+                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
+                  {isHolding ? (
+                    <span className={isClockedIn ? "text-rose-500" : "text-primary"}>
+                      {isClockedIn ? "Release to cancel..." : "Hold..."}
+                    </span>
+                  ) : !startTime ? (
+                    "Hold to clock in"
                   ) : isOnBreak ? (
                     <>
                       <Coffee className="h-3.5 w-3.5 text-amber-500" />
@@ -201,33 +284,27 @@ export function MobileClockTimer({
             )}
           </AnimatePresence>
         </div>
+
+        {/* Pulse effect while holding */}
+        {isHolding && (
+          <motion.div
+            className={cn(
+              "absolute inset-2 rounded-full border-2",
+              isClockedIn ? "border-rose-500/30" : "border-primary/30"
+            )}
+            animate={{ scale: [1, 1.04, 1] }}
+            transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+          />
+        )}
       </div>
 
-      {/* Clock In / Clock Out button below the ring */}
-      {actionState === "idle" && !disabled && (
-        <div className="mt-4 w-full max-w-[240px]">
-          {!isClockedIn ? (
-            <button
-              onClick={handleClockIn}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
-            >
-              <Play className="h-4 w-4" />
-              Clock In
-            </button>
-          ) : (
-            <button
-              onClick={handleClockOut}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-semibold text-sm hover:bg-rose-500/20 transition-colors"
-            >
-              <Square className="h-3.5 w-3.5" />
-              Clock Out
-            </button>
-          )}
-        </div>
+      {/* Hold hint for clocked-in state */}
+      {isClockedIn && actionState === "idle" && !isHolding && (
+        <p className="mt-2 text-xs text-muted-foreground">Hold to clock out</p>
       )}
 
       {/* Target progress */}
-      {startTime && (
+      {startTime && !isHolding && (
         <div className="mt-2 text-center">
           <p className="text-xs text-muted-foreground">
             {progress >= 100 ? (

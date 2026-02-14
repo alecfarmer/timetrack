@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { OrgLink as Link } from "@/components/org-link"
 import { Home, Clock, BarChart3, Settings, Phone, Palmtree, DollarSign, Users, Trophy } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"

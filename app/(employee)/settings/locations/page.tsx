@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, MapPin, Navigation, Check, RefreshCw } from "lucide-react"
-import Link from "next/link"
+import { OrgLink as Link } from "@/components/org-link"
 import { formatDistance, calculateDistance } from "@/lib/geo"
 import { useGeolocation } from "@/hooks/use-geolocation"
 

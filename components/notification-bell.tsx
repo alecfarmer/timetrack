@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { OrgLink as Link } from "@/components/org-link"
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)

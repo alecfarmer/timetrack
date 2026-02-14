@@ -8,37 +8,30 @@ interface LogoProps {
 
 export function Logo({ size = "md", showText = true, className }: LogoProps) {
   const sizeMap = {
-    sm: { icon: "w-8 h-8", text: "text-base" },
-    md: { icon: "w-10 h-10", text: "text-lg" },
-    lg: { icon: "w-14 h-14", text: "text-2xl" },
+    sm: { icon: "w-7 h-7", text: "text-base" },
+    md: { icon: "w-9 h-9", text: "text-lg" },
+    lg: { icon: "w-12 h-12", text: "text-2xl" },
   }
 
   const s = sizeMap[size]
 
   return (
-    <div className={cn("flex items-center gap-2.5", className)}>
-      <div className={cn(s.icon, "rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg")}>
+    <div className={cn("flex items-center gap-2", className)}>
+      <div className={cn(s.icon, "rounded-lg bg-foreground flex items-center justify-center")}>
         <svg
           viewBox="0 0 32 32"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-[65%] h-[65%]"
+          className="w-[60%] h-[60%]"
         >
-          {/* Bold geometric K with subtle clock-pulse motif */}
-          {/* K vertical stem */}
-          <rect x="6" y="4" width="4.5" height="24" rx="1.5" fill="white" opacity="0.95" />
-          {/* K upper diagonal */}
-          <path d="M12 16L22 5C22.8 4.2 24 4.8 24 5.9V9.5L14 17.5" fill="white" opacity="0.95" />
-          {/* K lower diagonal */}
-          <path d="M12 16L22 27C22.8 27.8 24 27.2 24 26.1V22.5L14 14.5" fill="white" opacity="0.95" />
-          {/* Subtle pulse-line accent on the K intersection */}
-          <circle cx="12" cy="16" r="2" fill="white" opacity="0.6" />
+          {/* K letterform — geometric, bold */}
+          <rect x="7" y="5" width="4" height="22" rx="1" fill="currentColor" className="text-background" />
+          <path d="M13 16L22 6C22.6 5.4 23.5 5.8 23.5 6.6V10L15 17" fill="currentColor" className="text-background" />
+          <path d="M13 16L22 26C22.6 26.6 23.5 26.2 23.5 25.4V22L15 15" fill="currentColor" className="text-background" />
         </svg>
       </div>
       {showText && (
-        <div className="flex flex-col">
-          <span className={cn(s.text, "font-bold leading-none tracking-tight")}>KPR</span>
-        </div>
+        <span className={cn(s.text, "font-bold leading-none tracking-tight")}>KPR</span>
       )}
     </div>
   )
@@ -46,17 +39,16 @@ export function Logo({ size = "md", showText = true, className }: LogoProps) {
 
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <div className={cn("w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg", className)}>
+    <div className={cn("w-9 h-9 rounded-lg bg-foreground flex items-center justify-center", className)}>
       <svg
         viewBox="0 0 32 32"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-[65%] h-[65%]"
+        className="w-[60%] h-[60%]"
       >
-        <rect x="6" y="4" width="4.5" height="24" rx="1.5" fill="white" opacity="0.95" />
-        <path d="M12 16L22 5C22.8 4.2 24 4.8 24 5.9V9.5L14 17.5" fill="white" opacity="0.95" />
-        <path d="M12 16L22 27C22.8 27.8 24 27.2 24 26.1V22.5L14 14.5" fill="white" opacity="0.95" />
-        <circle cx="12" cy="16" r="2" fill="white" opacity="0.6" />
+        <rect x="7" y="5" width="4" height="22" rx="1" fill="currentColor" className="text-background" />
+        <path d="M13 16L22 6C22.6 5.4 23.5 5.8 23.5 6.6V10L15 17" fill="currentColor" className="text-background" />
+        <path d="M13 16L22 26C22.6 26.6 23.5 26.2 23.5 25.4V22L15 15" fill="currentColor" className="text-background" />
       </svg>
     </div>
   )

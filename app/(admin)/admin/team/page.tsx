@@ -33,7 +33,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { NotificationCenter } from "@/components/notification-center"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
-import { useRouter } from "next/navigation"
+import { useOrgRouter } from "@/components/org-link"
 import {
   Clock,
   MapPin,
@@ -96,7 +96,7 @@ interface Invite {
 
 export default function TeamPage() {
   const { org, isAdmin, loading: authLoading } = useAuth()
-  const router = useRouter()
+  const router = useOrgRouter()
 
   const [members, setMembers] = useState<Member[]>([])
   const [policy, setPolicy] = useState<Policy>({ requiredDaysPerWeek: 3, minimumMinutesPerDay: 0 })

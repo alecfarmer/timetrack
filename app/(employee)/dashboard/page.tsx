@@ -32,10 +32,11 @@ import {
   Target,
   RefreshCw,
   TrendingUp,
+  MapPin,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { OrgLink as Link } from "@/components/org-link"
 
 const PhotoCapture = dynamic(() => import("@/components/photo-capture").then(m => ({ default: m.PhotoCapture })), { ssr: false })
 const RewardModal = dynamic(() => import("@/components/gamification/level-up-modal").then(m => ({ default: m.RewardModal })), { ssr: false })
@@ -51,9 +52,10 @@ function getGreeting() {
 export default function Dashboard() {
   const router = useRouter()
   const { user, loading: authLoading, org } = useAuth()
-  const { position, loading: gpsLoading, refresh: refreshGps } = useGeolocation(true)
+  const { position, loading: gpsLoading, error: gpsError, refresh: refreshGps } = useGeolocation(true)
   const [showPhotoCapture, setShowPhotoCapture] = useState(false)
   const [showAllEntries, setShowAllEntries] = useState(false)
+  const [gpsBannerDismissed, setGpsBannerDismissed] = useState(false)
 
   const clock = useClockState(position, !authLoading && !!user)
   const { refresh: refreshRealtime } = useRealtime()
@@ -106,6 +108,12 @@ export default function Dashboard() {
   }, [clock.isClockedIn])
 
   if (clock.needsOnboarding) {
+    // No org — redirect to select-org to create/join one
+    if (!org) {
+      router.push("/select-org")
+      return null
+    }
+    // Has org but needs WFH setup
     return <Onboarding onComplete={clock.handleOnboardingComplete} />
   }
 
@@ -251,6 +259,39 @@ export default function Dashboard() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Location permission prompt */}
+            {!position && !gpsLoading && !gpsBannerDismissed && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Location access required</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      {gpsError === "Location permission denied"
+                        ? "Location was blocked. Enable it in your browser settings to clock in."
+                        : "Enable location access so you can clock in at your work sites."}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button variant="ghost" size="sm" className="text-amber-700 dark:text-amber-300 hover:text-amber-900" onClick={() => setGpsBannerDismissed(true)}>
+                    Dismiss
+                  </Button>
+                  {gpsError !== "Location permission denied" && (
+                    <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white" onClick={refreshGps}>
+                      Enable
+                    </Button>
+                  )}
+                </div>
+              </motion.div>
+            )}
 
             <HeroClockSection
               clock={clock}

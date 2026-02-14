@@ -24,7 +24,7 @@ import {
 import { formatDistanceToNow, isToday as dateFnsIsToday, isYesterday, format } from "date-fns"
 import { formatTime, formatDateInZone } from "@/lib/dates"
 import { cn, tzHeaders } from "@/lib/utils"
-import { useRouter } from "next/navigation"
+import { useOrgRouter } from "@/components/org-link"
 
 interface MemberActivitySheetProps {
   open: boolean
@@ -122,7 +122,7 @@ function groupEntriesByDate(entries: Entry[]): { label: string; date: string; en
 }
 
 export function MemberActivitySheet({ open, onOpenChange, member }: MemberActivitySheetProps) {
-  const router = useRouter()
+  const router = useOrgRouter()
   const [entries, setEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(false)
 

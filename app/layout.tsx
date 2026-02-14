@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SWRProvider } from "@/components/swr-provider"
 import { ToastContainer } from "@/components/notification-center"
 import { TimezonePrompt } from "@/components/timezone-prompt"
+import { Analytics } from "@vercel/analytics/react"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -60,6 +61,7 @@ export default function RootLayout({
               {children}
               <ToastContainer />
               <TimezonePrompt />
+              <Analytics />
             </AuthProvider>
           </SWRProvider>
         </ThemeProvider>

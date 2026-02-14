@@ -75,6 +75,8 @@ const DEFAULT_LOCATIONS = [
 const onboardingSchema = z.object({
   // Option A: Create a new org
   orgName: z.string().min(1).max(100).optional(),
+  // User-chosen slug (optional — auto-generated if not provided)
+  slug: z.string().min(2).max(50).regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/).optional(),
   // Option B: Join existing org via invite code
   inviteCode: z.string().min(1).max(50).optional(),
   // WFH location (optional for both paths)
@@ -153,7 +155,7 @@ export async function POST(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
-    const { orgName, inviteCode, wfhAddress, wfhLatitude, wfhLongitude } = validation.data
+    const { orgName, slug: userSlug, inviteCode, wfhAddress, wfhLatitude, wfhLongitude } = validation.data
 
     if (!orgName && !inviteCode) {
       return NextResponse.json(
@@ -221,12 +223,29 @@ export async function POST(request: NextRequest) {
 
     } else {
       // Create new org
-      const slug = slugify(orgName!)
+      const finalSlug = userSlug || `${slugify(orgName!)}-${Date.now().toString(36)}`
+
+      // If user provided a slug, check uniqueness
+      if (userSlug) {
+        const { data: existing } = await supabase
+          .from("Organization")
+          .select("id")
+          .eq("slug", userSlug)
+          .limit(1)
+          .maybeSingle()
+        if (existing) {
+          return NextResponse.json(
+            { error: "This slug is already taken" },
+            { status: 409 }
+          )
+        }
+      }
+
       const { data: org, error: orgError } = await supabase
         .from("Organization")
         .insert({
           name: orgName!,
-          slug: `${slug}-${Date.now().toString(36)}`,
+          slug: finalSlug,
           createdBy: user!.id,
         })
         .select()
@@ -307,9 +326,17 @@ export async function POST(request: NextRequest) {
         })
     }
 
+    // Fetch the org slug for the response
+    const { data: orgData } = await supabase
+      .from("Organization")
+      .select("slug")
+      .eq("id", orgId)
+      .single()
+
     return NextResponse.json({
       success: true,
       orgId,
+      orgSlug: orgData?.slug || null,
       joined: !!inviteCode,
     }, { status: 201 })
   } catch (error) {

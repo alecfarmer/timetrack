@@ -8,8 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { NotificationCenter } from "@/components/notification-center"
 import { RefreshButton } from "@/components/pull-to-refresh"
 import { useAuth } from "@/contexts/auth-context"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useOrgRouter, OrgLink as Link } from "@/components/org-link"
 import {
   Settings,
   Sliders,
@@ -97,7 +96,7 @@ const SETTINGS_SECTIONS = [
 
 export default function SettingsPage() {
   const { org, isAdmin, loading: authLoading } = useAuth()
-  const router = useRouter()
+  const router = useOrgRouter()
   const [orgInfo, setOrgInfo] = useState<OrgInfo | null>(null)
   const [featureStatus, setFeatureStatus] = useState<FeatureStatus | null>(null)
   const [loading, setLoading] = useState(true)

@@ -23,7 +23,7 @@ import {
   Award,
   Gift,
 } from "lucide-react"
-import Link from "next/link"
+import { OrgLink as Link } from "@/components/org-link"
 
 interface Metrics {
   overview: {

@@ -28,8 +28,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { AdminActivityFeed } from "@/components/admin-activity-feed"
 import { NotificationCenter } from "@/components/notification-center"
 import { useAuth } from "@/contexts/auth-context"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useOrgRouter, OrgLink as Link } from "@/components/org-link"
 import {
   Users,
   UserPlus,
@@ -279,7 +278,7 @@ function MemberRow({
 
 export default function AdminPage() {
   const { org, isAdmin, loading: authLoading } = useAuth()
-  const router = useRouter()
+  const router = useOrgRouter()
 
   const [members, setMembers] = useState<Member[]>([])
   const [invites, setInvites] = useState<Invite[]>([])
