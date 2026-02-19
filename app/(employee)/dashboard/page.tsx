@@ -18,6 +18,7 @@ import { XPWidget } from "@/components/dashboard/xp-widget"
 import { WeeklyOverviewWidget } from "@/components/dashboard/weekly-overview-widget"
 import { TodaysActivityWidget } from "@/components/dashboard/todays-activity-widget"
 import { PulseWidget } from "@/components/dashboard/pulse-widget"
+import { InsightsWidget, CompactInsightsWidget } from "@/components/dashboard/insights-widget"
 import { Button } from "@/components/ui/button"
 import { useGeolocation } from "@/hooks/use-geolocation"
 import { useClockState } from "@/hooks/use-clock-state"
@@ -318,6 +319,7 @@ export default function Dashboard() {
 
             {/* Mobile: Stacked layout */}
             <div className="space-y-4 lg:hidden">
+              <CompactInsightsWidget weekSummary={clock.weekSummary} />
               <PulseWidget />
               <XPWidget />
               <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
@@ -331,6 +333,7 @@ export default function Dashboard() {
             {/* Desktop: Grid layout */}
             <div className="hidden lg:grid lg:grid-cols-5 gap-6">
               <div className="lg:col-span-3 space-y-6">
+                <InsightsWidget weekSummary={clock.weekSummary} />
                 <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
                 <TodaysActivityWidget
                   entries={entries}
