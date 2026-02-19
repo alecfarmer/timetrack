@@ -20,7 +20,15 @@ import { TodaysActivityWidget } from "@/components/dashboard/todays-activity-wid
 import { PulseWidget } from "@/components/dashboard/pulse-widget"
 import { InsightsWidget, CompactInsightsWidget } from "@/components/dashboard/insights-widget"
 import { ProductivityWidget, CompactProductivityWidget } from "@/components/dashboard/productivity-widget"
+import {
+  GoalsWidget,
+  WorkBalanceWidget,
+  WellnessIndicator,
+  StreakWidget,
+  QuickMetricsRow,
+} from "@/components/dashboard/additional-widgets"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { useGeolocation } from "@/hooks/use-geolocation"
 import { useClockState } from "@/hooks/use-clock-state"
 import { useRealtime, useLiveCompliance } from "@/contexts/realtime-context"
@@ -35,6 +43,11 @@ import {
   RefreshCw,
   TrendingUp,
   MapPin,
+  Clock,
+  Zap,
+  Flame,
+  CheckCircle2,
+  BarChart3,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
@@ -110,12 +123,10 @@ export default function Dashboard() {
   }, [clock.isClockedIn])
 
   if (clock.needsOnboarding) {
-    // No org — redirect to select-org to create/join one
     if (!org) {
       router.push("/select-org")
       return null
     }
-    // Has org but needs WFH setup
     return <Onboarding onComplete={clock.handleOnboardingComplete} />
   }
 
@@ -132,19 +143,20 @@ export default function Dashboard() {
     )
   }
 
-  // Compute live today minutes (API value + elapsed since fetch)
+  // Compute live today minutes
   const baseTodayMinutes = clock.currentStatus?.totalMinutesToday || 0
   const minutesSinceFetch = clock.isClockedIn
     ? Math.max(0, Math.floor((liveNow - clock.statusFetchedAt) / 60000))
     : 0
   const liveTodayMinutes = baseTodayMinutes + minutesSinceFetch
 
-  // Compute live weekly hours (WorkDay totals + active session from sessionStart)
+  // Compute live weekly hours
   const sessionStartStr = clock.currentStatus?.currentSessionStart
   const activeSessionMinutes = clock.isClockedIn && sessionStartStr
     ? Math.max(0, Math.floor((liveNow - new Date(sessionStartStr).getTime()) / 60000))
     : 0
   const liveWeeklyHours = Math.floor((weeklyMinutes + activeSessionMinutes) / 60)
+  const liveWeeklyMinutesTotal = weeklyMinutes + activeSessionMinutes
 
   const todayHours = Math.floor(liveTodayMinutes / 60)
   const todayMinutes = liveTodayMinutes % 60
@@ -152,6 +164,43 @@ export default function Dashboard() {
   const entries = clock.currentStatus?.todayEntries || []
   const firstName = org?.firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "there"
   const isOvertime = todayHours >= 8
+  const avgDailyHours = daysWorked > 0 ? Math.round((liveWeeklyMinutesTotal / 60 / daysWorked) * 10) / 10 : 0
+  const overtimeHours = Math.max(0, liveWeeklyHours - 40)
+
+  // Quick metrics for the hero section
+  const quickMetrics = [
+    {
+      label: "Today",
+      value: `${todayHours}h ${todayMinutes}m`,
+      subValue: todayHours >= 8 ? "Goal reached!" : `${8 - todayHours}h to go`,
+      icon: <Clock className="h-4 w-4 text-blue-500" />,
+      trend: todayHours >= 8 ? "up" as const : undefined,
+      color: todayHours >= 8 ? "text-emerald-600 dark:text-emerald-400" : undefined,
+    },
+    {
+      label: "This Week",
+      value: `${liveWeeklyHours}h`,
+      subValue: `${avgDailyHours}h avg/day`,
+      icon: <Calendar className="h-4 w-4 text-violet-500" />,
+      trend: liveWeeklyHours >= 40 ? "up" as const : undefined,
+    },
+    {
+      label: "Compliance",
+      value: `${daysWorked}/${requiredDays}`,
+      subValue: isCompliant ? "On track" : `${requiredDays - daysWorked} more days`,
+      icon: <Target className="h-4 w-4 text-emerald-500" />,
+      trend: isCompliant ? "up" as const : "down" as const,
+      color: isCompliant ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400",
+    },
+    {
+      label: "Streak",
+      value: `${currentStreak}`,
+      subValue: currentStreak > 0 ? `${currentStreak} day streak` : "Start today!",
+      icon: <Flame className="h-4 w-4 text-orange-500" />,
+      trend: currentStreak > 0 ? "up" as const : undefined,
+      color: currentStreak > 0 ? "text-orange-600 dark:text-orange-400" : undefined,
+    },
+  ]
 
   return (
     <ErrorBoundary>
@@ -199,22 +248,28 @@ export default function Dashboard() {
 
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="bg-background pb-24 lg:pb-8">
-          {/* Desktop-only: slim clock bar (greeting/nav in sidebar) */}
-          <header className="hidden lg:block sticky top-0 z-40 border-b bg-card">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between h-10">
-                <div className="flex items-center gap-3">
+          {/* Desktop Header - Full width */}
+          <header className="hidden lg:block sticky top-0 z-40 border-b bg-card/95 backdrop-blur-sm">
+            <div className="max-w-[1600px] mx-auto px-6 xl:px-8">
+              <div className="flex items-center justify-between h-12">
+                <div className="flex items-center gap-4">
                   <p className="text-sm font-medium">{getGreeting()}, {firstName}</p>
                   <span className="text-xs text-muted-foreground">{format(new Date(), "EEEE, MMMM d")}</span>
                   {clock.isOffline && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-xs font-medium">
+                    <Badge variant="outline" className="gap-1 text-amber-600 border-amber-500/30 bg-amber-500/10">
                       <WifiOff className="h-3 w-3" />
                       Offline
-                    </span>
+                    </Badge>
+                  )}
+                  {clock.isClockedIn && (
+                    <Badge variant="outline" className="gap-1.5 text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Clocked In
+                    </Badge>
                   )}
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -240,7 +295,8 @@ export default function Dashboard() {
             />
           </header>
 
-          <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+          {/* Main Content - Extra wide */}
+          <main className="max-w-[1600px] mx-auto px-4 sm:px-6 xl:px-8 py-6 space-y-6">
             <OfflineBanner onSyncComplete={() => Promise.all([clock.fetchCurrentStatus(), clock.fetchWeekSummary()])} />
 
             <AnimatePresence>
@@ -249,7 +305,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="flex items-center justify-between gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20"
+                  className="flex items-center justify-between gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20"
                 >
                   <div className="flex items-center gap-3">
                     <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
@@ -267,11 +323,11 @@ export default function Dashboard() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20"
+                className="flex items-center justify-between gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-amber-500/15 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="h-4 w-4 text-amber-600" />
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-5 w-5 text-amber-600" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Location access required</p>
@@ -295,6 +351,7 @@ export default function Dashboard() {
               </motion.div>
             )}
 
+            {/* Mobile: Hero Clock Section */}
             <HeroClockSection
               clock={clock}
               position={position}
@@ -306,19 +363,29 @@ export default function Dashboard() {
               onDismissAlert={() => clock.setEightHourAlert(false)}
             />
 
-            <StatsGrid
-              todayHours={todayHours}
-              todayMinutes={todayMinutes}
-              todayProgress={todayProgress}
-              weeklyHours={liveWeeklyHours}
-              daysWorked={daysWorked}
-              requiredDays={requiredDays}
-              compliancePercent={compliancePercent}
-              isCompliant={isCompliant}
-              currentStreak={currentStreak}
-            />
+            {/* Quick Metrics Row - Desktop only */}
+            <div className="hidden lg:block">
+              <QuickMetricsRow metrics={quickMetrics} />
+            </div>
 
-            {/* Mobile: Stacked layout */}
+            {/* Mobile Stats Grid */}
+            <div className="lg:hidden">
+              <StatsGrid
+                todayHours={todayHours}
+                todayMinutes={todayMinutes}
+                todayProgress={todayProgress}
+                weeklyHours={liveWeeklyHours}
+                daysWorked={daysWorked}
+                requiredDays={requiredDays}
+                compliancePercent={compliancePercent}
+                isCompliant={isCompliant}
+                currentStreak={currentStreak}
+              />
+            </div>
+
+            {/* ═══════════════════════════════════════════════════════════════════
+                MOBILE LAYOUT - Stacked widgets
+            ═══════════════════════════════════════════════════════════════════ */}
             <div className="space-y-4 lg:hidden">
               <CompactProductivityWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
               <CompactInsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
@@ -331,46 +398,72 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Desktop: Grid layout */}
-            <div className="hidden lg:grid lg:grid-cols-12 gap-6">
-              {/* Main content - 8 columns */}
-              <div className="lg:col-span-8 space-y-6">
-                {/* Analytics row */}
-                <div className="grid grid-cols-2 gap-6">
-                  <ProductivityWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
-                  <InsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
-                </div>
-                <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
-                <TodaysActivityWidget
-                  entries={entries}
-                  showAll={showAllEntries}
-                  setShowAll={setShowAllEntries}
+            {/* ═══════════════════════════════════════════════════════════════════
+                DESKTOP LAYOUT - Wide 3-column grid
+            ═══════════════════════════════════════════════════════════════════ */}
+            <div className="hidden lg:block space-y-6">
+              {/* Row 1: Main Analytics Widgets - Full width, side by side */}
+              <div className="grid grid-cols-2 gap-6">
+                <ProductivityWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
+                <InsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
+              </div>
+
+              {/* Row 2: Three column layout for secondary widgets */}
+              <div className="grid grid-cols-3 gap-6">
+                <GoalsWidget
+                  todayHours={todayHours + todayMinutes / 60}
+                  weeklyHours={liveWeeklyHours}
+                  daysWorked={daysWorked}
+                  requiredDays={requiredDays}
+                />
+                <WorkBalanceWidget weekSummary={clock.weekSummary} />
+                <WellnessIndicator
+                  consecutiveWorkDays={currentStreak}
+                  avgDailyHours={avgDailyHours}
+                  overtimeHours={overtimeHours}
                 />
               </div>
 
-              {/* Sidebar - 4 columns */}
-              <div className="lg:col-span-4 space-y-6">
-                <PulseWidget />
-                <XPWidget />
-                <Widget title="Quick Links">
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { href: "/history", icon: Calendar, label: "History", color: "text-violet-500" },
-                      { href: "/reports", icon: TrendingUp, label: "Reports", color: "text-blue-500" },
-                      { href: "/leave", icon: Coffee, label: "Leave", color: "text-emerald-500" },
-                      { href: "/settings", icon: Target, label: "Settings", color: "text-amber-500" },
-                    ].map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
-                      >
-                        <link.icon className={cn("h-4 w-4", link.color)} />
-                        <span className="text-sm font-medium">{link.label}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </Widget>
+              {/* Row 3: Weekly Overview - Full width */}
+              <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
+
+              {/* Row 4: Three column layout */}
+              <div className="grid grid-cols-3 gap-6">
+                {/* Activity - spans 2 columns */}
+                <div className="col-span-2">
+                  <TodaysActivityWidget
+                    entries={entries}
+                    showAll={showAllEntries}
+                    setShowAll={setShowAllEntries}
+                  />
+                </div>
+
+                {/* Sidebar widgets */}
+                <div className="space-y-6">
+                  <XPWidget />
+                  <StreakWidget currentStreak={currentStreak} />
+
+                  {/* Quick Links */}
+                  <Widget title="Quick Links">
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { href: "/history", icon: Calendar, label: "History", color: "text-violet-500" },
+                        { href: "/reports", icon: BarChart3, label: "Reports", color: "text-blue-500" },
+                        { href: "/leave", icon: Coffee, label: "Leave", color: "text-emerald-500" },
+                        { href: "/settings", icon: Target, label: "Settings", color: "text-amber-500" },
+                      ].map((link) => (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
+                        >
+                          <link.icon className={cn("h-4 w-4", link.color)} />
+                          <span className="text-sm font-medium">{link.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </Widget>
+                </div>
               </div>
             </div>
           </main>
