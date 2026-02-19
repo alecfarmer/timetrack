@@ -9,22 +9,18 @@ import { OfflineBanner } from "@/components/offline-banner"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { NotificationCenter } from "@/components/notification-center"
 import { PullToRefresh } from "@/components/pull-to-refresh"
-import { Widget } from "@/components/dashboard/widget-grid"
 import { useGamificationModals } from "@/components/gamification/level-up-modal"
 import { HeroClockSection } from "@/components/dashboard/hero-clock-section"
 import { DesktopClockBar } from "@/components/dashboard/desktop-clock-bar"
 import { StatsGrid } from "@/components/dashboard/stats-grid"
 import { XPWidget } from "@/components/dashboard/xp-widget"
-import { WeeklyOverviewWidget } from "@/components/dashboard/weekly-overview-widget"
 import { TodaysActivityWidget } from "@/components/dashboard/todays-activity-widget"
 import { PulseWidget } from "@/components/dashboard/pulse-widget"
 import { InsightsWidget, CompactInsightsWidget } from "@/components/dashboard/insights-widget"
 import { ProductivityWidget, CompactProductivityWidget } from "@/components/dashboard/productivity-widget"
 import {
-  GoalsWidget,
   WorkBalanceWidget,
   WellnessIndicator,
-  StreakWidget,
   QuickMetricsRow,
 } from "@/components/dashboard/additional-widgets"
 import { Button } from "@/components/ui/button"
@@ -38,20 +34,14 @@ import {
   WifiOff,
   AlertCircle,
   Calendar,
-  Coffee,
   Target,
   RefreshCw,
-  TrendingUp,
   MapPin,
   Clock,
-  Zap,
   Flame,
-  CheckCircle2,
-  BarChart3,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { OrgLink as Link } from "@/components/org-link"
 
 const PhotoCapture = dynamic(() => import("@/components/photo-capture").then(m => ({ default: m.PhotoCapture })), { ssr: false })
 const RewardModal = dynamic(() => import("@/components/gamification/level-up-modal").then(m => ({ default: m.RewardModal })), { ssr: false })
@@ -387,10 +377,9 @@ export default function Dashboard() {
                 MOBILE LAYOUT - Stacked widgets
             ═══════════════════════════════════════════════════════════════════ */}
             <div className="space-y-4 lg:hidden">
+              <XPWidget />
               <CompactProductivityWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
               <CompactInsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
-              <XPWidget />
-              <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
               <TodaysActivityWidget
                 entries={entries}
                 showAll={showAllEntries}
@@ -408,14 +397,9 @@ export default function Dashboard() {
                 <InsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
               </div>
 
-              {/* Row 2: Three column layout for secondary widgets */}
+              {/* Row 2: XP/Progress + Secondary widgets */}
               <div className="grid grid-cols-3 gap-6">
-                <GoalsWidget
-                  todayHours={todayHours + todayMinutes / 60}
-                  weeklyHours={liveWeeklyHours}
-                  daysWorked={daysWorked}
-                  requiredDays={requiredDays}
-                />
+                <XPWidget />
                 <WorkBalanceWidget weekSummary={clock.weekSummary} />
                 <WellnessIndicator
                   consecutiveWorkDays={currentStreak}
@@ -424,47 +408,12 @@ export default function Dashboard() {
                 />
               </div>
 
-              {/* Row 3: Weekly Overview - Full width */}
-              <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
-
-              {/* Row 4: Three column layout */}
-              <div className="grid grid-cols-3 gap-6">
-                {/* Activity - spans 2 columns */}
-                <div className="col-span-2">
-                  <TodaysActivityWidget
-                    entries={entries}
-                    showAll={showAllEntries}
-                    setShowAll={setShowAllEntries}
-                  />
-                </div>
-
-                {/* Sidebar widgets */}
-                <div className="space-y-6">
-                  <XPWidget />
-                  <StreakWidget currentStreak={currentStreak} />
-
-                  {/* Quick Links */}
-                  <Widget title="Quick Links">
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { href: "/history", icon: Calendar, label: "History", color: "text-violet-500" },
-                        { href: "/reports", icon: BarChart3, label: "Reports", color: "text-blue-500" },
-                        { href: "/leave", icon: Coffee, label: "Leave", color: "text-emerald-500" },
-                        { href: "/settings", icon: Target, label: "Settings", color: "text-amber-500" },
-                      ].map((link) => (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
-                        >
-                          <link.icon className={cn("h-4 w-4", link.color)} />
-                          <span className="text-sm font-medium">{link.label}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  </Widget>
-                </div>
-              </div>
+              {/* Row 3: Activity - Full width */}
+              <TodaysActivityWidget
+                entries={entries}
+                showAll={showAllEntries}
+                setShowAll={setShowAllEntries}
+              />
             </div>
           </main>
         </div>
