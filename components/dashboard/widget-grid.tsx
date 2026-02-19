@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { GripVertical, X, Settings, Plus, ChevronRight } from "lucide-react"
+import { OrgLink } from "@/components/org-link"
 import { staggerContainer, staggerChild } from "@/lib/animations"
 
 // Widget configuration type
@@ -233,13 +234,13 @@ export function Widget({
             </CardTitle>
             {action && (
               action.href ? (
-                <a
+                <OrgLink
                   href={action.href}
                   className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                 >
                   {action.label}
                   <ChevronRight className="h-4 w-4" />
-                </a>
+                </OrgLink>
               ) : (
                 <button
                   onClick={action.onClick}

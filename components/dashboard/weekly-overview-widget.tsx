@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { Widget } from "@/components/dashboard/widget-grid"
 import { Calendar, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { OrgLink } from "@/components/org-link"
 import { format } from "date-fns"
 
 function MobileWeekStrip({ weekSummary }: { weekSummary: any }) {
@@ -20,9 +21,9 @@ function MobileWeekStrip({ weekSummary }: { weekSummary: any }) {
           <Calendar className="h-4 w-4 text-violet-500" />
           <span className="text-sm font-semibold">This Week</span>
         </div>
-        <a href="/history" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+        <OrgLink href="/history" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
           View all
-        </a>
+        </OrgLink>
       </div>
 
       <div className="flex px-2 pb-4 pt-1">

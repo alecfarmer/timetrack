@@ -3,6 +3,7 @@
 import { ReactNode } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { OrgLink } from "@/components/org-link"
 import { Button } from "@/components/ui/button"
 import {
   Coffee,
@@ -109,9 +110,9 @@ export function QuickActionsBar({
 
         if (action.href) {
           return (
-            <a key={action.id} href={action.href} className={layout === "grid" ? "" : "flex-shrink-0"}>
+            <OrgLink key={action.id} href={action.href} className={layout === "grid" ? "" : "flex-shrink-0"}>
               {content}
-            </a>
+            </OrgLink>
           )
         }
 
@@ -341,7 +342,7 @@ export function QuickActionCard({
   )
 
   if (href) {
-    return <a href={href}>{content}</a>
+    return <OrgLink href={href}>{content}</OrgLink>
   }
 
   return <button onClick={onClick} className="w-full text-left">{content}</button>
