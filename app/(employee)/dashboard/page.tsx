@@ -15,14 +15,8 @@ import { DesktopClockBar } from "@/components/dashboard/desktop-clock-bar"
 import { StatsGrid } from "@/components/dashboard/stats-grid"
 import { XPWidget } from "@/components/dashboard/xp-widget"
 import { TodaysActivityWidget } from "@/components/dashboard/todays-activity-widget"
-import { PulseWidget } from "@/components/dashboard/pulse-widget"
-import { InsightsWidget, CompactInsightsWidget } from "@/components/dashboard/insights-widget"
-import { ProductivityWidget, CompactProductivityWidget } from "@/components/dashboard/productivity-widget"
-import {
-  WorkBalanceWidget,
-  WellnessIndicator,
-  QuickMetricsRow,
-} from "@/components/dashboard/additional-widgets"
+import { UnifiedAnalyticsWidget, CompactUnifiedAnalytics } from "@/components/dashboard/unified-analytics"
+import { QuickMetricsRow } from "@/components/dashboard/additional-widgets"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useGeolocation } from "@/hooks/use-geolocation"
@@ -378,8 +372,7 @@ export default function Dashboard() {
             ═══════════════════════════════════════════════════════════════════ */}
             <div className="space-y-4 lg:hidden">
               <XPWidget />
-              <CompactProductivityWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
-              <CompactInsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
+              <CompactUnifiedAnalytics weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
               <TodaysActivityWidget
                 entries={entries}
                 showAll={showAllEntries}
@@ -388,27 +381,22 @@ export default function Dashboard() {
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════════
-                DESKTOP LAYOUT - Wide 3-column grid
+                DESKTOP LAYOUT - Balanced grid with equal-sized boxes
             ═══════════════════════════════════════════════════════════════════ */}
             <div className="hidden lg:block space-y-6">
-              {/* Row 1: Main Analytics Widgets - Full width, side by side */}
-              <div className="grid grid-cols-2 gap-6">
-                <ProductivityWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
-                <InsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
-              </div>
+              {/* Row 1: XP Progress - Prominent position */}
+              <XPWidget />
 
-              {/* Row 2: XP/Progress + Secondary widgets */}
-              <div className="grid grid-cols-3 gap-6">
-                <XPWidget />
-                <WorkBalanceWidget weekSummary={clock.weekSummary} />
-                <WellnessIndicator
-                  consecutiveWorkDays={currentStreak}
-                  avgDailyHours={avgDailyHours}
-                  overtimeHours={overtimeHours}
-                />
-              </div>
+              {/* Row 2: Unified Analytics - Full width with tabbed panels */}
+              <UnifiedAnalyticsWidget
+                weekSummary={clock.weekSummary}
+                liveSessionMinutes={activeSessionMinutes}
+                currentStreak={currentStreak}
+                avgDailyHours={avgDailyHours}
+                overtimeHours={overtimeHours}
+              />
 
-              {/* Row 3: Activity - Full width */}
+              {/* Row 3: Today's Activity - Full width */}
               <TodaysActivityWidget
                 entries={entries}
                 showAll={showAllEntries}
