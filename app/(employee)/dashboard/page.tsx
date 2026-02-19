@@ -19,6 +19,7 @@ import { WeeklyOverviewWidget } from "@/components/dashboard/weekly-overview-wid
 import { TodaysActivityWidget } from "@/components/dashboard/todays-activity-widget"
 import { PulseWidget } from "@/components/dashboard/pulse-widget"
 import { InsightsWidget, CompactInsightsWidget } from "@/components/dashboard/insights-widget"
+import { ProductivityWidget, CompactProductivityWidget } from "@/components/dashboard/productivity-widget"
 import { Button } from "@/components/ui/button"
 import { useGeolocation } from "@/hooks/use-geolocation"
 import { useClockState } from "@/hooks/use-clock-state"
@@ -319,8 +320,8 @@ export default function Dashboard() {
 
             {/* Mobile: Stacked layout */}
             <div className="space-y-4 lg:hidden">
+              <CompactProductivityWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
               <CompactInsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
-              <PulseWidget />
               <XPWidget />
               <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
               <TodaysActivityWidget
@@ -331,9 +332,14 @@ export default function Dashboard() {
             </div>
 
             {/* Desktop: Grid layout */}
-            <div className="hidden lg:grid lg:grid-cols-5 gap-6">
-              <div className="lg:col-span-3 space-y-6">
-                <InsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
+            <div className="hidden lg:grid lg:grid-cols-12 gap-6">
+              {/* Main content - 8 columns */}
+              <div className="lg:col-span-8 space-y-6">
+                {/* Analytics row */}
+                <div className="grid grid-cols-2 gap-6">
+                  <ProductivityWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
+                  <InsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
+                </div>
                 <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
                 <TodaysActivityWidget
                   entries={entries}
@@ -342,7 +348,8 @@ export default function Dashboard() {
                 />
               </div>
 
-              <div className="lg:col-span-2 space-y-6">
+              {/* Sidebar - 4 columns */}
+              <div className="lg:col-span-4 space-y-6">
                 <PulseWidget />
                 <XPWidget />
                 <Widget title="Quick Links">
