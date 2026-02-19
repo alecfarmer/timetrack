@@ -92,8 +92,9 @@ export function NotificationCenter() {
       const res = await fetch("/api/alerts?limit=50")
       if (res.ok) {
         const data = await res.json()
+        const notifications = data.notifications || []
         setNotifications(
-          data.map((n: { id: string; type: string; title?: string; message: string; createdAt: string; isRead: boolean; link?: string; data?: Record<string, unknown> }) => ({
+          notifications.map((n: { id: string; type: string; title?: string; message: string; createdAt: string; isRead: boolean; link?: string; data?: Record<string, unknown> }) => ({
             ...n,
             title: n.title || getNotificationTitle(n.type),
             createdAt: new Date(n.createdAt),

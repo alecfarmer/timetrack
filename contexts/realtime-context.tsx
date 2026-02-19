@@ -225,7 +225,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       await fetch("/api/alerts", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ notificationIds: [id] }),
       })
 
       setState((prev) => ({
