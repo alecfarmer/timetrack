@@ -35,9 +35,13 @@ export const updateLocationSchema = z.object({
 })
 
 // ─── Callout Schemas ─────────────────────────────────────────────
+export const calloutPriorityEnum = z.enum(["P1", "P2", "P3", "P4", "P5"])
+export type CalloutPriority = z.infer<typeof calloutPriorityEnum>
+
 export const createCalloutSchema = z.object({
   incidentNumber: z.string().min(1).max(100),
   locationId: z.string().min(1),
+  priority: calloutPriorityEnum.default("P3"),
   timeReceived: z.string().datetime(),
   timeStarted: z.string().datetime().nullable().optional(),
   timeEnded: z.string().datetime().nullable().optional(),
@@ -49,8 +53,15 @@ export const createCalloutSchema = z.object({
 })
 
 // ─── Leave Schemas ───────────────────────────────────────────────
+export const leaveTypeEnum = z.enum([
+  "PTO", "SICK", "HOLIDAY", "PERSONAL", "BEREAVEMENT", "JURY_DUTY", "OTHER",
+  "COMP",    // Compensatory time off (earned from P1 callouts)
+  "TRAVEL",  // Business travel (weekend = auto-grant comp day)
+])
+export type LeaveType = z.infer<typeof leaveTypeEnum>
+
 export const createLeaveSchema = z.object({
-  type: z.enum(["PTO", "SICK", "HOLIDAY", "PERSONAL", "BEREAVEMENT", "JURY_DUTY", "OTHER"]),
+  type: leaveTypeEnum,
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),

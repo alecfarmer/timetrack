@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
     const {
       incidentNumber,
       locationId,
+      priority,
       timeReceived,
       timeStarted,
       timeEnded,
@@ -123,6 +124,7 @@ export async function POST(request: NextRequest) {
       .insert({
         incidentNumber,
         locationId,
+        priority,
         userId: user!.id,
         timeReceived: new Date(timeReceived).toISOString(),
         timeStarted: timeStarted ? new Date(timeStarted).toISOString() : null,

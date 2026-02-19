@@ -27,6 +27,7 @@ export interface Callout {
   incidentNumber: string
   locationId: string
   location: Location
+  priority?: "P1" | "P2" | "P3" | "P4" | "P5"
   timeReceived: string
   timeStarted: string | null
   timeEnded: string | null
@@ -36,6 +37,14 @@ export interface Callout {
   description: string | null
   resolution: string | null
   createdAt: string
+}
+
+const priorityColors: Record<string, string> = {
+  P1: "bg-red-600 text-white",
+  P2: "bg-orange-500 text-white",
+  P3: "bg-yellow-500 text-black",
+  P4: "bg-blue-500 text-white",
+  P5: "bg-slate-500 text-white",
 }
 
 interface CalloutCardProps {
@@ -79,11 +88,21 @@ export function CalloutCard({
           <div className="flex items-start justify-between cursor-pointer" onClick={onToggleExpand}>
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
+                {callout.priority && (
+                  <Badge className={`${priorityColors[callout.priority]} font-bold text-xs px-1.5`}>
+                    {callout.priority}
+                  </Badge>
+                )}
                 <span className="font-mono font-bold text-lg">{callout.incidentNumber}</span>
                 {isActive && (
                   <Badge variant="warning" className="gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                     {isWorking ? "In Progress" : "Active"}
+                  </Badge>
+                )}
+                {callout.priority === "P1" && !callout.timeEnded && (
+                  <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-600">
+                    Earns comp time
                   </Badge>
                 )}
               </div>

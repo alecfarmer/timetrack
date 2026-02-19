@@ -86,7 +86,8 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/settings", icon: Settings, label: "All Settings" },
       { href: "/admin/features", icon: Shield, label: "Features" },
-      { href: "/admin/jurisdictions", icon: MapPin, label: "Policies" },
+      { href: "/admin/locations", icon: MapPin, label: "Locations" },
+      { href: "/admin/jurisdictions", icon: FileText, label: "Policies" },
       { href: "/admin/leave-policy", icon: Palmtree, label: "Leave & PTO" },
       { href: "/admin/payroll-config", icon: DollarSign, label: "Payroll" },
       { href: "/admin/alerts", icon: Bell, label: "Alerts" },
