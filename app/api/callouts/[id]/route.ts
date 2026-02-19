@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin as supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
+import { addDays } from "date-fns"
 
 // GET /api/callouts/[id] - Get a single callout
 export async function GET(
@@ -54,6 +55,7 @@ export async function PATCH(
     const {
       incidentNumber,
       locationId,
+      priority,
       timeReceived,
       timeStarted,
       timeEnded,
@@ -67,7 +69,7 @@ export async function PATCH(
     // Check if callout exists and belongs to user
     const { data: existingCallout } = await supabase
       .from("Callout")
-      .select("id")
+      .select("id, priority, timeEnded, timeReceived, incidentNumber, orgId")
       .eq("id", id)
       .eq("userId", user!.id)
       .single()
@@ -84,6 +86,7 @@ export async function PATCH(
 
     if (incidentNumber !== undefined) updateData.incidentNumber = incidentNumber
     if (locationId !== undefined) updateData.locationId = locationId
+    if (priority !== undefined) updateData.priority = priority
     if (timeReceived !== undefined) updateData.timeReceived = new Date(timeReceived).toISOString()
     if (timeStarted !== undefined) updateData.timeStarted = timeStarted ? new Date(timeStarted).toISOString() : null
     if (timeEnded !== undefined) updateData.timeEnded = timeEnded ? new Date(timeEnded).toISOString() : null
@@ -92,6 +95,47 @@ export async function PATCH(
     if (gpsAccuracy !== undefined) updateData.gpsAccuracy = gpsAccuracy
     if (description !== undefined) updateData.description = description
     if (resolution !== undefined) updateData.resolution = resolution
+
+    // Check if this is a P1 callout being completed (timeEnded being set)
+    const effectivePriority = priority || existingCallout.priority
+    const isP1Completion = effectivePriority === "P1" &&
+                           timeEnded &&
+                           !existingCallout.timeEnded
+
+    // If P1 callout is being completed, auto-create comp time entry
+    if (isP1Completion && existingCallout.orgId) {
+      const sourceDate = existingCallout.timeReceived
+        ? new Date(existingCallout.timeReceived).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0]
+
+      // P1 callouts earn 4 hours (240 minutes) of comp time
+      const minutesEarned = 240
+      const expiresAt = addDays(new Date(sourceDate), 90).toISOString()
+      const incidentRef = existingCallout.incidentNumber || id.slice(0, 8)
+
+      // Check if comp time already exists for this callout
+      const { data: existingCompTime } = await supabase
+        .from("CompTimeEntry")
+        .select("id")
+        .eq("type", "CALLOUT")
+        .eq("sourceId", id)
+        .single()
+
+      if (!existingCompTime) {
+        await supabase
+          .from("CompTimeEntry")
+          .insert({
+            userId: user!.id,
+            orgId: existingCallout.orgId,
+            type: "CALLOUT",
+            sourceId: id,
+            sourceDate,
+            minutesEarned,
+            description: `P1 Incident #${incidentRef}`,
+            expiresAt,
+          })
+      }
+    }
 
     const { data: callout, error } = await supabase
       .from("Callout")

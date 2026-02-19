@@ -49,6 +49,7 @@ export default function CalloutsPage() {
 
   const [incidentNumber, setIncidentNumber] = useState("")
   const [selectedLocationId, setSelectedLocationId] = useState("")
+  const [priority, setPriority] = useState<"P1" | "P2" | "P3" | "P4" | "P5">("P3")
   const [description, setDescription] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
@@ -120,6 +121,7 @@ export default function CalloutsPage() {
         body: JSON.stringify({
           incidentNumber: incidentNumber.trim(),
           locationId: selectedLocationId,
+          priority,
           timeReceived: new Date().toISOString(),
           gpsLatitude: position?.latitude,
           gpsLongitude: position?.longitude,
@@ -132,6 +134,7 @@ export default function CalloutsPage() {
         throw new Error(data.error || "Failed to create callout")
       }
       setIncidentNumber("")
+      setPriority("P3")
       setDescription("")
       setShowNewCallout(false)
       await fetchCallouts()
@@ -308,6 +311,33 @@ export default function CalloutsPage() {
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Priority *</Label>
+                          <div className="grid grid-cols-5 gap-2">
+                            {(["P1", "P2", "P3", "P4", "P5"] as const).map((p) => (
+                              <Button
+                                key={p}
+                                type="button"
+                                variant={priority === p ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setPriority(p)}
+                                className={cn(
+                                  "rounded-lg font-semibold",
+                                  priority === p && p === "P1" && "bg-red-600 hover:bg-red-700",
+                                  priority === p && p === "P2" && "bg-orange-500 hover:bg-orange-600",
+                                  priority === p && p === "P3" && "bg-yellow-500 hover:bg-yellow-600 text-black",
+                                  priority === p && p === "P4" && "bg-blue-500 hover:bg-blue-600",
+                                  priority === p && p === "P5" && "bg-slate-500 hover:bg-slate-600"
+                                )}
+                              >
+                                {p}
+                              </Button>
+                            ))}
+                          </div>
+                          {priority === "P1" && (
+                            <p className="text-xs text-amber-600">P1 callouts automatically earn comp time when resolved</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="description">Description (optional)</Label>

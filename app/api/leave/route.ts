@@ -1,9 +1,77 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin as supabase } from "@/lib/supabase"
 import { getAuthUser } from "@/lib/auth"
-import { format, eachDayOfInterval, parseISO } from "date-fns"
+import { format, eachDayOfInterval, parseISO, isWeekend, addDays } from "date-fns"
 import { createLeaveSchema, validateBody } from "@/lib/validations"
 import { calculatePtoBalance } from "@/lib/leave-balance"
+
+// Helper to get available comp time balance
+async function getCompTimeBalance(userId: string) {
+  const { data: entries } = await supabase
+    .from("CompTimeEntry")
+    .select("id, minutesEarned, minutesUsed")
+    .eq("userId", userId)
+    .in("status", ["AVAILABLE", "PARTIALLY_USED"])
+    .gt("expiresAt", new Date().toISOString())
+    .order("expiresAt", { ascending: true }) // Use oldest first
+
+  if (!entries) return { availableMinutes: 0, entries: [] }
+
+  const availableMinutes = entries.reduce(
+    (sum, e) => sum + (e.minutesEarned - e.minutesUsed),
+    0
+  )
+
+  return { availableMinutes, entries }
+}
+
+// Helper to deduct comp time (FIFO - oldest expiring first)
+async function deductCompTime(userId: string, minutesToDeduct: number, leaveRequestIds: string[]) {
+  const { entries } = await getCompTimeBalance(userId)
+
+  let remaining = minutesToDeduct
+
+  for (const entry of entries) {
+    if (remaining <= 0) break
+
+    const available = entry.minutesEarned - entry.minutesUsed
+    const toDeduct = Math.min(available, remaining)
+
+    // Update the comp time entry
+    const newUsed = entry.minutesUsed + toDeduct
+    const newStatus = newUsed >= entry.minutesEarned ? "FULLY_USED" : "PARTIALLY_USED"
+
+    await supabase
+      .from("CompTimeEntry")
+      .update({ minutesUsed: newUsed, status: newStatus })
+      .eq("id", entry.id)
+
+    // Record usage for each leave request
+    for (const leaveId of leaveRequestIds) {
+      // Check if usage already exists
+      const { data: existing } = await supabase
+        .from("CompTimeUsage")
+        .select("id")
+        .eq("compTimeEntryId", entry.id)
+        .eq("leaveRequestId", leaveId)
+        .single()
+
+      if (!existing) {
+        await supabase
+          .from("CompTimeUsage")
+          .insert({
+            compTimeEntryId: entry.id,
+            leaveRequestId: leaveId,
+            minutesUsed: Math.floor(toDeduct / leaveRequestIds.length),
+          })
+      }
+    }
+
+    remaining -= toDeduct
+  }
+
+  return minutesToDeduct - remaining // Actual amount deducted
+}
 
 // GET /api/leave?month=2025-01 - Get leave requests for a month
 export async function GET(request: NextRequest) {
@@ -111,6 +179,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check comp time balance for COMP leave type
+    if (type === "COMP") {
+      const minutesNeeded = days.length * 480 // 8 hours per day
+      const { availableMinutes } = await getCompTimeBalance(user!.id)
+
+      if (availableMinutes < minutesNeeded) {
+        const availableHours = Math.floor(availableMinutes / 60)
+        const neededHours = Math.floor(minutesNeeded / 60)
+        return NextResponse.json(
+          {
+            error: `Insufficient comp time balance. You have ${availableHours}h available but need ${neededHours}h.`,
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     const records = days.map((d) => ({
       userId: user!.id,
       orgId: org?.orgId || null,
@@ -133,7 +218,55 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ leaves: data })
+    // Handle COMP leave - deduct from comp time balance
+    if (type === "COMP" && data && data.length > 0) {
+      const minutesToDeduct = data.length * 480 // 8 hours per day
+      const leaveIds = data.map(l => l.id)
+      await deductCompTime(user!.id, minutesToDeduct, leaveIds)
+    }
+
+    // Handle TRAVEL leave - auto-grant comp time for weekend days
+    if (type === "TRAVEL" && data && data.length > 0 && org) {
+      const weekendDays = days.filter(d => isWeekend(d))
+
+      if (weekendDays.length > 0) {
+        // Create comp time entries for weekend travel days
+        for (const d of weekendDays) {
+          const sourceId = data.find(l => l.date === format(d, "yyyy-MM-dd"))?.id
+
+          // Check if comp entry already exists for this source
+          if (sourceId) {
+            const { data: existing } = await supabase
+              .from("CompTimeEntry")
+              .select("id")
+              .eq("type", "TRAVEL")
+              .eq("sourceId", sourceId)
+              .single()
+
+            if (!existing) {
+              const expiresAt = addDays(new Date(), 90)
+              await supabase
+                .from("CompTimeEntry")
+                .insert({
+                  userId: user!.id,
+                  orgId: org.orgId,
+                  type: "TRAVEL",
+                  sourceId,
+                  sourceDate: format(d, "yyyy-MM-dd"),
+                  minutesEarned: 480, // Full day = 8 hours
+                  description: `Weekend travel: ${format(d, "EEE, MMM d")}${notes ? ` - ${notes}` : ""}`,
+                  expiresAt: expiresAt.toISOString(),
+                })
+            }
+          }
+        }
+      }
+    }
+
+    return NextResponse.json({
+      leaves: data,
+      compTimeGranted: type === "TRAVEL" ? days.filter(d => isWeekend(d)).length : 0,
+    })
   } catch (error) {
     console.error("Error creating leave:", error)
     return NextResponse.json({ error: "Failed to create leave request" }, { status: 500 })
