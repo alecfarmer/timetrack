@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { Widget } from "@/components/dashboard/widget-grid"
-import { Calendar, CheckCircle2, Home } from "lucide-react"
+import { Calendar, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { OrgLink } from "@/components/org-link"
 import { format } from "date-fns"
@@ -64,10 +64,8 @@ function MobileWeekStrip({ weekSummary }: { weekSummary: any }) {
                       ? "ring-2 ring-primary text-foreground"
                       : "bg-muted/60 text-muted-foreground"
               )}>
-                {isOnSite ? (
+                {(isOnSite || isWfh) ? (
                   <CheckCircle2 className="h-4 w-4" />
-                ) : isWfh ? (
-                  <Home className="h-4 w-4" />
                 ) : (
                   <span className="text-xs font-medium">{new Date(day.date).getDate()}</span>
                 )}
@@ -150,10 +148,8 @@ export function WeeklyOverviewWidget({ weekSummary }: { weekSummary: any }) {
                         ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                         : "text-muted-foreground"
                   )}>
-                    {isOnSite ? (
+                    {(isOnSite || isWfh) ? (
                       <CheckCircle2 className="h-4 w-4" />
-                    ) : isWfh ? (
-                      <Home className="h-4 w-4" />
                     ) : (
                       <span className="text-xs">{new Date(day.date).getDate()}</span>
                     )}
