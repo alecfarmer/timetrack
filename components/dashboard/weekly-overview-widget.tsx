@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { Widget } from "@/components/dashboard/widget-grid"
-import { Calendar, CheckCircle2 } from "lucide-react"
+import { Calendar, CheckCircle2, Home } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { OrgLink } from "@/components/org-link"
 import { format } from "date-fns"
@@ -32,6 +32,8 @@ function MobileWeekStrip({ weekSummary }: { weekSummary: any }) {
           const mins = (day.minutes || 0) % 60
           const isToday = day.date === today
           const isWeekend = i === 0 || i === 6
+          const isWfh = day.locationCategory === "HOME" && day.minutes > 0
+          const isOnSite = day.worked // 'worked' means on-site (non-HOME) with meetsPolicy
 
           return (
             <motion.div
@@ -54,14 +56,18 @@ function MobileWeekStrip({ weekSummary }: { weekSummary: any }) {
 
               <div className={cn(
                 "w-9 h-9 rounded-full flex items-center justify-center",
-                day.worked
+                isOnSite
                   ? "bg-emerald-500 text-white"
-                  : isToday
-                    ? "ring-2 ring-primary text-foreground"
-                    : "bg-muted/60 text-muted-foreground"
+                  : isWfh
+                    ? "bg-blue-500 text-white"
+                    : isToday
+                      ? "ring-2 ring-primary text-foreground"
+                      : "bg-muted/60 text-muted-foreground"
               )}>
-                {day.worked ? (
+                {isOnSite ? (
                   <CheckCircle2 className="h-4 w-4" />
+                ) : isWfh ? (
+                  <Home className="h-4 w-4" />
                 ) : (
                   <span className="text-xs font-medium">{new Date(day.date).getDate()}</span>
                 )}
@@ -96,12 +102,27 @@ export function WeeklyOverviewWidget({ weekSummary }: { weekSummary: any }) {
           icon={<Calendar className="h-4 w-4 text-violet-500" />}
           action={{ label: "View History", href: "/history" }}
         >
+          {/* Legend */}
+          <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-emerald-500" />
+              <span>On-site</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-blue-500" />
+              <span>WFH</span>
+            </div>
+          </div>
+
           <div className="grid grid-cols-7 gap-2">
             {weekSummary?.weekDays?.map((day: any, i: number) => {
               const hours = Math.floor((day.minutes || 0) / 60)
               const mins = (day.minutes || 0) % 60
               const isToday = day.date === format(new Date(), "yyyy-MM-dd")
               const isWeekend = i === 0 || i === 6
+              const isWfh = day.locationCategory === "HOME" && day.minutes > 0
+              const isOnSite = day.worked // 'worked' means on-site (non-HOME) with meetsPolicy
+
               return (
                 <motion.div
                   key={day.date}
@@ -123,12 +144,16 @@ export function WeeklyOverviewWidget({ weekSummary }: { weekSummary: any }) {
                   </span>
                   <div className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium mb-2",
-                    day.worked
+                    isOnSite
                       ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      : "text-muted-foreground"
+                      : isWfh
+                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                        : "text-muted-foreground"
                   )}>
-                    {day.worked ? (
+                    {isOnSite ? (
                       <CheckCircle2 className="h-4 w-4" />
+                    ) : isWfh ? (
+                      <Home className="h-4 w-4" />
                     ) : (
                       <span className="text-xs">{new Date(day.date).getDate()}</span>
                     )}
