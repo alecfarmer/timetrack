@@ -319,7 +319,7 @@ export default function Dashboard() {
 
             {/* Mobile: Stacked layout */}
             <div className="space-y-4 lg:hidden">
-              <CompactInsightsWidget weekSummary={clock.weekSummary} />
+              <CompactInsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
               <PulseWidget />
               <XPWidget />
               <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
@@ -333,7 +333,7 @@ export default function Dashboard() {
             {/* Desktop: Grid layout */}
             <div className="hidden lg:grid lg:grid-cols-5 gap-6">
               <div className="lg:col-span-3 space-y-6">
-                <InsightsWidget weekSummary={clock.weekSummary} />
+                <InsightsWidget weekSummary={clock.weekSummary} liveSessionMinutes={activeSessionMinutes} />
                 <WeeklyOverviewWidget weekSummary={clock.weekSummary} />
                 <TodaysActivityWidget
                   entries={entries}

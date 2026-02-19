@@ -18,6 +18,7 @@ import {
   Activity,
   Flame,
   Zap,
+  Info,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getTimezone } from "@/lib/dates"
@@ -50,9 +51,11 @@ interface InsightsWidgetProps {
       worked: boolean
     }>
   } | null
+  /** Live session minutes to add to today's hours (for real-time updates while clocked in) */
+  liveSessionMinutes?: number
 }
 
-export function InsightsWidget({ weekSummary }: InsightsWidgetProps) {
+export function InsightsWidget({ weekSummary, liveSessionMinutes = 0 }: InsightsWidgetProps) {
   const [insights, setInsights] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"charts" | "stats">("charts")
@@ -76,13 +79,22 @@ export function InsightsWidget({ weekSummary }: InsightsWidgetProps) {
     fetchInsights()
   }, [])
 
+  // Convert live session to hours
+  const liveSessionHours = liveSessionMinutes / 60
+
   // Compute weekly breakdown from weekSummary if insights API fails
-  const weeklyData = insights?.weeklyBreakdown ||
+  // Add live session hours to today's hours for real-time updates
+  const todayStr = new Date().toDateString()
+  const weeklyData = (insights?.weeklyBreakdown ||
     weekSummary?.weekDays?.map((d) => ({
       date: d.date,
       hours: d.minutes / 60,
-      isToday: new Date(d.date).toDateString() === new Date().toDateString(),
-    })) || []
+      isToday: new Date(d.date).toDateString() === todayStr,
+    })) || []).map((d) => ({
+      ...d,
+      // Add live session hours to today's data
+      hours: d.isToday ? d.hours + liveSessionHours : d.hours,
+    }))
 
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   const barData = weeklyData.slice(0, 7).map((d, i) => ({
@@ -91,16 +103,17 @@ export function InsightsWidget({ weekSummary }: InsightsWidgetProps) {
     target: 8,
   }))
 
-  // Calculate averages from available data
+  // Calculate averages from available data (including live hours)
   const totalHours = weeklyData.reduce((sum, d) => sum + d.hours, 0)
   const daysWithHours = weeklyData.filter((d) => d.hours > 0).length || 1
   const avgHours = totalHours / daysWithHours
 
-  // Mock trend data if not available
-  const trendData = insights?.trend?.map((v) => ({ value: v })) ||
-    [{ value: 38 }, { value: 42 }, { value: 40 }, { value: totalHours }]
+  // Update trend data with live hours for this week
+  const trendData = insights?.trend?.map((v, i) => ({
+    value: i === insights.trend.length - 1 ? v + liveSessionHours : v // Add live hours to current week
+  })) || [{ value: 38 }, { value: 42 }, { value: 40 }, { value: totalHours }]
 
-  // Distribution for donut chart
+  // Distribution for donut chart (live-updated)
   const donutData = [
     { name: "Regular", value: Math.max(0, Math.min(40, totalHours)), color: "hsl(var(--primary))" },
     { name: "Overtime", value: Math.max(0, totalHours - 40), color: "#f59e0b" },
@@ -199,6 +212,7 @@ export function InsightsWidget({ weekSummary }: InsightsWidgetProps) {
             icon={<Target className="h-4 w-4 text-emerald-500" />}
             label="On-Time"
             value={`${insights?.onTimeRate || 95}%`}
+            tooltip="Percentage of clock-ins before 9:00 AM this week"
           />
           <StatBox
             icon={<Flame className="h-4 w-4 text-orange-500" />}
@@ -209,6 +223,7 @@ export function InsightsWidget({ weekSummary }: InsightsWidgetProps) {
             icon={<Zap className="h-4 w-4 text-violet-500" />}
             label="Productivity"
             value={`${insights?.productivityScore || 92}%`}
+            tooltip="Percentage of work days where you completed 8+ hours"
           />
           <div className="col-span-2 pt-2 border-t">
             <div className="flex items-center justify-between">
@@ -229,17 +244,20 @@ function StatBox({
   label,
   value,
   trend,
+  tooltip,
 }: {
   icon: React.ReactNode
   label: string
   value: string
   trend?: { current: number; previous: number }
+  tooltip?: string
 }) {
   return (
-    <div className="rounded-lg bg-muted/50 p-3">
+    <div className="rounded-lg bg-muted/50 p-3" title={tooltip}>
       <div className="flex items-center gap-1.5 mb-1">
         {icon}
         <span className="text-xs text-muted-foreground">{label}</span>
+        {tooltip && <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />}
       </div>
       <div className="flex items-center justify-between">
         <span className="text-lg font-bold">{value}</span>
@@ -252,10 +270,17 @@ function StatBox({
 }
 
 // Compact version for mobile
-export function CompactInsightsWidget({ weekSummary }: InsightsWidgetProps) {
-  const weeklyData = weekSummary?.weekDays?.map((d) => ({
-    hours: d.minutes / 60,
-  })) || []
+export function CompactInsightsWidget({ weekSummary, liveSessionMinutes = 0 }: InsightsWidgetProps) {
+  const liveSessionHours = liveSessionMinutes / 60
+  const todayStr = new Date().toDateString()
+
+  // Include live session hours in today's data
+  const weeklyData = weekSummary?.weekDays?.map((d) => {
+    const isToday = new Date(d.date).toDateString() === todayStr
+    return {
+      hours: (d.minutes / 60) + (isToday ? liveSessionHours : 0),
+    }
+  }) || []
 
   const totalHours = weeklyData.reduce((sum, d) => sum + d.hours, 0)
   const daysWorked = weeklyData.filter((d) => d.hours > 0).length
