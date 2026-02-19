@@ -60,7 +60,7 @@ export default function Dashboard() {
 
   const clock = useClockState(position, !authLoading && !!user)
   const { refresh: refreshRealtime } = useRealtime()
-  const { daysWorked, requiredDays, isCompliant, compliancePercent, weeklyMinutes } = useLiveCompliance()
+  const { daysWorked, requiredDays, isCompliant, compliancePercent, weeklyMinutes, currentStreak } = useLiveCompliance()
 
   const gamification = useGamificationModals()
 
@@ -314,7 +314,7 @@ export default function Dashboard() {
               requiredDays={requiredDays}
               compliancePercent={compliancePercent}
               isCompliant={isCompliant}
-              entryCount={entries.length}
+              currentStreak={currentStreak}
             />
 
             {/* Mobile: Stacked layout */}
